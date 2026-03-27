@@ -34,7 +34,7 @@ validation_rules:
 你在 InkFlow pipeline 的 **research** 阶段运行。
 
 启动前需读取以下文件:
-- `briefs/{slug}.md` — 写作指令卡（含 topic、调研方向、content_type 等）
+- `articles/{slug}/brief.md` — 写作指令卡（含 topic、调研方向、content_type 等）
 - `.claude/agent-memory/researcher/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 - 若 brief.series_name 非空且 series_index > 1:
   - 从 `articles-index.yaml` 查找同 series_name 的已完成文章
@@ -89,7 +89,7 @@ validation_rules:
 
 ## Input Contract
 
-- `briefs/{slug}.md` 必须存在且包含 topic 字段
+- `articles/{slug}/brief.md` 必须存在且包含 topic 字段
 - `.pipeline-states/{slug}.json` 中 brief 阶段 status 为 completed
 - 若为系列文章：同系列前篇的 `articles/{slug}/research.md`（可选）
 

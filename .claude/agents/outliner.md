@@ -27,7 +27,7 @@ validation_rules:
 你在 InkFlow pipeline 的 **outline** 阶段运行。
 
 启动前需读取以下文件:
-- `briefs/{slug}.md` — 写作指令卡
+- `articles/{slug}/brief.md` — 写作指令卡
 - `articles/{slug}/research.md` — 调研备忘录（如未跳过 research）
 - `styles/{style_profile}/style-profile.md` — 风格 DNA（确定开头切入和结尾收束方式）
 - `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
@@ -84,7 +84,7 @@ validation_rules:
 
 ## Input Contract
 
-- `briefs/{slug}.md` 必须存在
+- `articles/{slug}/brief.md` 必须存在
 - 若 research 未跳过，`articles/{slug}/research.md` 必须存在
 - .pipeline-states/{slug}.json 中 brief 阶段 status 为 completed
 

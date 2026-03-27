@@ -20,6 +20,7 @@ description: >
    - **新建文章**：用户提供了主题 → 进入 Brief 创建
    - **继续 pipeline**：扫描 `.pipeline-states/` 找到有未完成阶段的 state → 继续
    - **重跑阶段**：用户说"重跑 {stage}" → 进入 Rerun 流程
+   - **预览 pipeline**：用户说"预览"、"dry-run"、"检查配置" → 进入 Dry-Run 模式
    - **无明确意图**：用 AskUserQuestion 询问
 
 ```
@@ -29,6 +30,7 @@ AskUserQuestion:
     - "新建文章" — 从 brief 开始创建新内容
     - "继续未完成的文章" — 恢复之前暂停的 pipeline
     - "重跑某个阶段" — 重新执行已完成的阶段
+    - "预览 pipeline" — 检查配置和依赖（不消耗 token）
 ```
 
 ## 2. Brief 创建
@@ -229,12 +231,95 @@ L4 人工介入:
 
 所有阶段 completed 或 skipped 后：
 
+**10.1 记忆压缩检查**
+
+在展示完成选项前，扫描 `.claude/agent-memory/` 下所有 `MEMORY.md` 文件：
+- 统计每个文件中的规则条目数（以 `- ` 开头的行）
+- 若任何文件超过 30 条，在完成消息中附加提醒：
+  `"{agent} 的工作记忆已有 {N} 条规则（阈值 30），建议运行记忆压缩。"`
+
+**10.2 完成选项**
+
 ```
 AskUserQuestion:
-  question: "Pipeline 已完成！接下来做什么？"
+  question: "Pipeline 已完成！接下来做什么？"（若有记忆压缩提醒，附在问题描述中）
   options:
     - "运行反馈闭环" — 提示触发 feedback-loop skill
     - "分析写作风格" — 提示触发 style-analyzer skill（首次使用推荐）
     - "开始新文章" — 重新进入 Brief 创建
     - "结束" — 退出
+```
+
+## 11. Dry-Run 模式（Pipeline 预览）
+
+当用户选择"预览 pipeline"或说"dry-run"时执行。**不 spawn 任何 agent，零 token 消耗**。
+
+**流程**：
+
+1. 确定目标：
+   - 若有指定 slug → 读取该文章的 brief 和 state
+   - 若无 → 用 AskUserQuestion 请用户选择（已有文章列表或"使用默认配置预览"）
+
+2. 读取 pipeline YAML，逐 stage 检查：
+
+```
+FOR each stage in pipeline:
+
+  a. SKIP 条件评估
+     - 读取 stage.skip_if
+     - 从 brief frontmatter 取值（若有 brief）
+     - 输出: "跳过" 或 "执行"，附原因
+
+  b. 依赖状态检查
+     - 读取 stage.requires
+     - 从 .pipeline-states/{slug}.json 检查依赖状态（若有 state）
+     - 输出: "依赖满足" 或 "依赖未满足: {stage} 状态为 {status}"
+
+  c. 上下文文件检查
+     - 读取 stage.context_files
+     - 替换 {slug} 和 {style_profile} 变量
+     - 用 Glob 检查每个文件是否存在
+     - 输出: "✓ 存在" 或 "✗ 缺失"
+
+  d. Skill/Rule 可用性检查
+     - 从 pipeline YAML 读取 stage 对应的 skills 和 rules
+     - 用 Glob 检查每个 skill/rule 文件是否存在
+     - 输出: "✓ 可用" 或 "✗ 未找到: {path}"
+
+  e. Agent 可用性检查
+     - 检查 .claude/agents/{agent}.md 是否存在
+     - 读取 agent 的 model 字段，与 .inkflow.yaml 的 model_allocation 交叉验证
+     - 输出: "✓ {agent} (model: {model})" 或 "✗ agent 文件不存在"
+```
+
+3. 输出汇总表：
+
+```markdown
+## Pipeline 预览: {pipeline_name}
+
+| Stage | 状态 | Agent | Model | 上下文文件 | Skills | Rules |
+|-------|------|-------|-------|-----------|--------|-------|
+| brief | ✓ completed | (user) | - | - | - | - |
+| research | → 跳过 (skip_research=true) | researcher | sonnet | brief.md ✓ | - | - |
+| outline | → 待执行 | outliner | opus | brief.md ✓, research.md ✗ | - | wechat-platform |
+| ... | | | | | | |
+
+### 问题清单
+- ⚠ outline: context_file `articles/{slug}/research.md` 不存在（research 被跳过，正常）
+- ✗ draft: skill `anti-ai-style` 未找到（检查 .claude/skills/domains/ 目录）
+
+### 配置摘要
+- 领域: wechat-article
+- 导出格式: wechat_md, plain_md, html, summary
+- 检查点: outline (Checkpoint 1), refine (Checkpoint 2), publish (Checkpoint 3)
+```
+
+4. 用 AskUserQuestion 提供后续操作：
+
+```
+AskUserQuestion:
+  question: "预览完成。要执行 pipeline 还是修复问题？"
+  options:
+    - "开始执行 pipeline" — 进入正常执行流程
+    - "返回" — 退出预览
 ```

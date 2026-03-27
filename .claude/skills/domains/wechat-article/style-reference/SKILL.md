@@ -6,6 +6,7 @@ domain: wechat-article
 version: 1.0.0
 context_source: "styles/{style_profile}/style-profile.md"
 context_selector: "按 section 主题选最相关段落"
+inject_at: [draft]
 ---
 
 ## 加载规则
