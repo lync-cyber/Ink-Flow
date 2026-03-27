@@ -1,6 +1,9 @@
 ## 运行时状态
 pipeline-state.json
 
+# 用户本地配置（不提交）
+.claude/settings.local.json
+
 # 系统文件
 .DS_Store
 Thumbs.db
