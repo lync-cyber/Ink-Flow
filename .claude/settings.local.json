@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.axtonliu.ai)",
+      "WebFetch(domain:www.woshipm.com)",
+      "Bash(git init:*)",
+      "Bash(for dir:*)",
+      "Bash(do touch:*)",
+      "Bash(done)",
+      "Bash(git add:*)"
+    ]
+  }
+}
