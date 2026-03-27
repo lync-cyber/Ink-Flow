@@ -3,7 +3,9 @@ name: {agent-name}
 description: {一行描述}
 tools: {Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch}
 model: {sonnet|opus}
-memory: project
+memory: {project|none}               # project = 持久化工作记忆; none = 无需记忆
+skills: [{skill-name}]               # 有操作逻辑的能力（.claude/skills/）
+rules: [{rule-name}]                 # 声明式约束（.claude/rules/）
 validation_rules:
   required_sections:
     - "{section-name}"

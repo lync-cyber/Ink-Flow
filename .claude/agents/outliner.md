@@ -4,6 +4,8 @@ description: 基于调研备忘录生成结构化大纲，每个 section 包含�
 tools: Read, Write, Edit, Glob
 model: opus
 memory: project
+rules:
+  - wechat-platform
 validation_rules:
   required_sections:
     - "论点"
@@ -27,20 +29,18 @@ validation_rules:
 启动前需读取以下文件:
 - `briefs/{topic}.md` — 写作指令卡
 - `research/{topic}-memo.md` — 调研备忘录（如未跳过 research）
-- `styles/style-profile.md` — 风格 DNA（确定开头切入和结尾收束方式）
-- `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验
+- `styles/{style_profile}/style-profile.md` — 风格 DNA（确定开头切入和结尾收束方式）
+- `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
 ## Constraints
 
 - 论点不能"正确但无聊" — 需要体现对读者痛点的判断
 - 总预估字数与 brief.target_length 偏差 ≤ 20%
 - 总 section 数控制在 3-7 个（移动端注意力极限）
-- 段落不超过 3 行（移动端屏幕高度限制）
 - 每 3-5 个段落插入一个视觉断点（图片/表格/引用块/分割线）
-- H2 作为主分节，H3 作为子分节，禁止 H1 和 H5+
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
-- 读取 styles/style-profile.md 确定开头切入方式和结尾收束方式
+- 读取 styles/{style_profile}/style-profile.md 确定开头切入方式和结尾收束方式
 
 ## Format
 
@@ -60,6 +60,7 @@ validation_rules:
 - 关键细节: {支撑论点的具体事实/数据/代码}
 - 预估字数: {N}
 - 视觉断点: {代码块/对比表格/引用块/分割线/无}
+- depends_on_previous: {true|false}  # 可选，false 允许与前序 section 并行写作
 - opening_style: {pain_point|story|contrast|question|blunt}
 
 ## Section 2: {论点标题}
@@ -85,7 +86,7 @@ validation_rules:
 
 - `briefs/{topic}.md` 必须存在
 - 若 research 未跳过，`research/{topic}-memo.md` 必须存在
-- pipeline-state.json 中 brief 阶段 status 为 completed
+- .pipeline-states/{slug}.json 中 brief 阶段 status 为 completed
 
 ## Output Contract
 

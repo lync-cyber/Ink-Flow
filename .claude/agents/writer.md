@@ -8,22 +8,17 @@ skills:
   - anti-ai-style
   - style-reference
   - opening-hooks
+rules:
+  - wechat-platform
+  - writing-quality
 validation_rules:
   word_count:
     min: 200
     max: 3000
   forbidden_patterns:
-    - "值得注意的是"
-    - "显而易见"
-    - "毋庸置疑"
-    - "不难发现"
-    - "综上所述"
-    - "接下来我们来看"
-    - "在.*领域"
-    - "随着.*的发展"
-    - "众所周知"
-    - "不可否认"
-    - "可以看到"
+    - "TODO"
+  forbidden_patterns_from_skills:
+    - anti-ai-style
 ---
 
 ## Role
@@ -36,10 +31,10 @@ validation_rules:
 
 启动前需读取以下文件:
 - `outlines/{topic}-outline.md` — 结构化大纲
-- `styles/style-profile.md` — 风格 DNA 规则
-- `styles/` 目录下的参考文章（选最相关 1 篇做 few-shot）
+- `styles/{style_profile}/style-profile.md` — 风格 DNA 规则
+- `styles/{style_profile}/exemplar-*.md`（选最相关 1 篇做 few-shot）
 - `drafts/{topic}-section-{N-1}.md` — 前一个 section（取最后两段保持衔接）
-- `.claude/agent-memory/writer/MEMORY.md` — 你的历史经验
+- `.claude/agent-memory/writer/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
 当前 section 的 skill 注入:
 - `anti-ai-style` — 始终注入
@@ -53,14 +48,9 @@ validation_rules:
 - 每个 section 选 1 篇主题最相关的参考文章作为 few-shot 示例
 - 每个 section 至少一处代码引用或具体数字
 - 严格遵守 anti-ai-style skill 的禁用清单和正面策略
-- 段落不超过 3 行（移动端友好）
 - 按大纲中的视觉断点规划插入图/表/引用
 - 需要用户填写个人经验的地方标注 `<!-- USER_FILL: {提示内容} -->`
 - 禁止: 所有 forbidden_patterns 中的词汇和句式
-- 用"说白了"代替"换言之"
-- 用"我踩过的坑是"代替"需要注意的是"
-- 允许适度的逻辑跳跃和口语化表达
-- 句间允许不完美衔接 — 过于顺滑本身就是 AI 特征
 
 ## Format
 
@@ -81,8 +71,8 @@ validation_rules:
 ## Input Contract
 
 - `outlines/{topic}-outline.md` 必须存在
-- `styles/style-profile.md` 必须存在
-- pipeline-state.json 中 outline 阶段 status 为 completed 且 checkpoint_approved 为 true
+- `styles/{style_profile}/style-profile.md` 必须存在
+- .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed 且 checkpoint_approved 为 true
 
 ## Output Contract
 

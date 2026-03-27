@@ -5,7 +5,7 @@ description: 执行配图阶段 — 调用 illustrator agent 生成架构图、�
 ## 执行逻辑
 
 ### 1. 前置检查
-- 读取 `pipeline-state.json`
+- 读取 `.pipeline-states/{slug}.json`
 - 确认 outline 阶段 status 为 completed
 - 读取 `briefs/{topic}.md` 检查 `no_figures`: 若为 true → 标记 skipped
 - 注意: 此阶段可与 draft 并行执行（parallel_with: [draft]）
@@ -27,7 +27,7 @@ description: 执行配图阶段 — 调用 illustrator agent 生成架构图、�
 - 检查: SVG 符合公众号兼容约束（无 id/style/script/a 标签）
 
 ### 5. 更新状态
-- 更新 pipeline-state.json:
+- 更新 `.pipeline-states/{slug}.json`:
   - figures.status: "completed"
   - figures.artifacts: ["figures/{topic}-figures.md", ...]
 - 追加运行日志

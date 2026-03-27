@@ -13,7 +13,7 @@ description: 执行发布阶段 — 应用排版规则、生成运营元数据�
 ## 执行逻辑
 
 ### 1. 前置检查
-- 读取 `pipeline-state.json`
+- 读取 `.pipeline-states/{slug}.json`
 - 确认 refine 阶段 status 为 completed 且 checkpoint_approved 为 true
 - 读取 `output/{topic}-final.md` — 润色后文章
 
@@ -66,7 +66,7 @@ description: 执行发布阶段 — 应用排版规则、生成运营元数据�
 - 包含文章核心观点和链接引导
 
 ### 5. 更新状态
-- 更新 pipeline-state.json:
+- 更新 `.pipeline-states/{slug}.json`:
   - publish.status: "completed"
   - publish.artifacts: [导出的文件列表]
 - 追加运行日志

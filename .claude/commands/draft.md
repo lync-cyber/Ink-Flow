@@ -5,7 +5,7 @@ description: 执行写作阶段 — 按大纲逐 section 调用 writer agent，�
 ## 执行逻辑
 
 ### 1. 前置检查
-- 读取 `pipeline-state.json`
+- 读取 `.pipeline-states/{slug}.json`
 - 确认 outline 阶段 status 为 completed 且 checkpoint_approved 为 true
 - 读取 `outlines/{topic}-outline.md` 解析 section 列表
 
@@ -13,9 +13,17 @@ description: 执行写作阶段 — 按大纲逐 section 调用 writer agent，�
 
 对大纲中的每个 section:
 
+#### 2.0 并行判断
+- 读取 section 的 `depends_on_previous` 字段（默认 true）
+- 若 `depends_on_previous == false`:
+  - 可与前序 section 并行执行（使用 Agent tool 的并行调用）
+  - 不传入前一 section 的衔接内容
+- 若 `depends_on_previous != false`（默认）:
+  - 等待前一 section 完成，读取其最后两段
+
 #### 2.1 组装上下文
 - 读取 `outlines/{topic}-outline.md` 中当前 section 的定义
-- 读取 `styles/style-profile.md` 风格规则
+- 读取 `styles/{style_profile}/style-profile.md` 风格规则（style_profile 从 brief frontmatter 获取，默认 "default"）
 - 加载 skills:
   - `anti-ai-style` — 始终注入
   - `style-reference` — 始终注入（选最相关参考文章的 2-3 段做 few-shot）
@@ -38,7 +46,7 @@ description: 执行写作阶段 — 按大纲逐 section 调用 writer agent，�
 - 合并时检查 section 间的衔接是否自然
 
 ### 4. 更新状态
-- 更新 pipeline-state.json:
+- 更新 `.pipeline-states/{slug}.json`:
   - draft.status: "completed"
   - draft.artifacts: ["drafts/{topic}-full-draft.md", "drafts/{topic}-section-*.md"]
 - 追加运行日志（每个 section 单独记录耗时和 token）

@@ -5,14 +5,14 @@ description: 执行大纲阶段 — 调用 outliner agent 生成结构化大纲�
 ## 执行逻辑
 
 ### 1. 前置检查
-- 读取 `pipeline-state.json`，确认 brief 阶段 status 为 completed
+- 读取 `.pipeline-states/{slug}.json`，确认 brief 阶段 status 为 completed
 - 若 research 未跳过，确认 research 阶段 status 为 completed
 - 读取 `briefs/{topic}.md` 获取参数
 
 ### 2. 组装上下文
 - 读取 `briefs/{topic}.md` 完整内容
 - 读取 `research/{topic}-memo.md`（如未跳过 research）
-- 读取 `styles/style-profile.md`（如存在，用于确定开头/结尾风格）
+- 读取 `styles/{style_profile}/style-profile.md`（如存在，用于确定开头/结尾风格；style_profile 从 brief 获取，默认 "default"）
 - 读取 `.claude/agent-memory/outliner/MEMORY.md`
 - 注入移动端结构约束（来自 outliner agent Constraints）
 
@@ -27,7 +27,7 @@ description: 执行大纲阶段 — 调用 outliner agent 生成结构化大纲�
 - 检查: section 数在 3-7 之间
 
 ### 5. 更新状态
-- 更新 pipeline-state.json:
+- 更新 `.pipeline-states/{slug}.json`:
   - outline.status: "completed"
   - outline.artifacts: ["outlines/{topic}-outline.md"]
 - 追加运行日志

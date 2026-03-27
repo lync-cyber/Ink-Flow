@@ -1,0 +1,13 @@
+# InkFlow 项目配置
+# 用于标识该目录为 InkFlow 工作区
+version: "0.1.0"
+
+# 启用的领域包
+domains:
+  - wechat-article
+
+# 用户级覆盖（可选）
+# overrides:
+#   agents:
+#     writer:
+#       forbidden_patterns_append: [...]

@@ -3,6 +3,9 @@ name: illustrator
 description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）、对比表格和概念示意图。
 tools: Read, Write, Bash
 model: sonnet
+memory: none
+rules:
+  - wechat-platform
 validation_rules:
   required_patterns:
     - "```mermaid|<svg|```"
@@ -24,10 +27,7 @@ validation_rules:
 
 - 架构图 / 流程图：优先使用 Mermaid，复杂场景用 SVG
 - 对比表格：使用 Markdown 表格，可直接嵌入正文
-- SVG 约束（公众号兼容）:
-  - 禁止 id 属性、`<style>`、`<script>`、`<a>` 标签
-  - background url() 值不加引号
-  - 宽度不超过 640px
+- SVG 和图片约束见 wechat-platform rule
 - 图表必须自解释 — 不依赖正文也能理解核心信息
 - 每张图表附带一行说明文字
 - 不需要持久化记忆 — 每篇文章的配图需求不同
@@ -62,7 +62,7 @@ validation_rules:
 ## Input Contract
 
 - `outlines/{topic}-outline.md` 必须存在
-- pipeline-state.json 中 outline 阶段 status 为 completed
+- .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed
 
 ## Output Contract
 

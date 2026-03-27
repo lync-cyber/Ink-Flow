@@ -4,6 +4,8 @@
 
 InkFlow（墨流）是基于 Claude Code 原生能力（subagent + skill + slash command + hook + memory）的通用 LLM 辅助内容创作工作流框架。公众号文章写作是其参考实现，框架核心只理解 pipeline manifest schema，不绑定具体领域。
 
+当前版本: 见 `VERSION` 文件
+
 ## 设计哲学（五条原则）
 
 1. **交接协议原则** — 每次交给用户的是有具体内容可判断的产出物，不是 yes/no 问题
@@ -20,6 +22,9 @@ InkFlow（墨流）是基于 Claude Code 原生能力（subagent + skill + slash
   ├── agents/               # Subagent 定义（RCCF 结构 + 契约）
   ├── commands/             # Slash command（.md）
   ├── validators/           # 输出校验引擎（contract-validator.sh）
+  ├── rules/                # 声明式约束规则（Rule 文件）
+  │   ├── core/             # 跨领域通用规则
+  │   └── domains/          # 领域特有规则
   ├── skills/
   │   ├── core/             # 通用 skill（随框架发布）
   │   └── domains/          # 领域 skill 包（按需引入）
@@ -30,10 +35,13 @@ research/                   # 调研备忘录
 outlines/                   # 结构化大纲
 drafts/                     # 各 section 草稿
 figures/                    # SVG / Mermaid 配图
-styles/                     # 风格参考文章 + style-profile.md
+styles/                     # 风格参考文章（按 style_profile 分目录）
+  └── {profile}/            # 如 default/，含 style-profile.md + exemplar-*.md
 output/                     # 最终成品（多格式导出）
 retro/                      # 复盘 + 运行日志
   └── runs/                 # 结构化运行日志
+articles-index.yaml         # 文章索引（pipeline 自动维护）
+.pipeline-states/           # 按文章隔离的 pipeline 状态
 ```
 
 ## Agent 设计约定（RCCF 结构）
@@ -46,25 +54,39 @@ name: {agent-name}
 description: {一行描述}
 tools: {工具列表}
 model: {sonnet|opus}
-memory: project
+memory: {project|none}
+skills: [{skill-name}]           # 有操作逻辑的能力
+rules: [{rule-name}]             # 声明式约束（见 .claude/rules/）
 validation_rules:
   required_sections: [...]
   optional_sections: [...]       # 条件可选输出
   word_count: { min: N, max: N }
   required_patterns: [...]
   forbidden_patterns: [...]
+  forbidden_patterns_from_skills: [...]  # 从 skill 动态加载
   platform_checks: [...]         # 平台特有校验
 ---
 ```
 
 Agent 无状态化：Slash command 负责"组装上下文"，agent 只负责"生成输出"。
 
+## Rule 与 Skill 的区分
+
+| 维度 | Rule（.claude/rules/） | Skill（.claude/skills/） |
+|------|----------------------|------------------------|
+| 本质 | 纯声明式约束 | 有逻辑的能力 |
+| 内容 | 条目化的规则清单 | 操作步骤/选择逻辑/转换规则 |
+| 注入方式 | 作为 Constraints 追加到 agent prompt | 按 type 不同注入（rule/transform/context） |
+| 继承 | 支持 extends 单层继承 | 不支持 |
+| 举例 | platform-base（段落长度、图片宽度） | de-ai-polish（被动→主动转换步骤） |
+
+Rule 文件统一 frontmatter：name, description, domain, version, inject_at, inject_mode, extends（可选）。
+
 ## Skill 类型与标准化接口
 
 | 类型 | 说明 | 接口 |
 |------|------|------|
-| Rule | 静态规则集，注入 agent prompt | inject_at, inject_mode, inject_condition |
-| Transform | 接收输入、产出输出的转换逻辑 | input, output, transform_order |
+| Transform | 接收输入、产出输出的转换逻辑 | input, output, transform_order, inject_at |
 | Context | 组装上下文注入 agent | context_source, context_selector |
 
 所有 skill 统一 frontmatter：name, type, description, domain, version + 类型特定字段。

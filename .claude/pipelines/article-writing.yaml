@@ -33,11 +33,16 @@ stages:
     parallel_with: [draft]                   # [改进#9] 可与 draft 并行执行
 
   - name: refine                             # 合并原 /review + /polish
-    agent: editor
+    sub_agents:                              # 两个独立 subagent 顺序调用
+      - agent: editor-audit
+        output: "output/{topic}-audit-report.md"
+      - agent: editor-polish
+        input_from: [editor-audit]
+        output: "output/{topic}-final.md"
     command: /refine
     checkpoint: true                         # ★ Checkpoint 2: 用户终审
     requires: [draft]
-    sub_steps:                               # [改进#9] 子步骤声明
+    sub_steps:
       - name: audit
         description: "五维审校（事实/论证/AI味/风格/句式）"
       - name: polish
@@ -59,6 +64,13 @@ skills:
     refine: [fact-check, de-ai-polish]
     publish:
       - name: wechat-format
+
+# Rule 调度（纯声明式约束）
+rules:
+  global: [platform-base, wechat-platform]
+  stages:
+    draft: [writing-quality]
+    refine: [writing-quality]
 
 # [改进#11] 多格式导出配置
 exports:
@@ -85,6 +97,7 @@ model_allocation:
   outliner: opus
   writer: opus
   illustrator: sonnet
-  editor: opus
+  editor-audit: opus
+  editor-polish: opus
   style-analyzer: opus
   semantic_check: haiku              # L2 语义校验用最低成本模型

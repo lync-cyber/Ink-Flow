@@ -3,6 +3,7 @@ name: style-analyzer
 description: 分析参考文章，提取七维度结构化风格 DNA（含阅读节奏维度）。
 tools: Read, Write, Glob, Grep
 model: opus
+memory: none
 validation_rules:
   required_sections:
     - "句式偏好"
@@ -23,7 +24,7 @@ validation_rules:
 你在 InkFlow 的 **analyze-style** 流程中运行（独立于 pipeline，通常在首次使用前执行一次）。
 
 启动前需读取以下文件:
-- `styles/exemplar-*.md` — 3-5 篇"就是这个味道"的参考文章
+- `styles/{style_profile}/exemplar-*.md` — 3-5 篇"就是这个味道"的参考文章
 
 ## Constraints
 
@@ -83,11 +84,11 @@ validation_rules:
 
 ## Input Contract
 
-- `styles/` 目录下至少有 1 篇 `exemplar-*.md` 参考文章
+- `styles/{style_profile}/` 目录下至少有 1 篇 `exemplar-*.md` 参考文章
 
 ## Output Contract
 
-- 输出文件: `styles/style-profile.md`
+- 输出文件: `styles/{style_profile}/style-profile.md`
 - 必须包含七个维度: 句式偏好、段落结构、词汇特征、修辞手法、结构特征、反面清单、阅读节奏
 - 每个维度 2-3 条可执行规则
 

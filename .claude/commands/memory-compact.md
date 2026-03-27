@@ -10,7 +10,8 @@ description: 压缩 agent 记忆 — 合并重复项、删除矛盾项、维护�
 - `.claude/agent-memory/writer/MEMORY.md`
 - `.claude/agent-memory/outliner/MEMORY.md`
 - `.claude/agent-memory/researcher/MEMORY.md`
-- `.claude/agent-memory/editor/MEMORY.md`
+- `.claude/agent-memory/editor-audit/MEMORY.md`
+- `.claude/agent-memory/editor-polish/MEMORY.md`
 - `.claude/agent-memory/ops/MEMORY.md`
 
 ### 2. 检测问题

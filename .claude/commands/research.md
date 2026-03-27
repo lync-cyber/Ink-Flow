@@ -5,7 +5,7 @@ description: 执行调研阶段 — 调用 researcher agent 收集事实、代�
 ## 执行逻辑
 
 ### 1. 前置检查
-- 读取 `pipeline-state.json`，确认 brief 阶段 status 为 completed
+- 读取 `.pipeline-states/{slug}.json`，确认 brief 阶段 status 为 completed
 - 读取 `briefs/{topic}.md` 获取 topic 和调研参数
 - 检查 `skip_research`: 若为 true → 标记 research 为 skipped，提示用户
 
@@ -27,7 +27,7 @@ description: 执行调研阶段 — 调用 researcher agent 收集事实、代�
 - 校验失败 → L1 重试（最多 2 次）→ 仍失败则标记 failed
 
 ### 5. 更新状态
-- 更新 pipeline-state.json:
+- 更新 `.pipeline-states/{slug}.json`:
   - research.status: "completed"
   - research.artifacts: ["research/{topic}-memo.md"]
   - token_usage.research: { input: N, output: N }

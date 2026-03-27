@@ -23,6 +23,7 @@ description: 创建或编辑写作指令卡（brief），一次性捕获所有�
    ---
    # === 核心参数 ===
    topic: "{用户输入的主题}"
+   slug: "{auto-generated-from-topic}"  # 自动生成，全 pipeline 文件名基准（中文 pinyin 或英文 kebab-case）
    target_length: 1500              # 目标字数（推荐 800-2000）
    content_type: deep_dive          # quick_take | deep_dive | tutorial | opinion
    audience: tech_intermediate      # tech_beginner | tech_intermediate | tech_advanced | general
@@ -40,6 +41,7 @@ description: 创建或编辑写作指令卡（brief），一次性捕获所有�
    cover_style: auto                # auto | custom
 
    # === 风格覆盖 ===
+   style_profile: default           # 对应 styles/{style_profile}/style-profile.md
    tone_override: ""                # 空=使用 style-profile 默认值
    opening_style: auto              # pain_point | story | contrast | question | blunt | auto
    ---
@@ -64,7 +66,7 @@ description: 创建或编辑写作指令卡（brief），一次性捕获所有�
    ```
 
 4. **状态更新**
-   - 初始化或更新 `pipeline-state.json`:
+   - 初始化或更新 `.pipeline-states/{topic-slug}.json`:
      - pipeline: "article-writing"
      - run_id: "{date}-{topic-slug}"
      - brief 阶段 status: "completed"

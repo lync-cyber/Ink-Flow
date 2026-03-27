@@ -186,6 +186,48 @@ check_forbidden_patterns() {
   done <<< "$patterns"
 }
 
+# Handler: forbidden_patterns_from_skills — 从 skill 文件动态加载禁用词汇
+check_forbidden_patterns_from_skills() {
+  local yaml="$1"
+  local skill_names
+  skill_names=$(extract_yaml_array "forbidden_patterns_from_skills" "$yaml")
+
+  while IFS= read -r skill_name; do
+    [[ -z "$skill_name" ]] && continue
+
+    # 在 core 和 domains 目录中查找 skill
+    local skill_file=""
+    if [[ -f ".claude/skills/core/${skill_name}/SKILL.md" ]]; then
+      skill_file=".claude/skills/core/${skill_name}/SKILL.md"
+    else
+      # 搜索 domains 子目录
+      skill_file=$(find .claude/skills/domains -path "*/${skill_name}/SKILL.md" 2>/dev/null | head -1)
+    fi
+
+    if [[ -z "$skill_file" ]]; then
+      log "WARN: 未找到 skill '${skill_name}' 的文件"
+      continue
+    fi
+
+    # 从 skill 正文中提取引号内的禁用词汇（在"禁用"相关段落中）
+    local skill_patterns
+    skill_patterns=$(grep -oP '(?<=")[^"]+(?=")' "$skill_file" 2>/dev/null | sort -u)
+
+    while IFS= read -r pattern; do
+      [[ -z "$pattern" ]] && continue
+      # 跳过非中文模式（避免误匹配英文引号内容）
+      [[ ! "$pattern" =~ [一-龥] ]] && continue
+      local match
+      match=$(grep -nF "$pattern" "$OUTPUT_FILE" 2>/dev/null | head -1)
+      if [[ -n "$match" ]]; then
+        local first_line
+        first_line=$(echo "$match" | head -1 | cut -d: -f1)
+        add_violation "forbidden_pattern_from_skill" "发现禁用模式 '${pattern}' (来自 skill ${skill_name}, 行 ${first_line})"
+      fi
+    done <<< "$skill_patterns"
+  done <<< "$skill_names"
+}
+
 # Handler: platform_checks — 平台适配校验 [改进#6]
 check_platform_checks() {
   local yaml="$1"
@@ -313,6 +355,7 @@ check_optional_sections "$frontmatter"
 check_word_count "$frontmatter"
 check_required_patterns "$frontmatter"
 check_forbidden_patterns "$frontmatter"
+check_forbidden_patterns_from_skills "$frontmatter"
 check_platform_checks "$frontmatter"
 
 # ============================================================

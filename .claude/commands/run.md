@@ -8,7 +8,7 @@ description: 编排器 — 自动推进 pipeline，在 checkpoint 暂停等待�
 
 ### 1. 初始化
 - 读取 `.claude/pipelines/article-writing.yaml` 获取 pipeline 定义
-- 读取 `pipeline-state.json`（不存在则创建）
+- 读取 `.pipeline-states/{slug}.json`（不存在则创建，slug 从 brief frontmatter 获取）
 - 确定当前阶段（找到第一个 status 为 pending 或 in_progress 的阶段）
 
 ### 2. 逐阶段推进
@@ -49,7 +49,7 @@ description: 编排器 — 自动推进 pipeline，在 checkpoint 暂停等待�
 
 ### 4. 状态管理
 
-更新 `pipeline-state.json`:
+更新 `.pipeline-states/{slug}.json`:
 ```json
 {
   "pipeline": "article-writing",
@@ -85,7 +85,7 @@ description: 编排器 — 自动推进 pipeline，在 checkpoint 暂停等待�
 
 ### 6. 子步骤追踪
 
-对声明了 `sub_steps` 的阶段（如 refine），在 pipeline-state.json 中追踪子步骤状态:
+对声明了 `sub_steps` 的阶段（如 refine），在 `.pipeline-states/{slug}.json` 中追踪子步骤状态:
 ```json
 "refine": {
   "status": "in_progress",
