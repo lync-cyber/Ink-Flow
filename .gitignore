@@ -8,15 +8,8 @@
 # ============================================================
 # 创作内容（用户项目私有，不进框架仓库）
 # ============================================================
-briefs/*.md
-research/*.md
-outlines/*.md
-drafts/*.md
-figures/*.svg
-figures/*.md
-!figures/.gitkeep
-output/*
-!output/.gitkeep
+articles/*/
+!articles/.gitkeep
 styles/*/style-profile.md
 styles/*/exemplar-*.md
 
@@ -25,6 +18,9 @@ styles/*/exemplar-*.md
 
 # 文章索引（用户私有）
 articles-index.yaml
+
+# 运营数据（用户私有）
+retro/ops-metrics.csv
 
 # ============================================================
 # 系统文件

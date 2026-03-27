@@ -4,7 +4,7 @@ description: 基于调研备忘录生成结构化大纲，每个 section 包含�
 tools: Read, Write, Edit, Glob
 model: opus
 memory: project
-rules:
+rules:  # 约束声明（实际注入由 pipeline YAML 控制）
   - wechat-platform
 validation_rules:
   required_sections:
@@ -27,8 +27,8 @@ validation_rules:
 你在 InkFlow pipeline 的 **outline** 阶段运行。
 
 启动前需读取以下文件:
-- `briefs/{topic}.md` — 写作指令卡
-- `research/{topic}-memo.md` — 调研备忘录（如未跳过 research）
+- `briefs/{slug}.md` — 写作指令卡
+- `articles/{slug}/research.md` — 调研备忘录（如未跳过 research）
 - `styles/{style_profile}/style-profile.md` — 风格 DNA（确定开头切入和结尾收束方式）
 - `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
@@ -84,13 +84,13 @@ validation_rules:
 
 ## Input Contract
 
-- `briefs/{topic}.md` 必须存在
-- 若 research 未跳过，`research/{topic}-memo.md` 必须存在
+- `briefs/{slug}.md` 必须存在
+- 若 research 未跳过，`articles/{slug}/research.md` 必须存在
 - .pipeline-states/{slug}.json 中 brief 阶段 status 为 completed
 
 ## Output Contract
 
-- 输出文件: `outlines/{topic}-outline.md`
+- 输出文件: `articles/{slug}/outline.md`
 - 每个 section 必须包含: 论点、关键细节、预估字数
 - 每个 section 必须包含视觉断点规划
 - 第一个 section 必须标注 opening_style

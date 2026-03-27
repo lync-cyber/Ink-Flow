@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-InkFlow（墨流）是基于 Claude Code 原生能力（subagent + skill + slash command + hook + memory）的通用 LLM 辅助内容创作工作流框架。公众号文章写作是其参考实现，框架核心只理解 pipeline manifest schema，不绑定具体领域。
+InkFlow（墨流）是基于 Claude Code 原生能力（subagent + skill + hook + memory）的通用 LLM 辅助内容创作工作流框架。公众号文章写作是其参考实现，框架核心只理解 pipeline manifest schema，不绑定具体领域。
 
 当前版本: 见 `VERSION` 文件
 
@@ -20,26 +20,33 @@ InkFlow（墨流）是基于 Claude Code 原生能力（subagent + skill + slash
 .claude/
   ├── pipelines/            # 声明式流水线定义（YAML）
   ├── agents/               # Subagent 定义（RCCF 结构 + 契约）
-  ├── commands/             # Slash command（.md）
-  ├── validators/           # 输出校验引擎（contract-validator.sh）
-  ├── rules/                # 声明式约束规则（Rule 文件）
+  ├── skills/
+  │   ├── inkflow/          # 主编排 skill（pipeline 驱动）
+  │   │   ├── SKILL.md
+  │   │   ├── scripts/      # contract-validator.sh, pipeline-state.sh
+  │   │   └── references/   # brief-template.md, checkpoint-prompts.md
+  │   ├── style-analyzer/   # 风格分析 skill
+  │   ├── feedback-loop/    # 反馈闭环 skill（feedback + retro + ops + compact）
+  │   ├── de-ai-polish/     # 去 AI 味润色 skill
+  │   └── domains/          # 领域 skill 包（按需引入）
+  │       └── wechat-article/
+  ├── rules/                # 声明式约束规则
   │   ├── core/             # 跨领域通用规则
   │   └── domains/          # 领域特有规则
-  ├── skills/
-  │   ├── core/             # 通用 skill（随框架发布）
-  │   └── domains/          # 领域 skill 包（按需引入）
   └── agent-memory/         # 持久化工作记忆
 
-briefs/                     # 写作指令卡（frontmatter + 正文）
-research/                   # 调研备忘录
-outlines/                   # 结构化大纲
-drafts/                     # 各 section 草稿
-figures/                    # SVG / Mermaid 配图
-styles/                     # 风格参考文章（按 style_profile 分目录）
-  └── {profile}/            # 如 default/，含 style-profile.md + exemplar-*.md
-output/                     # 最终成品（多格式导出）
-retro/                      # 复盘 + 运行日志
-  └── runs/                 # 结构化运行日志
+articles/                   # 内容产物（按文章分组）
+  └── {slug}/
+      ├── brief.md          # 写作指令卡
+      ├── research.md       # 调研备忘录
+      ├── outline.md        # 结构化大纲
+      ├── drafts/           # 分节草稿 + 合并稿
+      ├── figures/          # SVG / Mermaid 配图
+      ├── output/           # 最终成品（多格式导出）
+      └── retro.md          # 本文复盘
+styles/                     # 风格参考文章（共享，按 style_profile 分目录）
+  └── {profile}/
+retro/runs/                 # 跨文章运行日志
 articles-index.yaml         # 文章索引（pipeline 自动维护）
 .pipeline-states/           # 按文章隔离的 pipeline 状态
 ```
@@ -68,49 +75,54 @@ validation_rules:
 ---
 ```
 
-Agent 无状态化：Slash command 负责"组装上下文"，agent 只负责"生成输出"。
+Agent 无状态化：编排 skill 负责"组装上下文"，agent 只负责"生成输出"。
 
-## Rule 与 Skill 的区分
+## Skill 体系
+
+### 编排 Skill
+
+| Skill | 触发方式 | 说明 |
+|-------|---------|------|
+| `inkflow` | `/inkflow` 或自然语言 | 主编排器 — pipeline 驱动，checkpoint 交互 |
+| `style-analyzer` | 自然语言（"分析风格"） | 提取七维度风格 DNA |
+| `feedback-loop` | 自然语言（"给反馈"、"复盘"） | 反馈 + 复盘 + 运营 + 记忆压缩 |
+
+### 领域 Skill
+
+| Skill | 类型 | 说明 |
+|-------|------|------|
+| `de-ai-polish` | Transform | 去 AI 味润色 |
+| `anti-ai-style` | Rule | 禁用词汇/句式 |
+| `writing-strategy` | Context | 正向写作指导 |
+| `opening-hooks` | Context | 5 种开头策略 |
+| `style-reference` | Context | 风格 DNA + 范文注入 |
+| `wechat-format` | Transform | 多格式导出 |
+
+### Rule 与 Skill 的区分
 
 | 维度 | Rule（.claude/rules/） | Skill（.claude/skills/） |
 |------|----------------------|------------------------|
 | 本质 | 纯声明式约束 | 有逻辑的能力 |
 | 内容 | 条目化的规则清单 | 操作步骤/选择逻辑/转换规则 |
-| 注入方式 | 作为 Constraints 追加到 agent prompt | 按 type 不同注入（rule/transform/context） |
-| 继承 | 支持 extends 单层继承 | 不支持 |
-| 举例 | platform-base（段落长度、图片宽度） | de-ai-polish（被动→主动转换步骤） |
-
-Rule 文件统一 frontmatter：name, description, domain, version, inject_at, inject_mode, extends（可选）。
-
-## Skill 类型与标准化接口
-
-| 类型 | 说明 | 接口 |
-|------|------|------|
-| Transform | 接收输入、产出输出的转换逻辑 | input, output, transform_order, inject_at |
-| Context | 组装上下文注入 agent | context_source, context_selector |
-
-所有 skill 统一 frontmatter：name, type, description, domain, version + 类型特定字段。
+| 注入方式 | 作为 Constraints 追加到 agent prompt | 按 type 不同注入 |
 
 ## Pipeline 使用
 
 ```bash
-# 编排器模式 — 自动推进，在 checkpoint 暂停
-/run
+# 编排器 — 自动推进 pipeline，在 checkpoint 暂停，使用 AskUserQuestion 交互
+/inkflow
 
-# 单阶段执行（调试用）
-/brief → /research → /outline → /draft → /figures → /refine → /publish
+# 也可通过自然语言触发
+"写一篇关于 React Hooks 的文章"
+"继续 pipeline"
+"重跑 draft 阶段"
 
-# 重跑某阶段
-/rerun <stage> [--force]
-
-# 风格分析（首次使用前执行）
-/analyze-style
+# 风格分析（首次使用前）
+"分析我的写作风格"
 
 # 写后学习
-/feedback          # diff + 分类确认 → 更新 memory
-/feedback-ops      # 运营数据录入 → 趋势分析
-/retro             # 3 指标记分卡 + 记忆晋升建议
-/memory-compact    # 记忆压缩（每 5 篇后）
+"给反馈"          # → feedback-loop skill
+"复盘"            # → feedback-loop skill
 ```
 
 ## 四层错误处理
@@ -120,7 +132,7 @@ Rule 文件统一 frontmatter：name, description, domain, version, inject_at, i
 | L1 | 重试（默认最多 2 次） | 0 |
 | L2 | contract-validator.sh 脚本预检验 + 可选 LLM 语义校验 | 脚本: 0 / LLM: 低 |
 | L3 | 模型降级（Opus → Sonnet） | 降低 |
-| L4 | 标记 needs_human，暂停 pipeline | 0 |
+| L4 | AskUserQuestion 结构化选择，暂停 pipeline | 0 |
 
 ## 微信公众号运营参数速查
 

@@ -195,10 +195,10 @@ check_forbidden_patterns_from_skills() {
   while IFS= read -r skill_name; do
     [[ -z "$skill_name" ]] && continue
 
-    # 在 core 和 domains 目录中查找 skill
+    # 在 skills 目录中查找 skill（通用 skill 直接在 skills/ 下，领域 skill 在 domains/ 下）
     local skill_file=""
-    if [[ -f ".claude/skills/core/${skill_name}/SKILL.md" ]]; then
-      skill_file=".claude/skills/core/${skill_name}/SKILL.md"
+    if [[ -f ".claude/skills/${skill_name}/SKILL.md" ]]; then
+      skill_file=".claude/skills/${skill_name}/SKILL.md"
     else
       # 搜索 domains 子目录
       skill_file=$(find .claude/skills/domains -path "*/${skill_name}/SKILL.md" 2>/dev/null | head -1)

@@ -4,7 +4,7 @@ type: context
 description: 公众号文章开头策略库，按 brief.opening_style 选择注入，优化"黄金 3 秒"开头。
 domain: wechat-article
 version: 1.0.0
-context_source: "briefs/{topic}.md"
+context_source: "briefs/{slug}.md"
 context_selector: "按 brief.opening_style 选择对应策略段注入"
 ---
 
@@ -42,7 +42,7 @@ context_selector: "按 brief.opening_style 选择对应策略段注入"
 
 ## 选择逻辑
 
-1. 读取 `briefs/{topic}.md` 的 `opening_style` 字段
+1. 读取 `briefs/{slug}.md` 的 `opening_style` 字段
 2. 若为 "auto" 或空:
    - content_type == "opinion" → blunt
    - content_type == "tutorial" → pain_point

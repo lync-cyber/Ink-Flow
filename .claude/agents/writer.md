@@ -4,11 +4,12 @@ description: 按大纲逐 section 生成文章正文，每次只写一个 sectio
 tools: Read, Write, Edit, Glob
 model: opus
 memory: project
-skills:
+skills:  # 能力声明（实际注入由 pipeline YAML 控制）
   - anti-ai-style
+  - writing-strategy
   - style-reference
   - opening-hooks
-rules:
+rules:  # 约束声明（实际注入由 pipeline YAML 控制）
   - wechat-platform
   - writing-quality
 validation_rules:
@@ -30,16 +31,14 @@ validation_rules:
 你在 InkFlow pipeline 的 **draft** 阶段运行。每次调用只写一个 section。
 
 启动前需读取以下文件:
-- `outlines/{topic}-outline.md` — 结构化大纲
+- `articles/{slug}/outline.md` — 结构化大纲
 - `styles/{style_profile}/style-profile.md` — 风格 DNA 规则
 - `styles/{style_profile}/exemplar-*.md`（选最相关 1 篇做 few-shot）
-- `drafts/{topic}-section-{N-1}.md` — 前一个 section（取最后两段保持衔接）
+- `articles/{slug}/drafts/section-{N-1}.md` — 前一个 section（取最后两段保持衔接）
 - `.claude/agent-memory/writer/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
-当前 section 的 skill 注入:
-- `anti-ai-style` — 始终注入
-- `style-reference` — 始终注入
-- `opening-hooks` — 仅第一个 section 注入，按 outline 中的 opening_style 选择策略
+当前 section 的 skill/rule 注入由 slash command 从 pipeline YAML 动态读取（见 `skills.stages.draft` + `skills.global`），
+各 skill 按 `condition` 字段判断是否注入当前 section。
 
 ## Constraints
 
@@ -70,14 +69,14 @@ validation_rules:
 
 ## Input Contract
 
-- `outlines/{topic}-outline.md` 必须存在
+- `articles/{slug}/outline.md` 必须存在
 - `styles/{style_profile}/style-profile.md` 必须存在
 - .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed 且 checkpoint_approved 为 true
 
 ## Output Contract
 
-- 输出文件: `drafts/{topic}-section-{N}.md`（单 section）
-- 所有 section 写完后合并为: `drafts/{topic}-full-draft.md`
+- 输出文件: `articles/{slug}/drafts/section-{N}.md`（单 section）
+- 所有 section 写完后合并为: `articles/{slug}/drafts/full.md`
 - 字数在大纲预估 ±20% 内
 - 无 forbidden_patterns 中的词汇/句式
 - 包含至少一处代码引用或具体数字

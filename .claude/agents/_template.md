@@ -4,8 +4,8 @@ description: {一行描述}
 tools: {Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch}
 model: {sonnet|opus}
 memory: {project|none}               # project = 持久化工作记忆; none = 无需记忆
-skills: [{skill-name}]               # 有操作逻辑的能力（.claude/skills/）
-rules: [{rule-name}]                 # 声明式约束（.claude/rules/）
+skills: [{skill-name}]               # 能力声明（实际注入由 pipeline YAML 的 skills.stages.{stage} + skills.global 控制）
+rules: [{rule-name}]                 # 约束声明（实际注入由 pipeline YAML 的 rules.stages.{stage} + rules.global 控制）
 validation_rules:
   required_sections:
     - "{section-name}"

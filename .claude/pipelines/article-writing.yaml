@@ -6,40 +6,54 @@ description: 公众号文章写作 pipeline
 
 stages:
   - name: brief
-    type: user_input                         # 用户填写，非 agent 执行
-    command: /brief
+    type: user_input                         # 用户填写，由编排器交互式引导
 
   - name: research
     agent: researcher
-    command: /research
     skip_if: "brief.skip_research == true"   # 观点类文章可跳过调研
+    context_files:
+      - "articles/{slug}/brief.md"
 
   - name: outline
     agent: outliner
-    command: /outline
     checkpoint: true                         # ★ Checkpoint 1: 用户审核大纲
     requires: [brief]
+    context_files:
+      - "articles/{slug}/brief.md"
+      - "articles/{slug}/research.md"
+      - "styles/{style_profile}/style-profile.md"
 
   - name: draft
     agent: writer
-    command: /draft
     requires: [outline]
+    context_files:
+      - "articles/{slug}/outline.md"
+      - "styles/{style_profile}/style-profile.md"
 
   - name: figures
     agent: illustrator
-    command: /figures
     skip_if: "brief.no_figures == true"      # 条件跳过
-    requires: [outline]                      # [改进#9] 依赖 outline（非 draft），支持并行
-    parallel_with: [draft]                   # [改进#9] 可与 draft 并行执行
+    requires: [outline]                      # 依赖 outline（非 draft），支持并行
+    parallel_with: [draft]                   # 可与 draft 并行执行
+    context_files:
+      - "articles/{slug}/outline.md"
 
-  - name: refine                             # 合并原 /review + /polish
+  - name: refine
     sub_agents:                              # 两个独立 subagent 顺序调用
       - agent: editor-audit
-        output: "output/{topic}-audit-report.md"
+        output: "articles/{slug}/output/audit.md"
+        context_files:
+          - "articles/{slug}/drafts/full.md"
+          - "articles/{slug}/figures/summary.md"
+          - "articles/{slug}/research.md"
+          - "styles/{style_profile}/style-profile.md"
       - agent: editor-polish
         input_from: [editor-audit]
-        output: "output/{topic}-final.md"
-    command: /refine
+        output: "articles/{slug}/output/final.md"
+        context_files:
+          - "articles/{slug}/drafts/full.md"
+          - "articles/{slug}/output/audit.md"
+          - "styles/{style_profile}/style-profile.md"
     checkpoint: true                         # ★ Checkpoint 2: 用户终审
     requires: [draft]
     sub_steps:
@@ -49,55 +63,30 @@ stages:
         description: "去 AI 味润色"
 
   - name: publish
-    command: /publish
     checkpoint: true                         # ★ Checkpoint 3: 用户确认发布
+    context_files:
+      - "articles/{slug}/output/final.md"
+      - "articles/{slug}/brief.md"
 
 # Skill 调度配置
 skills:
-  global: [fact-check]                       # 全阶段可用
+  global: []                                 # 全阶段可用
   stages:
     draft:
       - name: anti-ai-style
+      - name: writing-strategy
       - name: style-reference
       - name: opening-hooks
-        condition: "stage.section_index == 0" # [改进#10] 仅第一 section 注入
-    refine: [fact-check, de-ai-polish]
+        condition: "stage.section_index == 0" # 仅第一 section 注入
+    refine: [de-ai-polish]
     publish:
       - name: wechat-format
 
 # Rule 调度（纯声明式约束）
 rules:
-  global: [platform-base, wechat-platform]
+  global: [platform-base, wechat-platform, fact-check]
   stages:
     draft: [writing-quality]
     refine: [writing-quality]
 
-# [改进#11] 多格式导出配置
-exports:
-  - format: wechat_md
-    description: "Markdown Nice 适配格式（默认）"
-    output: "output/{topic}-wechat.md"
-
-  - format: plain_md
-    description: "纯净 Markdown（知乎/掘金等）"
-    output: "output/{topic}-plain.md"
-
-  - format: html
-    description: "内联样式 HTML（可直接粘贴公众号编辑器）"
-    output: "output/{topic}.html"
-
-  - format: summary
-    description: "短摘要版（朋友圈/社群分发）"
-    output: "output/{topic}-summary.md"
-    word_limit: 200
-
-# 模型分配策略
-model_allocation:
-  researcher: sonnet
-  outliner: opus
-  writer: opus
-  illustrator: sonnet
-  editor-audit: opus
-  editor-polish: opus
-  style-analyzer: opus
-  semantic_check: haiku              # L2 语义校验用最低成本模型
+# exports 和 model_allocation 已移入 .inkflow.yaml（项目级配置）

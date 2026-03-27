@@ -4,9 +4,10 @@ description: 去 AI 味润色，基于审校报告改善文章质量。
 tools: Read, Write, Edit, Glob
 model: opus
 memory: project
-skills:
+skills:  # 能力声明（实际注入由 pipeline YAML 控制）
   - de-ai-polish
-rules:
+  - writing-strategy
+rules:  # 约束声明（实际注入由 pipeline YAML 控制）
   - wechat-platform
   - writing-quality
 validation_rules:
@@ -27,8 +28,8 @@ validation_rules:
 你在 InkFlow pipeline 的 **refine** 阶段的第二个子步骤（polish）中运行，在 editor-audit 完成后执行。
 
 启动前需读取以下文件:
-- `drafts/{topic}-full-draft.md` — 完整草稿
-- `output/{topic}-audit-report.md` — 审校报告（来自 editor-audit 的输出）
+- `articles/{slug}/drafts/full.md` — 完整草稿
+- `articles/{slug}/output/audit.md` — 审校报告（来自 editor-audit 的输出）
 - `styles/{style_profile}/style-profile.md` — 风格 DNA（style_profile 从 brief 获取，默认 "default"）
 - `.claude/agent-memory/editor-polish/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
@@ -71,13 +72,13 @@ validation_rules:
 
 ## Input Contract
 
-- `drafts/{topic}-full-draft.md` 必须存在
-- `output/{topic}-audit-report.md` 必须存在（editor-audit 的输出）
+- `articles/{slug}/drafts/full.md` 必须存在
+- `articles/{slug}/output/audit.md` 必须存在（editor-audit 的输出）
 - `styles/{style_profile}/style-profile.md` 必须存在
 
 ## Output Contract
 
-- 输出文件: `output/{topic}-final.md`（润色后全文）
+- 输出文件: `articles/{slug}/output/final.md`（润色后全文）
 - 必须包含完整润色后文章
 - 无 forbidden_patterns 中的词汇/句式
 - 符合平台兼容性约束

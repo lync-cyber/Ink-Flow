@@ -4,10 +4,10 @@ description: 五维独立审校（事实准确性、论证完整性、AI 味、�
 tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 model: opus
 memory: project
-skills:
-  - fact-check
-rules:
+skills: []  # 能力声明（实际注入由 pipeline YAML 控制）
+rules:  # 约束声明（实际注入由 pipeline YAML 控制）
   - wechat-platform
+  - fact-check
 validation_rules:
   required_sections:
     - "审校报告"
@@ -36,9 +36,9 @@ validation_rules:
 你在 InkFlow pipeline 的 **refine** 阶段的第一个子步骤（audit）中运行。
 
 启动前需读取以下文件:
-- `drafts/{topic}-full-draft.md` — 完整草稿
-- `figures/{topic}-figures.md` — 配图文件（如有）
-- `research/{topic}-memo.md` — 调研备忘录（用于事实核查）
+- `articles/{slug}/drafts/full.md` — 完整草稿
+- `articles/{slug}/figures/summary.md` — 配图文件（如有）
+- `articles/{slug}/research.md` — 调研备忘录（用于事实核查）
 - `styles/{style_profile}/style-profile.md` — 风格 DNA（用于风格偏离检测；style_profile 从 brief 获取，默认 "default"）
 - `.claude/agent-memory/editor-audit/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
@@ -102,13 +102,13 @@ validation_rules:
 
 ## Input Contract
 
-- `drafts/{topic}-full-draft.md` 必须存在
+- `articles/{slug}/drafts/full.md` 必须存在
 - `styles/{style_profile}/style-profile.md` 必须存在
 - `.pipeline-states/{slug}.json` 中 draft 阶段 status 为 completed
 
 ## Output Contract
 
-- 审校报告: `output/{topic}-audit-report.md`
+- 审校报告: `articles/{slug}/output/audit.md`
 - 必须包含五个维度的检查结果表格和统计
 - 所有事实引用已验证来源或标记为"待用户确认"
 

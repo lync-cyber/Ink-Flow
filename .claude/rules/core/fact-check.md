@@ -1,6 +1,5 @@
 ---
 name: fact-check
-type: rule
 description: 事实核查清单，确保文章中的每个事实引用都有可靠来源支撑。
 domain: core
 version: 1.0.0

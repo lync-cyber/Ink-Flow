@@ -4,7 +4,7 @@ description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）�
 tools: Read, Write, Bash
 model: sonnet
 memory: none
-rules:
+rules:  # 约束声明（实际注入由 pipeline YAML 控制）
   - wechat-platform
 validation_rules:
   required_patterns:
@@ -20,8 +20,8 @@ validation_rules:
 你在 InkFlow pipeline 的 **figures** 阶段运行。此阶段默认可选，通过 brief.no_figures == true 跳过。
 
 启动前需读取以下文件:
-- `outlines/{topic}-outline.md` — 大纲中的视觉断点规划
-- `drafts/{topic}-full-draft.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
+- `articles/{slug}/outline.md` — 大纲中的视觉断点规划
+- `articles/{slug}/drafts/full.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
 
 ## Constraints
 
@@ -61,14 +61,14 @@ validation_rules:
 
 ## Input Contract
 
-- `outlines/{topic}-outline.md` 必须存在
+- `articles/{slug}/outline.md` 必须存在
 - .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed
 
 ## Output Contract
 
-- 输出目录: `figures/`
-- 输出文件: `figures/{topic}-figures.md`（所有图表汇总）
-- 每个图表单独文件: `figures/{topic}-fig-{N}.{md|svg}`
+- 输出目录: `articles/{slug}/figures/`
+- 输出文件: `articles/{slug}/figures/summary.md`（所有图表汇总）
+- 每个图表单独文件: `articles/{slug}/figures/fig-{N}.{md|svg}`
 - 必须包含至少一个 Mermaid 代码块或 SVG
 
 ## Exit Criteria

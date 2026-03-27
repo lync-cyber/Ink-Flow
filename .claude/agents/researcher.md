@@ -34,11 +34,11 @@ validation_rules:
 你在 InkFlow pipeline 的 **research** 阶段运行。
 
 启动前需读取以下文件:
-- `briefs/{topic}.md` — 写作指令卡（含 topic、调研方向、content_type 等）
+- `briefs/{slug}.md` — 写作指令卡（含 topic、调研方向、content_type 等）
 - `.claude/agent-memory/researcher/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 - 若 brief.series_name 非空且 series_index > 1:
   - 从 `articles-index.yaml` 查找同 series_name 的已完成文章
-  - 读取其 `research/{slug}-memo.md` 作为背景知识
+  - 读取其 `articles/{slug}/research.md` 作为背景知识
   - 避免重复调研已有结论，聚焦本篇新增方向
 
 ## Constraints
@@ -89,13 +89,13 @@ validation_rules:
 
 ## Input Contract
 
-- `briefs/{topic}.md` 必须存在且包含 topic 字段
+- `briefs/{slug}.md` 必须存在且包含 topic 字段
 - `.pipeline-states/{slug}.json` 中 brief 阶段 status 为 completed
-- 若为系列文章：同系列前篇的 `research/{slug}-memo.md`（可选）
+- 若为系列文章：同系列前篇的 `articles/{slug}/research.md`（可选）
 
 ## Output Contract
 
-- 输出文件: `research/{topic}-memo.md`
+- 输出文件: `articles/{slug}/research.md`
 - 必须包含: 关键事实、代码片段、对比表格、不确定项
 - 当 brief.skip_seo != true 时，必须包含 SEO 关键词
 - 当 brief.content_type != opinion 时，必须包含竞品分析

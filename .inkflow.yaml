@@ -1,10 +1,71 @@
 # InkFlow 项目配置
 # 用于标识该目录为 InkFlow 工作区
-version: "0.1.0"
+version: "0.3.0"
 
 # 启用的领域包
 domains:
   - wechat-article
+
+# 模型分配策略（跨 pipeline 复用）
+model_allocation:
+  researcher: sonnet
+  outliner: opus
+  writer: opus
+  illustrator: sonnet
+  editor-audit: opus
+  editor-polish: opus
+  style-analyzer: opus
+  semantic_check: haiku              # L2 语义校验用最低成本模型
+
+# 多格式导出配置（跨 pipeline 复用）
+exports:
+  - format: wechat_md
+    description: "Markdown Nice 适配格式（默认）"
+    output: "articles/{slug}/output/wechat.md"
+
+  - format: plain_md
+    description: "纯净 Markdown（知乎/掘金等）"
+    output: "articles/{slug}/output/plain.md"
+
+  - format: html
+    description: "内联样式 HTML（可直接粘贴公众号编辑器）"
+    output: "articles/{slug}/output/index.html"
+
+  - format: summary
+    description: "短摘要版（朋友圈/社群分发）"
+    output: "articles/{slug}/output/summary.md"
+    word_limit: 200
+
+# Brief 字段默认值（减少每次填写量）
+defaults:
+  target_length: 1500
+  content_type: deep_dive
+  audience: tech_intermediate
+  skip_research: false
+  no_figures: false
+  skip_seo: false
+  publish_timing: evening
+  cta_type: follow
+  cover_style: auto
+  style_profile: default
+  opening_style: auto
+  mode: standard                     # standard | quick
+
+# 脚本路径
+scripts:
+  validator: .claude/skills/inkflow/scripts/contract-validator.sh
+  state_manager: .claude/skills/inkflow/scripts/pipeline-state.sh
+  diff_extractor: .claude/skills/feedback-loop/scripts/diff-extractor.sh
+
+# Skill/Rule 自动发现注册表
+registry:
+  auto_discover: true                  # 自动扫描以下目录
+  skills_paths:
+    - .claude/skills                   # 通用 skill（inkflow, style-analyzer, feedback-loop, de-ai-polish）
+    - .claude/skills/domains/{domain}  # {domain} 从 domains 列表展开
+  rules_paths:
+    - .claude/rules/core
+    - .claude/rules/domains/{domain}
 
 # 用户级覆盖（可选）
 # overrides:
