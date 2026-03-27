@@ -8,7 +8,24 @@
       "Bash(for dir:*)",
       "Bash(do touch:*)",
       "Bash(done)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(chmod +x .claude/validators/contract-validator.sh)",
+      "Bash(.claude/validators/contract-validator.sh:*)",
+      "Bash(git status:*)"
+    ]
+  },
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] SubagentStop: agent completed\" >> retro/runs/current.log.md"
+          }
+        ]
+      }
     ]
   }
 }
