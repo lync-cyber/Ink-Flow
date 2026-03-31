@@ -2,8 +2,7 @@
 name: platform-base
 description: 通用移动端内容平台排版约束基类（段落长度、图片限制、标题层级等）。
 domain: core
-version: 1.0.0
-inject_at: [outline, draft, figures, refine, publish]
+inject_at: [outline, draft, figures, audit, polish, publish]
 inject_mode: always
 ---
 

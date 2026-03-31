@@ -1,0 +1,646 @@
+#!/usr/bin/env python3
+"""InkFlow Markdown Lint — 文章格式校验工具
+
+用法: python tools/markdown-lint/lint.py <markdown-file> [--column <栏目名>] [--config <config.yaml>]
+
+输出: JSON (stdout), 人类可读摘要 (stderr)
+退出码: 0=通过, 1=有 error, 2=仅 warning
+"""
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+# ============================================================
+# 配置加载
+# ============================================================
+
+DEFAULT_CONFIG = {
+    "rules": {
+        "block_syntax": {
+            "enabled": True,
+            "severity": "error",
+            "valid_types": [
+                "card", "cta", "footer", "media", "miniapp",
+                "vote", "collection", "hashtag", "readmore", "label", "note",
+            ],
+        },
+        "typography": {
+            "enabled": True,
+            "severity": "warning",
+            "max_paragraph_chars": 120,
+            "max_sentence_chars": 40,
+            "allowed_headings": [2, 3, 4],
+        },
+        "theme_constraints": {"enabled": True, "severity": "error"},
+        "block_content": {"enabled": True, "severity": "warning"},
+        "image_references": {"enabled": True, "severity": "warning"},
+        "css_safety": {
+            "enabled": True,
+            "severity": "error",
+            "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:"],
+            "forbidden_tags": ["<style", "<script"],
+        },
+        "forbidden_patterns": {"enabled": True, "severity": "warning"},
+    },
+    "column_overrides": {
+        "学术前沿": {"theme_constraints": {"require_references": True, "require_tldr": True}},
+        "人物故事": {"theme_constraints": {"forbid_tldr": True}},
+        "技术专题": {"theme_constraints": {"require_code_block": True}},
+    },
+}
+
+# 栏目名 → theme id 映射
+COLUMN_ALIASES = {
+    "学术前沿": "academic",
+    "行业趋势": "industry",
+    "技术专题": "tech",
+    "人物故事": "story",
+    "academic": "academic",
+    "industry": "industry",
+    "tech": "tech",
+    "story": "story",
+}
+
+# voice-styling 禁用词（从 SKILL.md 第一节提取的引号内中文模式）
+FORBIDDEN_WORDS = [
+    "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
+    "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
+    "毫无疑问", "不言而喻",
+    "从某种意义上说", "在一定程度上", "未来可期", "让我们拭目以待", "相信未来",
+    "这表明", "由此可见", "通过以上分析", "不难看出", "这说明",
+    "接下来我们来看", "可以看到", "需要注意的是",
+    "希望本文对你有所帮助",
+]
+
+
+def load_config(config_path: str | None) -> dict:
+    if config_path and Path(config_path).exists() and yaml:
+        with open(config_path, encoding="utf-8") as f:
+            return yaml.safe_load(f) or DEFAULT_CONFIG
+    return DEFAULT_CONFIG
+
+
+def get_column_overrides(config: dict, column: str) -> dict:
+    overrides = config.get("column_overrides", {})
+    return overrides.get(column, {})
+
+
+# ============================================================
+# Markdown 解析器 — 单遍扫描，追踪上下文状态
+# ============================================================
+
+class LineContext:
+    """每行的上下文状态"""
+    __slots__ = ("line_num", "text", "stripped", "in_frontmatter", "in_code_block", "in_custom_block")
+
+    def __init__(self, line_num: int, text: str, stripped: str,
+                 in_frontmatter: bool, in_code_block: bool, in_custom_block: bool):
+        self.line_num = line_num
+        self.text = text
+        self.stripped = stripped
+        self.in_frontmatter = in_frontmatter
+        self.in_code_block = in_code_block
+        self.in_custom_block = in_custom_block
+
+
+def parse_frontmatter(lines: list[str]) -> dict:
+    """从文件行中提取 YAML frontmatter"""
+    if not lines or lines[0].strip() != "---":
+        return {}
+    fm_lines = []
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        fm_lines.append(line)
+    if not fm_lines:
+        return {}
+    if yaml:
+        try:
+            return yaml.safe_load("\n".join(fm_lines)) or {}
+        except Exception:
+            pass
+    # 简易正则回退
+    result = {}
+    for line in fm_lines:
+        m = re.match(r'^(\w+):\s*"?([^"]*)"?\s*$', line)
+        if m:
+            result[m.group(1)] = m.group(2)
+    return result
+
+
+def iter_lines(lines: list[str]):
+    """单遍迭代所有行，生成带上下文状态的 LineContext"""
+    in_frontmatter = False
+    frontmatter_seen = 0
+    in_code_block = False
+    in_custom_block = False
+
+    for i, raw_line in enumerate(lines, 1):
+        text = raw_line.rstrip("\n\r")
+        stripped = text.strip()
+
+        # frontmatter 追踪
+        if stripped == "---":
+            if frontmatter_seen == 0:
+                in_frontmatter = True
+                frontmatter_seen = 1
+                yield LineContext(i, text, stripped, True, False, False)
+                continue
+            elif in_frontmatter:
+                in_frontmatter = False
+                frontmatter_seen = 2
+                yield LineContext(i, text, stripped, True, False, False)
+                continue
+
+        if in_frontmatter:
+            yield LineContext(i, text, stripped, True, False, False)
+            continue
+
+        # 代码块追踪
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            yield LineContext(i, text, stripped, False, True, in_custom_block)
+            continue
+
+        if in_code_block:
+            yield LineContext(i, text, stripped, False, True, in_custom_block)
+            continue
+
+        # :::block 追踪
+        if re.match(r"^:::\w+", stripped):
+            in_custom_block = True
+            yield LineContext(i, text, stripped, False, False, False)  # block opener 自身不算 "in block"
+            continue
+        if stripped == ":::":
+            in_custom_block = False
+            yield LineContext(i, text, stripped, False, False, False)
+            continue
+
+        yield LineContext(i, text, stripped, False, False, in_custom_block)
+
+
+# ============================================================
+# 违规记录
+# ============================================================
+
+class Violation:
+    __slots__ = ("rule", "severity", "line", "message")
+
+    def __init__(self, rule: str, severity: str, line: int, message: str):
+        self.rule = rule
+        self.severity = severity
+        self.line = line
+        self.message = message
+
+    def to_dict(self) -> dict:
+        return {"rule": self.rule, "severity": self.severity, "line": self.line, "message": self.message}
+
+
+class LintResult:
+    def __init__(self, file_path: str, column: str):
+        self.file_path = file_path
+        self.column = column
+        self.violations: list[Violation] = []
+
+    def add(self, rule: str, severity: str, line: int, message: str):
+        self.violations.append(Violation(rule, severity, line, message))
+
+    @property
+    def error_count(self) -> int:
+        return sum(1 for v in self.violations if v.severity == "error")
+
+    @property
+    def warning_count(self) -> int:
+        return sum(1 for v in self.violations if v.severity == "warning")
+
+    def to_json(self) -> str:
+        return json.dumps({
+            "file": self.file_path,
+            "column": self.column,
+            "summary": {"errors": self.error_count, "warnings": self.warning_count},
+            "violations": [v.to_dict() for v in self.violations],
+        }, ensure_ascii=False)
+
+    def to_human(self) -> str:
+        name = Path(self.file_path).name
+        lines = [f"{name}: {self.error_count} errors, {self.warning_count} warnings"]
+        for v in self.violations:
+            sev = "ERROR" if v.severity == "error" else "WARN "
+            lines.append(f"  L{v.line:<4} {sev} [{v.rule}] {v.message}")
+        return "\n".join(lines)
+
+
+# ============================================================
+# 规则实现
+# ============================================================
+
+def count_display_chars(text: str) -> int:
+    """统计显示字符数（中文算 1 字符，英文/数字算 1 字符）"""
+    return len(text)
+
+
+def split_sentences(text: str) -> list[str]:
+    """按中文句末标点切分句子"""
+    parts = re.split(r"[。！？]", text)
+    return [s for s in parts if s.strip()]
+
+
+def rule_block_syntax(lines: list[str], config: dict, result: LintResult):
+    """规则 A: :::block 语法正确性"""
+    valid_types = set(config["rules"]["block_syntax"].get("valid_types", []))
+    in_block = False
+    block_type = ""
+    block_start = 0
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+
+        m = re.match(r"^:::(\S+)$", ctx.stripped)
+        if m:
+            new_type = m.group(1)
+            if not in_block:
+                # 开始标记
+                in_block = True
+                block_type = new_type
+                block_start = ctx.line_num
+                # A2: 类型合法性
+                if new_type not in valid_types:
+                    result.add("A2", "warning", ctx.line_num, f"未知 :::block 类型: {new_type}")
+            else:
+                # A3: 嵌套
+                result.add("A3", "error", ctx.line_num,
+                           f"检测到 :::block 嵌套（外层 {block_type} 从 L{block_start} 开始）")
+                block_type = new_type
+                block_start = ctx.line_num
+        elif ctx.stripped == ":::" and in_block:
+            # 闭合标记
+            in_block = False
+            block_type = ""
+
+    # A1: 文件结束时未闭合
+    if in_block:
+        result.add("A1", "error", block_start,
+                    f"未闭合的 :::{block_type} block（从第 {block_start} 行开始）")
+
+
+def rule_typography(lines: list[str], config: dict, result: LintResult):
+    """规则 C: 排版约束"""
+    typo_cfg = config["rules"]["typography"]
+    max_para = typo_cfg.get("max_paragraph_chars", 120)
+    max_sent = typo_cfg.get("max_sentence_chars", 40)
+    allowed_h = set(typo_cfg.get("allowed_headings", [2, 3, 4]))
+
+    h1_count = 0
+    paragraph_lines: list[str] = []
+    paragraph_start = 0
+
+    def flush_paragraph():
+        nonlocal paragraph_lines, paragraph_start
+        if not paragraph_lines:
+            return
+        text = "".join(paragraph_lines)
+        # C1: 段落长度
+        clen = count_display_chars(text)
+        if clen > max_para:
+            result.add("C1", "warning", paragraph_start,
+                        f"段落超过 {max_para} 字符（{clen} 字符），建议拆分")
+        # C2: 句子长度
+        for sent in split_sentences(text):
+            slen = count_display_chars(sent.strip())
+            if slen > max_sent:
+                preview = sent.strip()[:30]
+                result.add("C2", "warning", paragraph_start,
+                            f"句子超过 {max_sent} 字符（{slen} 字符）: {preview}...")
+        # C3: 首行缩进
+        first_line = paragraph_lines[0] if paragraph_lines else ""
+        if re.match(r"^[ \t]{2,}", first_line) and not re.match(r"^\s*[-*]", first_line):
+            result.add("C3", "warning", paragraph_start, "检测到首行缩进（移动端显示错位）")
+        paragraph_lines = []
+        paragraph_start = 0
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
+            flush_paragraph()
+            continue
+
+        # 跳过 :::block 开闭标记行
+        if re.match(r"^:::", ctx.stripped):
+            flush_paragraph()
+            continue
+
+        # C4: 标题层级
+        hm = re.match(r"^(#{1,6})\s", ctx.text)
+        if hm:
+            level = len(hm.group(1))
+            if level == 1:
+                h1_count += 1
+                if h1_count > 1:
+                    result.add("C4", "error", ctx.line_num, "正文中出现多个 H1 标题")
+            elif level not in allowed_h:
+                result.add("C4", "error", ctx.line_num,
+                            f"禁止使用 H{level} 标题（允许: {sorted(allowed_h)}）")
+            flush_paragraph()
+            # 对标题行也做句子长度检查
+            for sent in split_sentences(ctx.stripped.lstrip("# ")):
+                slen = count_display_chars(sent.strip())
+                if slen > max_sent:
+                    preview = sent.strip()[:30]
+                    result.add("C2", "warning", ctx.line_num,
+                                f"句子超过 {max_sent} 字符（{slen} 字符）: {preview}...")
+            continue
+
+        # 空行 → 段落分隔
+        if not ctx.stripped:
+            flush_paragraph()
+            continue
+
+        # 跳过列表、引用、表格、图片行（不参与段落合并）
+        if re.match(r"^[>\-*|!]|^\d+\.", ctx.stripped):
+            flush_paragraph()
+            # 对这些行也做句子长度检查
+            for sent in split_sentences(ctx.stripped):
+                slen = count_display_chars(sent.strip())
+                if slen > max_sent:
+                    preview = sent.strip()[:30]
+                    result.add("C2", "warning", ctx.line_num,
+                                f"句子超过 {max_sent} 字符（{slen} 字符）: {preview}...")
+            continue
+
+        # 累积段落
+        if not paragraph_lines:
+            paragraph_start = ctx.line_num
+        paragraph_lines.append(ctx.text)
+
+    flush_paragraph()
+
+
+def rule_theme_constraints(lines: list[str], column: str, config: dict, result: LintResult):
+    """规则 B: 栏目特有约束"""
+    if not column:
+        return
+
+    overrides = get_column_overrides(config, column)
+    tc = overrides.get("theme_constraints", {})
+    theme_id = COLUMN_ALIASES.get(column, column)
+    full_text = "\n".join(lines)
+
+    # B1: 学术前沿 — 参考文献
+    if tc.get("require_references") or theme_id == "academic":
+        if not re.search(r"\[\d+\]", full_text):
+            result.add("B1", "error", 0, "学术前沿栏目缺少参考文献引用（[N] 标记）")
+
+    # B2: 学术前沿 — H1 后 blockquote
+    if tc.get("require_tldr") or theme_id == "academic":
+        _check_h1_blockquote(lines, result, required=True,
+                             rule="B2", msg="学术前沿栏目 H1 后应紧跟 blockquote 作为 TL;DR")
+
+    # B3: 技术专题 — 代码块
+    if tc.get("require_code_block") or theme_id == "tech":
+        if "```" not in full_text:
+            result.add("B3", "error", 0, "技术专题栏目缺少代码块")
+
+    # B4: 人物故事 — 禁止 TL;DR
+    if tc.get("forbid_tldr") or theme_id == "story":
+        _check_h1_blockquote(lines, result, required=False,
+                             rule="B4", msg="人物故事栏目不需要 TL;DR（H1 后的 blockquote）")
+
+
+def _check_h1_blockquote(lines: list[str], result: LintResult, required: bool, rule: str, msg: str):
+    """检查 H1 后是否紧跟 blockquote"""
+    h1_line = None
+    for i, line in enumerate(lines):
+        if re.match(r"^# [^#]", line):
+            h1_line = i
+            break
+    if h1_line is None:
+        return
+
+    # 找 H1 之后的第一个非空行
+    for j in range(h1_line + 1, len(lines)):
+        stripped = lines[j].strip()
+        if stripped:
+            has_bq = stripped.startswith(">")
+            if required and not has_bq:
+                result.add(rule, "error", j + 1, msg)
+            elif not required and has_bq:
+                result.add(rule, "warning", j + 1, msg)
+            break
+
+
+def rule_css_safety(lines: list[str], config: dict, result: LintResult):
+    """规则 F: 微信 CSS 安全"""
+    css_cfg = config["rules"]["css_safety"]
+    forbidden_css = css_cfg.get("forbidden_css", [])
+    forbidden_tags = css_cfg.get("forbidden_tags", [])
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+
+        # F1: 禁用 CSS 属性（仅在 HTML/style 上下文中检查）
+        if re.search(r"<[^>]+style=|<style|<svg", ctx.text, re.IGNORECASE):
+            for prop in forbidden_css:
+                if prop.lower() in ctx.text.lower():
+                    result.add("F1", "error", ctx.line_num, f"禁用 CSS 属性: {prop}")
+
+        # F2: 禁用标签
+        text_lower = ctx.text.lower()
+        for tag in forbidden_tags:
+            if tag.lower() in text_lower:
+                result.add("F2", "error", ctx.line_num, f"禁止使用 {tag}> 标签")
+        if re.search(r'class="[^"]*"', ctx.text):
+            result.add("F2", "warning", ctx.line_num, "检测到 class 属性（微信不支持）")
+
+        # F3: SVG id 属性
+        if re.search(r"<svg|<[a-z]+\s[^>]*id=", ctx.text, re.IGNORECASE):
+            if re.search(r"\sid=", ctx.text):
+                result.add("F3", "error", ctx.line_num, "SVG 中禁止使用 id 属性")
+
+
+def rule_image_references(lines: list[str], _config: dict, result: LintResult):
+    """规则 E: 图片与引用"""
+    has_citation_in_text = False
+    has_ref_list = False
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+
+        # E1: 图片缺少 alt 文本
+        if re.search(r"!\[\]\(", ctx.text):
+            result.add("E1", "warning", ctx.line_num, "图片缺少 alt 文本（用作图注）")
+
+        # E3: 绝对路径
+        if re.search(r"!\[.*\]\(file://", ctx.text) or re.search(r"!\[.*\]\([A-Z]:\\", ctx.text):
+            result.add("E3", "warning", ctx.line_num, "图片路径应使用相对路径")
+
+        # 追踪引用标记和编号列表
+        if re.search(r"\[\d+\]", ctx.text):
+            has_citation_in_text = True
+        if re.match(r"^\d+\.\s", ctx.stripped):
+            has_ref_list = True
+
+    # E2: 引用完整性
+    if has_citation_in_text and not has_ref_list:
+        result.add("E2", "warning", 0, "文中有 [N] 引用标记但缺少文末编号列表")
+
+
+def rule_block_content(lines: list[str], _config: dict, result: LintResult):
+    """规则 D: 自定义 block 内容结构"""
+    current_block_type = None
+    block_start = 0
+    block_content: list[str] = []
+
+    def check_block():
+        if not current_block_type or not block_content:
+            return
+        content = "\n".join(block_content)
+
+        # D1: :::vote 格式
+        if current_block_type == "vote":
+            if "？" not in content and "?" not in content:
+                result.add("D1", "warning", block_start,
+                            ":::vote 缺少问题分隔符（？或 ?）")
+            if "/" not in content:
+                result.add("D1", "warning", block_start,
+                            ":::vote 缺少选项分隔符（/）")
+
+        # D2: :::collection 格式
+        elif current_block_type == "collection":
+            if "：" not in content and ":" not in content:
+                result.add("D2", "warning", block_start,
+                            ":::collection 缺少系列标题分隔符（：）")
+            if "本篇" not in content:
+                result.add("D2", "warning", block_start,
+                            ":::collection 缺少当前文章标记（本篇）")
+
+        # D3: :::hashtag 格式
+        elif current_block_type == "hashtag":
+            if "#" not in content:
+                result.add("D3", "warning", block_start,
+                            ":::hashtag 缺少 # 前缀标签")
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+
+        m = re.match(r"^:::(\S+)$", ctx.stripped)
+        if m:
+            check_block()
+            current_block_type = m.group(1)
+            block_start = ctx.line_num
+            block_content = []
+        elif ctx.stripped == ":::":
+            check_block()
+            current_block_type = None
+            block_content = []
+        elif current_block_type:
+            block_content.append(ctx.text)
+
+    # 处理未闭合 block 的内容（A1 已报告未闭合）
+    check_block()
+
+
+def rule_forbidden_patterns(lines: list[str], _config: dict, result: LintResult):
+    """规则 G: 禁用词检查（从 voice-styling skill 提取）"""
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
+            continue
+        for word in FORBIDDEN_WORDS:
+            if word in ctx.text:
+                result.add("G1", "warning", ctx.line_num, f"检测到禁用词: {word}")
+
+
+# ============================================================
+# 主流程
+# ============================================================
+
+def run_lint(file_path: str, column: str = "", config_path: str | None = None) -> LintResult:
+    config = load_config(config_path)
+    rules_cfg = config.get("rules", {})
+
+    path = Path(file_path)
+    lines = path.read_text(encoding="utf-8").splitlines()
+
+    # 自动检测栏目
+    if not column:
+        fm = parse_frontmatter(lines)
+        column = fm.get("column", "")
+
+    result = LintResult(file_path, column)
+
+    # 按类别执行规则
+    if rules_cfg.get("block_syntax", {}).get("enabled", True):
+        rule_block_syntax(lines, config, result)
+
+    if rules_cfg.get("typography", {}).get("enabled", True):
+        rule_typography(lines, config, result)
+
+    if rules_cfg.get("theme_constraints", {}).get("enabled", True):
+        rule_theme_constraints(lines, column, config, result)
+
+    if rules_cfg.get("css_safety", {}).get("enabled", True):
+        rule_css_safety(lines, config, result)
+
+    if rules_cfg.get("image_references", {}).get("enabled", True):
+        rule_image_references(lines, config, result)
+
+    if rules_cfg.get("block_content", {}).get("enabled", True):
+        rule_block_content(lines, config, result)
+
+    if rules_cfg.get("forbidden_patterns", {}).get("enabled", True):
+        rule_forbidden_patterns(lines, config, result)
+
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description="InkFlow Markdown Lint — 文章格式校验工具")
+    parser.add_argument("file", help="要校验的 Markdown 文件路径")
+    parser.add_argument("--column", default="", help="栏目名（如未指定，从 frontmatter 读取）")
+    parser.add_argument("--config", default=None, help="配置文件路径（默认: lint-config.yaml）")
+    args = parser.parse_args()
+
+    if not Path(args.file).exists():
+        print(f"错误: 文件不存在: {args.file}", file=sys.stderr)
+        sys.exit(1)
+
+    # 默认配置路径
+    config_path = args.config
+    if not config_path:
+        default_cfg = Path(__file__).parent / "lint-config.yaml"
+        if default_cfg.exists():
+            config_path = str(default_cfg)
+
+    result = run_lint(args.file, args.column, config_path)
+
+    # JSON to stdout
+    print(result.to_json())
+
+    # Human-readable to stderr
+    print(result.to_human(), file=sys.stderr)
+
+    # 退出码
+    if result.error_count > 0:
+        sys.exit(1)
+    elif result.warning_count > 0:
+        sys.exit(2)
+    else:
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    # 确保 Windows 下 stdout/stderr 使用 UTF-8
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+    main()

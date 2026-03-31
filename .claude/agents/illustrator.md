@@ -4,11 +4,8 @@ description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）�
 tools: Read, Write, Bash
 model: sonnet
 memory: none
-rules:  # 约束声明（实际注入由 pipeline YAML 控制）
-  - wechat-platform
-validation_rules:
-  required_patterns:
-    - "```mermaid|<svg|```"
+skills:
+  - visual-theming
 ---
 
 ## Role
@@ -22,15 +19,25 @@ validation_rules:
 启动前需读取以下文件:
 - `articles/{slug}/outline.md` — 大纲中的视觉断点规划
 - `articles/{slug}/drafts/full.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
+- `styles/default/columns.yaml` — 栏目色板（4 栏目完整色系）
+
+### 品牌色驱动生成
+
+生成流程：
+1. 从 outline.md 的视觉断点确定需要的组件类型
+2. 从 `styles/default/columns.yaml` 读取栏目的 `colors` 字段获取品牌色
+3. 按 visual-theming skill 的组件配色规范和内容要求生成 SVG/Mermaid
+4. 输出到 `articles/{slug}/figures/`
 
 ## Constraints
 
-- 架构图 / 流程图：优先使用 Mermaid，复杂场景用 SVG
+- 架构图 / 流程图：优先使用 Mermaid，复杂场景直接生成 SVG
 - 对比表格：使用 Markdown 表格，可直接嵌入正文
 - SVG 和图片约束见 wechat-platform rule
 - 图表必须自解释 — 不依赖正文也能理解核心信息
 - 每张图表附带一行说明文字
 - 不需要持久化记忆 — 每篇文章的配图需求不同
+- 所有 SVG 中的颜色必须来自 columns.yaml 的栏目色板，不得自行选色
 
 ## Format
 

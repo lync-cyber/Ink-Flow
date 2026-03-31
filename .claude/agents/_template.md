@@ -4,28 +4,9 @@ description: {一行描述}
 tools: {Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch}
 model: {sonnet|opus}
 memory: {project|none}               # project = 持久化工作记忆; none = 无需记忆
-skills: [{skill-name}]               # 能力声明（实际注入由 pipeline YAML 的 skills.stages.{stage} + skills.global 控制）
-rules: [{rule-name}]                 # 约束声明（实际注入由 pipeline YAML 的 rules.stages.{stage} + rules.global 控制）
-validation_rules:
-  required_sections:
-    - "{section-name}"
-  optional_sections:                   # [改进#6] 条件可选输出
-    - name: "{section-name}"
-      skip_if: "brief.{field} == {value}"
-  word_count:
-    min: {N}
-    max: {N}
-  required_patterns:
-    - "{regex}"
-  forbidden_patterns:
-    - "{regex}"
-  platform_checks:                     # [改进#6] 平台特有校验
-    - type: {css_safety|heading_level|image_width}
-      forbidden_css: ["{prop}"]
-      allowed: ["{level}"]
-      max_width: {N}
-semantic_checks:                       # 可选 LLM 语义校验（Haiku 执行）
-  - "{自然语言检查项}"
+skills: [{skill-name}]
+# 注意: validation 规则定义在 .inkflow.yaml 的 stages.{stage}.validation 中，
+# 不在 agent frontmatter 中（校验隔离原则：agent 不感知自己的评判标准）
 ---
 
 ## Role

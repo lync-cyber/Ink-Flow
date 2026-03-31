@@ -2,8 +2,7 @@
 name: writing-quality
 description: 通用写作质量约束（句式、段落、可读性），所有写作/编辑阶段共享。
 domain: core
-version: 1.0.0
-inject_at: [draft, refine]
+inject_at: [draft, audit, polish]
 inject_mode: always
 ---
 
@@ -11,12 +10,10 @@ inject_mode: always
 
 - 句子超过 40 字必须拆成两句
 - 拆分优先在"但是"、"因此"、"所以"处断句
-- 被动句改为主动句（"数据被存储在..."→"系统把数据写入..."）
 
 ## 段落规则
 
 - 检查每段第一句：删掉后段落仍成立则删掉
-- 删除所有起承转合的过渡句（直接开始下一节）
 
 ## 自检规则
 

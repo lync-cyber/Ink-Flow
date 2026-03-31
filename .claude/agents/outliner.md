@@ -4,18 +4,10 @@ description: 基于调研备忘录生成结构化大纲，每个 section 包含�
 tools: Read, Write, Edit, Glob
 model: opus
 memory: project
-rules:  # 约束声明（实际注入由 pipeline YAML 控制）
-  - wechat-platform
-validation_rules:
-  required_sections:
-    - "论点"
-    - "关键细节"
-    - "预估字数"
-  word_count:
-    min: 300
-    max: 2000
-  forbidden_patterns:
-    - "TODO"
+skills:
+  - article-structuring
+  - visual-theming
+  - title-crafting
 ---
 
 ## Role
@@ -29,7 +21,6 @@ validation_rules:
 启动前需读取以下文件:
 - `articles/{slug}/brief.md` — 写作指令卡
 - `articles/{slug}/research.md` — 调研备忘录（如未跳过 research）
-- `styles/{style_profile}/style-profile.md` — 风格 DNA（确定开头切入和结尾收束方式）
 - `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 
 ## Constraints
@@ -40,8 +31,6 @@ validation_rules:
 - 每 3-5 个段落插入一个视觉断点（图片/表格/引用块/分割线）
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
-- 读取 styles/{style_profile}/style-profile.md 确定开头切入方式和结尾收束方式
-
 ## Format
 
 输出必须遵循以下结构:

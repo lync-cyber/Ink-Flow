@@ -2,8 +2,7 @@
 name: wechat-platform
 description: 微信公众号平台特有约束（CSS 白名单、inline style、SVG 限制）。
 domain: wechat-article
-version: 1.0.0
-inject_at: [outline, draft, figures, refine, publish]
+inject_at: [outline, draft, figures, audit, polish, publish]
 inject_mode: always
 extends: platform-base
 ---

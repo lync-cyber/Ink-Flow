@@ -1,6 +1,6 @@
 # InkFlow 项目配置
 # 用于标识该目录为 InkFlow 工作区
-version: "0.3.1"
+version: "1.0.0"
 
 # 启用的领域包
 domains:
@@ -12,24 +12,21 @@ model_allocation:
   outliner: opus
   writer: opus
   illustrator: sonnet
-  editor-audit: opus
-  editor-polish: opus
-  style-analyzer: opus
-  semantic_check: haiku              # L2 语义校验用最低成本模型
+  auditor: opus
+  polisher: sonnet
+  publisher: sonnet
 
 # 多格式导出配置（跨 pipeline 复用）
 exports:
   - format: wechat_md
     description: "Markdown Nice 适配格式（默认）"
-    output: "articles/{slug}/output/wechat.md"
+    output: "articles/{slug}/output/article.md"
 
   - format: plain_md
     description: "纯净 Markdown（知乎/掘金等）"
     output: "articles/{slug}/output/plain.md"
 
-  - format: html
-    description: "内联样式 HTML（可直接粘贴公众号编辑器）"
-    output: "articles/{slug}/output/index.html"
+  # html 格式由 typesetter（tools/wechat-typesetter/index.html）程序化生成，不在 pipeline 内导出
 
   - format: summary
     description: "短摘要版（朋友圈/社群分发）"
@@ -49,20 +46,99 @@ defaults:
   cover_style: auto
   style_profile: default
   opening_style: auto
-  mode: standard                     # standard | quick
 
 # 脚本路径
 scripts:
-  validator: .claude/skills/inkflow/scripts/contract-validator.sh
-  state_manager: .claude/skills/inkflow/scripts/pipeline-state.sh
-  diff_extractor: .claude/skills/feedback-loop/scripts/diff-extractor.sh
+  diff_extractor: .claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.sh
 
-# Skill/Rule 自动发现注册表
+# 工作流阶段定义
+# validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
+stages:
+  - name: brief
+    type: user_input
+
+  - name: research
+    agent: researcher
+    skip_if: "brief.skip_research == true"
+    validation:
+      required_sections:
+        - "关键事实"
+        - "代码片段"
+        - "对比表格"
+        - "不确定项"
+      optional_sections:
+        - name: "SEO 关键词"
+          skip_if: "brief.skip_seo == true"
+        - name: "竞品分析"
+          skip_if: "brief.content_type == opinion"
+      word_count: { min: 500, max: 5000 }
+      required_patterns:
+        - "\\[来源\\]\\(http"
+      forbidden_patterns: ["TODO", "待补充"]
+
+  - name: outline
+    agent: outliner
+    checkpoint: true
+    requires: [brief]
+    validation:
+      required_sections: ["总览"]
+      required_patterns:
+        - "- 论点:"
+        - "- 关键细节:"
+        - "- 预估字数:"
+        - "- 视觉断点:"
+      word_count: { min: 300, max: 2000 }
+      forbidden_patterns: ["TODO"]
+
+  - name: draft
+    agent: writer
+    requires: [outline]
+    validation:
+      word_count: { min: 200, max: 3000 }
+      forbidden_patterns: ["TODO"]
+      forbidden_patterns_from_rules: [quality-redline]
+
+  - name: figures
+    agent: illustrator
+    skip_if: "brief.no_figures == true"
+    requires: [outline]
+    parallel_with: [draft]
+    validation:
+      required_patterns:
+        - "```mermaid|<svg"
+
+  - name: audit
+    agent: auditor
+    requires: [draft]
+    validation:
+      required_sections: ["审校报告", "传播性评估", "审校统计"]
+
+  - name: polish
+    agent: polisher
+    checkpoint: true
+    requires: [audit]
+    validation:
+      required_sections: ["润色结果"]
+      forbidden_patterns: ["TODO", "待确认"]
+      forbidden_patterns_from_rules: [quality-redline]
+      platform_checks:
+        - type: css_safety
+          forbidden_css: ["position:", "@media", "@keyframes", ":hover", ":active", "float:"]
+        - type: heading_level
+          allowed: ["##", "###", "####"]
+        - type: image_width
+          max_width: 640
+
+  - name: publish
+    agent: publisher
+    checkpoint: true
+    requires: [polish]
+
+# Skill/Rule 注册表
 registry:
-  auto_discover: true                  # 自动扫描以下目录
   skills_paths:
-    - .claude/skills                   # 通用 skill（inkflow, style-analyzer, feedback-loop, de-ai-polish）
-    - .claude/skills/domains/{domain}  # {domain} 从 domains 列表展开
+    - .claude/skills/common
+    - .claude/skills/domains/{domain}
   rules_paths:
     - .claude/rules/core
     - .claude/rules/domains/{domain}

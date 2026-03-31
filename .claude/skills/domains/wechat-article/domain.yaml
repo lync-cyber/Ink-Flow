@@ -1,23 +1,28 @@
 # 微信公众号文章写作 — 领域包清单
 name: wechat-article
-description: 微信公众号文章写作领域包，含排版约束、去AI味策略和导出格式
-version: 1.0.0
+description: 微信公众号文章写作领域包，含排版约束、栏目体系、品牌视觉和写作指导系统
 
 # 本领域提供的 Skills
 skills:
-  - anti-ai-style
-  - writing-strategy
-  - opening-hooks
-  - style-reference
-  - wechat-format
+  - writing-guiding
+  - visual-theming
+  - article-structuring
+  - opening-crafting
+  - title-crafting
+  - format-exporting
+  - publish-preparing
+  - content-planning
+  - creation-reviewing
+  - metrics-tracking
+  - performance-benchmarking
 
 # 本领域提供的 Rules
 rules:
   - wechat-platform
+  - quality-redline
 
 # 本领域支持的导出格式
 exports:
   - wechat_md
   - plain_md
-  - html
   - summary

@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信公众号排版工具 — AI+工控</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body, #root { height: 100%; overflow: hidden; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #999; }
+  textarea::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ============================================================
+// THEME SYSTEM — 4 columns with complete inline style maps
+// ============================================================
+const THEMES = {
+  academic: {
+    id: "academic", name: "学术前沿", icon: "📐",
+    colors: { primary: "#1a5276", accent: "#c0782b", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#e4edf4", bgDeep: "#c5d9e8", border: "#bfc5cb" },
+    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#c0782b", primary: "#4a9fd4" },
+  },
+  industry: {
+    id: "industry", name: "行业动态", icon: "📡",
+    colors: { primary: "#0e6655", accent: "#b9770e", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#dceee8", bgDeep: "#b8ddd3", border: "#b5bfba" },
+    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#b9770e", primary: "#2ecc9a" },
+  },
+  tech: {
+    id: "tech", name: "技术专栏", icon: "⚙️",
+    colors: { primary: "#4a235a", accent: "#1a5276", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#ece3f0", bgDeep: "#d4c2dd", border: "#b5b5bf" },
+    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#bb8fce" },
+  },
+  story: {
+    id: "story", name: "人物故事", icon: "✍️",
+    colors: { primary: "#784212", accent: "#1a5276", text: "#3f3f3f", textSec: "#6e5c50", textTer: "#888888", bg: "#f0e0d0", bgDeep: "#e8cdb3", border: "#c4b5a5" },
+    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#d4a06a" },
+  },
+};
+
+const DEFAULT_SPEC = { fontSize: 15, lineHeight: 1.75, letterSpacing: 1, pageMargin: 12 };
+
+// ============================================================
+// MARKDOWN PARSER — custom, no dependencies
+// ============================================================
+function parseMarkdown(md) {
+  const lines = md.split("\n");
+  const tokens = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // blank
+    if (line.trim() === "") { i++; continue; }
+    // custom block :::type
+    if (line.trim().startsWith(":::")) {
+      const type = line.trim().slice(3).trim();
+      const content = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith(":::")) { content.push(lines[i]); i++; }
+      if (i < lines.length) i++; // skip closing :::
+      tokens.push({ type: "custom", block: type, content: content.join("\n").trim() });
+      continue;
+    }
+    // code block
+    if (line.trimStart().startsWith("```")) {
+      const lang = line.trim().slice(3).trim();
+      const code = [];
+      i++;
+      while (i < lines.length && !lines[i].trimStart().startsWith("```")) { code.push(lines[i]); i++; }
+      if (i < lines.length) i++;
+      tokens.push({ type: "code", lang, content: code.join("\n") });
+      continue;
+    }
+    // heading
+    const hm = line.match(/^(#{1,6})\s+(.*)/);
+    if (hm) { tokens.push({ type: "heading", level: hm[1].length, content: hm[2] }); i++; continue; }
+    // hr
+    if (/^[-*_]{3,}\s*$/.test(line.trim())) { tokens.push({ type: "hr" }); i++; continue; }
+    // blockquote
+    if (line.trimStart().startsWith(">")) {
+      const bq = [];
+      while (i < lines.length && lines[i].trimStart().startsWith(">")) { bq.push(lines[i].replace(/^>\s?/, "")); i++; }
+      tokens.push({ type: "blockquote", content: bq.join("\n") });
+      continue;
+    }
+    // table
+    if (line.includes("|") && i + 1 < lines.length && /\|[\s-:]+\|/.test(lines[i + 1])) {
+      const headers = line.split("|").map(s => s.trim()).filter(Boolean);
+      i += 2; // skip header + separator
+      const rows = [];
+      while (i < lines.length && lines[i].includes("|")) {
+        rows.push(lines[i].split("|").map(s => s.trim()).filter(Boolean));
+        i++;
+      }
+      tokens.push({ type: "table", headers, rows });
+      continue;
+    }
+    // unordered list
+    if (/^\s*[-*+]\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*[-*+]\s+/, "")); i++; }
+      tokens.push({ type: "ul", items });
+      continue;
+    }
+    // ordered list
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*\d+\.\s+/, "")); i++; }
+      tokens.push({ type: "ol", items });
+      continue;
+    }
+    // image
+    const imgm = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    if (imgm) { tokens.push({ type: "image", alt: imgm[1], src: imgm[2] }); i++; continue; }
+    // paragraph (collect consecutive lines)
+    const para = [line];
+    i++;
+    while (i < lines.length && lines[i].trim() !== "" && !lines[i].match(/^#{1,6}\s/) && !lines[i].trimStart().startsWith(">") && !lines[i].trimStart().startsWith("```") && !lines[i].trimStart().startsWith(":::") && !/^[-*_]{3,}\s*$/.test(lines[i].trim()) && !/^\s*[-*+]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i]) && !lines[i].match(/^!\[/)) {
+      para.push(lines[i]);
+      i++;
+    }
+    tokens.push({ type: "paragraph", content: para.join(" ") });
+  }
+  return tokens;
+}
+
+function inlineFormat(text, theme, isDark) {
+  const c = isDark ? theme.dark : theme.colors;
+  let s = text;
+  // bold
+  s = s.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${c.primary};font-weight:600;">$1</strong>`);
+  // italic
+  s = s.replace(/\*(.+?)\*/g, `<em style="font-style:italic;">$1</em>`);
+  // inline code
+  s = s.replace(/`([^`]+)`/g, `<code style="font-family:Consolas,monospace;font-size:13px;background:${isDark ? '#333' : '#f0f0f0'};padding:1px 5px;border-radius:2px;color:${c.primary};">$1</code>`);
+  // dashed underline ~~text~~
+  s = s.replace(/~~(.+?)~~/g, `<span style="border-bottom:1px dashed ${c.accent};padding-bottom:1px;">$1</span>`);
+  // links
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:${c.accent};text-decoration:none;border-bottom:1px solid ${c.accent};">$1</a>`);
+  // sup references [1]
+  s = s.replace(/\[(\d+)\]/g, `<sup style="color:${c.accent};font-size:10px;">[$1]</sup>`);
+  return s;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ============================================================
+// SIMPLE SYNTAX HIGHLIGHTING for code blocks
+// ============================================================
+function highlightCode(escaped, lang) {
+  const keywords = ["import", "from", "as", "def", "class", "return", "if", "else", "for", "in", "while", "try", "except", "with", "yield", "lambda", "not", "and", "or", "is", "None", "True", "False", "const", "let", "var", "function", "export", "default"];
+  let result = escaped;
+  // comments (# ...)
+  result = result.replace(/(#[^\n]*)/g, '<span style="color:#7c8ba1;">$1</span>');
+  // strings (double and single quoted)
+  result = result.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;|"[^"]*?"|'[^']*?')/g, '<span style="color:#c3e88d;">$1</span>');
+  // keywords
+  const kwPattern = new RegExp(`\\b(${keywords.join("|")})\\b`, "g");
+  result = result.replace(kwPattern, '<span style="color:#c792ea;">$1</span>');
+  // function calls word(
+  result = result.replace(/\b([a-zA-Z_]\w*)\(/g, '<span style="color:#82aaff;">$1</span>(');
+  return result;
+}
+
+// ============================================================
+// RENDER TOKENS → INLINE-STYLED HTML
+// ============================================================
+function renderTokens(tokens, theme, spec, isDark) {
+  const c = isDark ? theme.dark : theme.colors;
+  const lc = theme.colors; // always-light colors for reference
+  const bgColor = isDark ? c.bg : "#fff";
+  const parts = [];
+  let isFirstH1 = true;
+
+  const storyLH = theme.id === "story" ? 2.0 : spec.lineHeight;
+  const pStyle = `font-size:${spec.fontSize}px;line-height:${storyLH};color:${c.text};letter-spacing:${spec.letterSpacing}px;text-align:justify;margin:0 0 ${Math.round(spec.fontSize * 1.1)}px;`;
+
+  for (let ti = 0; ti < tokens.length; ti++) {
+    const tok = tokens[ti];
+    switch (tok.type) {
+      case "heading": {
+        if (tok.level === 1) {
+          // ===== P0: HEADER AREA — per-theme column identity =====
+          if (isFirstH1) {
+            isFirstH1 = false;
+            if (theme.id === "academic") {
+              parts.push(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid ${c.border};"><div style="width:4px;height:28px;background:${c.primary};border-radius:2px;"></div><span style="font-size:12px;color:${c.primary};letter-spacing:4px;font-weight:500;">学术前沿</span><span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;font-family:monospace;">VOL.037</span></div>`);
+              parts.push(`<h1 style="font-size:22px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 16px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
+              // Check if next token is a blockquote (used as abstract)
+              if (ti + 1 < tokens.length && tokens[ti + 1].type === "blockquote") {
+                ti++;
+                parts.push(`<p style="font-size:13px;color:${c.textSec};line-height:1.8;margin:0 0 16px;padding-left:12px;border-left:2px solid ${c.accent};">${inlineFormat(tokens[ti].content, theme, isDark)}</p>`);
+              }
+            } else if (theme.id === "industry") {
+              parts.push(`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><div style="background:${c.primary};color:#fff;font-size:11px;padding:4px 12px;border-radius:2px;font-weight:600;letter-spacing:2px;">行业动态</div><div style="height:1px;flex:1;background:${c.border};"></div><span style="font-size:10px;color:${c.textTer || c.textSec};">2025.12 周报</span></div>`);
+              parts.push(`<h1 style="font-size:20px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 12px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
+              // Inject tag pills
+              parts.push(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">政策</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">融资</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">产品</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">技术突破</span></div>`);
+            } else if (theme.id === "tech") {
+              parts.push(`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="font-family:Consolas,monospace;font-size:12px;color:${c.primary};font-weight:600;">// 技术专栏</span><span style="font-size:10px;color:${c.textTer || c.textSec};font-family:Consolas,monospace;">#部署 #量化</span></div>`);
+              parts.push(`<h1 style="font-size:20px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 12px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
+              parts.push(`<div style="background:${isDark ? c.surface : lc.bg};border-left:3px solid ${c.primary};padding:10px 14px;font-size:12px;color:${c.textSec};line-height:1.7;margin-bottom:16px;"><strong style="color:${c.text};">12分钟</strong> · 难度 ⬤⬤⬤○○ · 前置：PyTorch基础</div>`);
+            } else {
+              // story
+              parts.push(`<div style="font-size:11px;color:${c.accent};letter-spacing:6px;margin-bottom:20px;font-weight:500;">人物故事</div>`);
+              parts.push(`<h1 style="font-size:24px;font-weight:400;line-height:1.7;color:${c.text};margin:0 0 20px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
+              // Check if next token is an italic paragraph (subtitle)
+              if (ti + 1 < tokens.length && tokens[ti + 1].type === "paragraph" && tokens[ti + 1].content.startsWith("*") && tokens[ti + 1].content.endsWith("*")) {
+                ti++;
+                const subtitleText = tokens[ti].content.slice(1, -1);
+                parts.push(`<p style="font-size:14px;color:${c.textSec};line-height:2;margin:0 0 16px;font-style:italic;">${inlineFormat(subtitleText, theme, isDark)}</p>`);
+              }
+            }
+          } else {
+            parts.push(`<h1 style="font-size:22px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 16px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
+          }
+        } else if (tok.level === 2) {
+          if (theme.id === "academic") {
+            parts.push(`<h2 style="display:inline-block;font-size:18px;font-weight:700;color:${c.text};margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid ${c.primary};">${inlineFormat(tok.content, theme, isDark)}</h2>`);
+          } else if (theme.id === "industry") {
+            parts.push(`<h2 style="display:inline-block;font-size:17px;font-weight:700;color:#fff;margin:28px 0 12px;padding:8px 16px;border-radius:2px;background:${c.primary};">${inlineFormat(tok.content, theme, isDark)}</h2>`);
+          } else if (theme.id === "tech") {
+            parts.push(`<h2 style="font-size:17px;font-weight:700;color:${c.text};margin:28px 0 12px;font-family:Consolas,monospace;display:flex;align-items:center;gap:8px;"><span style="color:${c.primary};font-size:14px;">##</span>${inlineFormat(tok.content, theme, isDark)}</h2>`);
+          } else {
+            // story: centered + decorative divider below
+            parts.push(`<h2 style="font-size:20px;font-weight:400;color:${c.text};margin:28px 0 0;text-align:center;">${inlineFormat(tok.content, theme, isDark)}</h2><div style="display:flex;justify-content:center;gap:4px;margin:8px 0 12px;"><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span><span style="display:inline-block;width:4px;height:4px;background:${c.accent};border-radius:50%;"></span><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span></div>`);
+          }
+        } else {
+          if (theme.id === "tech") {
+            parts.push(`<h3 style="font-size:14px;font-weight:600;color:${c.textSec};margin:20px 0 10px;font-family:Consolas,monospace;"><span style="color:${c.primary};margin-right:6px;">###</span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
+          } else if (theme.id === "academic") {
+            parts.push(`<h3 style="font-size:15px;font-weight:600;color:${c.primary};margin:20px 0 10px;padding-left:12px;border-left:3px solid ${c.accent};">${inlineFormat(tok.content, theme, isDark)}</h3>`);
+          } else if (theme.id === "industry") {
+            parts.push(`<h3 style="font-size:15px;font-weight:600;color:${c.primary};margin:20px 0 10px;display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:6px;height:6px;background:${c.accent};border-radius:50%;"></span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
+          } else {
+            // story: italic centered
+            parts.push(`<h3 style="font-size:15px;font-weight:400;color:${c.primary};margin:20px 0 10px;font-style:italic;text-align:center;">${inlineFormat(tok.content, theme, isDark)}</h3>`);
+          }
+        }
+        break;
+      }
+      case "paragraph":
+        parts.push(`<p style="${pStyle}">${inlineFormat(tok.content, theme, isDark)}</p>`);
+        break;
+      case "blockquote": {
+        const bqBg = isDark ? c.surface : lc.bg;
+        const content = tok.content;
+        // Story: detect quote + attribution pattern (line ending with ——)
+        if (theme.id === "story") {
+          const lines = content.split("\n");
+          const attrLine = lines.find(l => l.includes("——"));
+          if (attrLine) {
+            const quoteText = lines.filter(l => !l.includes("——")).join(" ");
+            parts.push(`<blockquote style="margin:0 0 16px;padding:20px 24px;text-align:center;"><div style="font-size:28px;color:${c.border};line-height:1;margin-bottom:8px;">"</div><p style="font-size:16px;color:${c.text};line-height:2;margin:0;font-style:italic;">${inlineFormat(quoteText, theme, isDark)}</p><div style="margin-top:12px;font-size:12px;color:${c.textSec};">${inlineFormat(attrLine, theme, isDark)}</div></blockquote>`);
+          } else {
+            parts.push(`<blockquote style="margin:0 0 16px;padding:20px 24px;text-align:center;"><p style="font-size:16px;color:${c.text};line-height:2;margin:0;font-style:italic;">${inlineFormat(content, theme, isDark)}</p></blockquote>`);
+          }
+        } else if (theme.id === "tech" && (content.includes("💡") || content.includes("提示"))) {
+          // Tech: tip block with badge
+          const tipText = content.replace(/^💡\s*提示[：:]\s*/, "").replace(/^💡\s*/, "");
+          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${bqBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:0;"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>&nbsp; ${inlineFormat(tipText, theme, isDark)}</p></blockquote>`);
+        } else {
+          const bqBorder = theme.id === "industry" ? c.accent : c.primary;
+          parts.push(`<blockquote style="margin:0 0 16px;padding:14px 18px;background:${bqBg};border-left:3px solid ${bqBorder};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.8;margin:0;text-align:justify;">${inlineFormat(content, theme, isDark)}</p></blockquote>`);
+        }
+        break;
+      }
+      case "ul": {
+        const items = tok.items.map((item, idx) => {
+          if (theme.id === "story") {
+            // Hollow circle with border
+            return `<div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;"><span style="width:8px;height:8px;border:1.5px solid ${c.accent};border-radius:50%;flex-shrink:0;margin-top:8px;"></span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          } else if (theme.id === "industry") {
+            const itemBg = idx % 2 === 0 ? `background:${isDark ? c.surface : lc.bg};border-radius:2px;padding:6px 12px;` : "";
+            return `<div style="display:flex;gap:10px;margin-bottom:8px;${itemBg}align-items:flex-start;"><span style="color:${c.accent};flex-shrink:0;font-weight:700;">→</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          } else if (theme.id === "academic") {
+            return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:8px;margin-top:7px;">■</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          } else {
+            // tech
+            return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:13px;">▸</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          }
+        }).join("");
+        parts.push(`<div style="margin:0 0 16px;">${items}</div>`);
+        break;
+      }
+      case "ol": {
+        const items = tok.items.map((item, idx) => {
+          if (theme.id === "tech") {
+            return `<div style="display:flex;gap:12px;margin-bottom:10px;align-items:flex-start;"><span style="font-family:Consolas,monospace;font-size:11px;color:#fff;background:${c.primary};border-radius:2px;padding:2px 7px;flex-shrink:0;font-weight:600;">${idx + 1}</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          }
+          return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};font-weight:600;flex-shrink:0;font-size:14px;">${idx + 1}.</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+        }).join("");
+        parts.push(`<div style="margin:0 0 16px;">${items}</div>`);
+        break;
+      }
+      case "hr": {
+        if (theme.id === "academic") {
+          parts.push(`<div style="display:flex;align-items:center;gap:12px;padding:12px 0;margin:0 0 16px;"><div style="flex:1;height:1px;background:${c.border};"></div><span style="font-size:10px;color:${c.textTer || c.textSec};font-family:monospace;">§</span><div style="flex:1;height:1px;background:${c.border};"></div></div>`);
+        } else if (theme.id === "industry") {
+          parts.push(`<div style="height:2px;background:${c.primary};border-radius:1px;margin:16px 0;opacity:0.5;"></div>`);
+        } else if (theme.id === "tech") {
+          parts.push(`<div style="padding:12px 0;margin:0 0 16px;font-family:monospace;font-size:12px;color:${c.border};text-align:center;letter-spacing:4px;">· · ·</div>`);
+        } else {
+          parts.push(`<div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:16px 0;margin:0 0 16px;"><div style="width:24px;height:1px;background:${c.border};"></div><div style="width:5px;height:5px;background:${c.accent};border-radius:50%;"></div><div style="width:24px;height:1px;background:${c.border};"></div></div>`);
+        }
+        break;
+      }
+      case "image": {
+        const captionAlign = theme.id === "story" ? "right" : "center";
+        const captionStyle = theme.id === "story" ? "font-style:italic;" : "";
+        parts.push(`<div style="margin:0 0 20px;text-align:center;"><img src="${tok.src}" alt="${tok.alt}" style="max-width:100%;border-radius:2px;" />${tok.alt ? `<p style="font-size:11px;color:${c.textTer || c.textSec};margin:8px 0 0;text-align:${captionAlign};${captionStyle}">${tok.alt}</p>` : ""}<div style="font-size:9px;color:${c.textTer || c.textSec};text-align:center;margin-top:4px;padding:4px 8px;background:${isDark ? '#2a2a2a' : '#f9f9f9'};border-radius:2px;line-height:1.5;">⚠ 使用透明底PNG，避免深色模式白边</div></div>`);
+        break;
+      }
+      case "code": {
+        const headerBg = theme.id === "tech" ? c.primary : "#2c3e50";
+        const escaped = escapeHtml(tok.content);
+        const highlighted = highlightCode(escaped, tok.lang);
+        const codeHint = "✅ Markdown兼容：" + "```" + (tok.lang || "code") + " 自动映射此样式";
+        parts.push(`<div style="border-radius:2px;overflow:hidden;border:1px solid ${c.border};margin:0 0 16px;"><div style="background:${headerBg};padding:6px 14px;display:flex;justify-content:space-between;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,monospace;">${tok.lang || "code"}</span><span style="font-size:10px;color:rgba(255,255,255,0.4);">复制</span></div><pre style="background:#1a1d23;padding:14px 16px;margin:0;overflow-x:auto;"><code style="font-family:Consolas,monospace;font-size:12px;line-height:1.8;color:#e2e8f0;white-space:pre;">${highlighted}</code></pre><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">${codeHint}</div></div>`);
+        break;
+      }
+      case "table": {
+        const thStyle = `padding:8px 10px;font-weight:600;text-align:left;font-size:12px;color:#fff;background:${c.primary};`;
+        const ths = tok.headers.map(h => `<th style="${thStyle}">${h}</th>`).join("");
+        const colCount = tok.headers.length;
+        const trs = tok.rows.map((row, ri) => {
+          const rowBg = ri % 2 === 0 ? bgColor : (isDark ? c.surface : lc.bg);
+          const tds = row.map((cell, ci) => {
+            const isLast = ci === colCount - 1;
+            const isFirst = ci === 0;
+            const cellColor = isLast ? c.accent : c.text;
+            const cellWeight = isFirst ? 'font-weight:600;' : '';
+            const cellFont = !isFirst ? 'font-family:Consolas,monospace;' : '';
+            return `<td style="padding:7px 10px;border-top:1px solid ${c.border};font-size:12px;color:${cellColor};${cellWeight}${cellFont}">${inlineFormat(cell, theme, isDark)}</td>`;
+          }).join("");
+          return `<tr style="background:${rowBg};">${tds}</tr>`;
+        }).join("");
+        parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`);
+        break;
+      }
+      case "custom": {
+        const blockType = tok.block.toLowerCase();
+        const cardBg = isDark ? c.surface : lc.bg;
+
+        // ===== P1: Rich rendering for custom blocks =====
+        if (blockType === "media") {
+          // Audio player + video card visual
+          const contentLines = tok.content ? tok.content.split(/[/／]/).map(s => s.trim()) : [];
+          const audioTitle = contentLines[0] || "音频内容";
+          const videoTitle = contentLines[1] || "视频内容";
+          parts.push(`<div style="margin:0 0 16px;">` +
+            // Audio player
+            `<div style="border:1px solid ${c.border};border-radius:2px;padding:12px 16px;background:${isDark ? c.surface : '#fff'};margin-bottom:12px;display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:${c.primary};font-size:16px;">▶</span></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${c.text};">${audioTitle}</div><div style="font-size:11px;color:${c.textTer || c.textSec};margin-top:4px;display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:55%;height:3px;background:${isDark ? c.border : lc.bgDeep};border-radius:2px;"></span><span>03:42</span></div></div></div>` +
+            // Video card
+            `<div style="border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:#1a1a1a;"><div style="height:80px;display:flex;align-items:center;justify-content:center;"><div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:16px;margin-left:2px;">▶</span></div></div><div style="padding:8px 12px;background:${isDark ? c.surface : '#fff'};border-top:1px solid ${c.border};"><div style="font-size:12px;color:${c.text};">${videoTitle}</div></div></div>` +
+            `<div style="font-size:9px;color:${c.textTer || c.textSec};margin-top:6px;text-align:center;">使用 &lt;mpvoice&gt; / &lt;mpvideo&gt; 标签嵌入 · 请在公众号后台插入</div></div>`);
+        } else if (blockType === "miniapp") {
+          // Miniapp card with icon
+          const contentParts = tok.content ? tok.content.split(/[—–-]/).map(s => s.trim()) : [];
+          const appName = contentParts[0] || "小程序";
+          const appDesc = contentParts[1] || "";
+          const icons = { academic: "📊", industry: "🗺", tech: "💻", story: "👤" };
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:14px 16px;background:${isDark ? c.surface : '#fff'};display:flex;align-items:center;gap:12px;"><div style="width:44px;height:44px;border-radius:8px;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${icons[theme.id] || "📱"}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${c.text};">${appName}</div>${appDesc ? `<div style="font-size:11px;color:${c.textSec};margin-top:2px;">${appDesc}</div>` : ""}</div><div style="font-size:10px;color:${c.textTer || c.textSec};flex-shrink:0;"><div>小程序</div><div style="margin-top:2px;text-align:right;">→</div></div></div>`);
+        } else if (blockType === "vote") {
+          // Vote UI with options
+          const lines = tok.content ? tok.content.split(/[/／]/).map(s => s.trim()) : [];
+          // First line may contain the question (before ？ or ?)
+          let question = "请投票";
+          let opts = lines;
+          if (lines.length > 0 && (lines[0].includes("？") || lines[0].includes("?"))) {
+            const qParts = lines[0].split(/[？?]/);
+            question = qParts[0] + "？";
+            const remainOpts = qParts.slice(1).join("").trim();
+            opts = remainOpts ? [remainOpts, ...lines.slice(1)] : lines.slice(1);
+          } else if (lines.length > 1) {
+            question = lines[0];
+            opts = lines.slice(1);
+          }
+          const optHtml = opts.map((opt, oi) => {
+            const selected = oi === 0;
+            const optBg = selected ? (isDark ? c.surface : lc.bg) : "transparent";
+            const borderColor = selected ? c.primary : c.border;
+            return `<div style="margin-bottom:8px;padding:8px 14px;border-radius:2px;border:1px solid ${c.border};font-size:13px;color:${c.text};display:flex;align-items:center;gap:10px;background:${optBg};"><span style="width:16px;height:16px;border-radius:50%;border:2px solid ${borderColor};flex-shrink:0;display:flex;align-items:center;justify-content:center;">${selected ? `<span style="width:8px;height:8px;border-radius:50%;background:${c.primary};"></span>` : ""}</span><span>${opt}</span>${selected ? `<span style="margin-left:auto;font-size:11px;color:${c.primary};font-weight:600;">42%</span>` : ""}</div>`;
+          }).join("");
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:16px;background:${isDark ? c.surface : '#fff'};"><div style="font-size:14px;font-weight:600;color:${c.text};margin-bottom:14px;line-height:1.6;">${question}</div>${optHtml}<div style="font-size:10px;color:${c.textTer || c.textSec};margin-top:8px;">微信原生投票 · 328人参与</div></div>`);
+        } else if (blockType === "collection") {
+          // Collection list with current highlight
+          const lines = tok.content ? tok.content.split(/[/／]/).map(s => s.trim()) : [];
+          let title = "合集";
+          let items = lines;
+          if (lines.length > 0 && lines[0].includes("：")) {
+            const titleParts = lines[0].split("：");
+            title = titleParts[0];
+            const rest = titleParts.slice(1).join("：").trim();
+            items = rest ? [rest, ...lines.slice(1)] : lines.slice(1);
+          }
+          const itemsHtml = items.map((item, ii) => {
+            const isCurrent = item.includes("本篇");
+            const itemBg = isCurrent ? (isDark ? c.surface : lc.bg) : "transparent";
+            return `<div style="padding:10px 16px;border-bottom:${ii < items.length - 1 ? `1px solid ${c.border}` : 'none'};display:flex;align-items:center;background:${itemBg};"><span style="font-size:13px;color:${isCurrent ? c.primary : c.text};font-weight:${isCurrent ? 600 : 400};flex:1;">${item}</span>${isCurrent ? `<span style="font-size:10px;color:${c.primary};">当前</span>` : ""}</div>`;
+          }).join("");
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:10px 16px;border-bottom:1px solid ${c.border};display:flex;align-items:center;gap:8px;"><span style="font-size:12px;font-weight:600;color:${c.primary};">📚 ${title}</span><span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;">${items.length}篇</span></div>${itemsHtml}</div>`);
+        } else if (blockType === "hashtag") {
+          // Colored tag group
+          const tags = tok.content ? tok.content.split(/\s+/).filter(t => t.startsWith("#")) : [];
+          if (tags.length === 0 && tok.content) {
+            tags.push(...tok.content.split(/\s+/));
+          }
+          const tagsHtml = tags.map(t => `<span style="font-size:13px;color:${c.primary};">${t}</span>`).join(" ");
+          parts.push(`<div style="margin:0 0 16px;"><div style="display:flex;gap:8px;flex-wrap:wrap;">${tagsHtml}</div><div style="font-size:9px;color:${c.textTer || c.textSec};margin-top:8px;padding:4px 8px;background:${isDark ? '#222' : '#f9f9f9'};border-radius:2px;">话题标签可被微信搜索索引，提升分发触达</div></div>`);
+        } else if (blockType === "card") {
+          // Info card per-theme — parse "key: value" lines or free-form content
+          const lines = tok.content ? tok.content.split("\n").map(s => s.trim()).filter(Boolean) : [];
+          if (theme.id === "academic") {
+            // Academic: data comparison card with title header + metric columns + footnote
+            // Format: first line = title, then "label value" pairs separated by /, last line starting with * = footnote
+            const title = lines[0] || "数据对比";
+            const footnote = lines.find(l => l.startsWith("*"));
+            const dataLine = lines.find(l => l.includes("/") && !l.startsWith("*") && l !== title);
+            let metricsHtml = "";
+            if (dataLine) {
+              const metrics = dataLine.split(/[/／]/).map(s => s.trim());
+              metricsHtml = metrics.map(m => {
+                const parts = m.split(/\s+/);
+                const value = parts.pop();
+                const label = parts.join(" ");
+                const isHighlight = m.includes("本文") || m.includes("本方法") || m.includes("★");
+                return `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:${isHighlight ? c.accent : c.primary};">${value}</div><div style="font-size:11px;color:${c.textSec};margin-top:4px;">${label}</div></div>`;
+              }).join("");
+            }
+            parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:10px 16px;border-bottom:1px solid ${c.border};"><span style="font-size:12px;font-weight:600;color:${c.primary};">${title}</span></div><div style="padding:16px;">${metricsHtml ? `<div style="display:flex;justify-content:space-between;margin-bottom:12px;">${metricsHtml}</div>` : ""}${footnote ? `<div style="font-size:11px;color:${c.textTer || c.textSec};border-top:1px solid ${c.border};padding-top:8px;">${footnote}</div>` : ""}</div></div>`);
+          } else if (theme.id === "industry") {
+            // Industry: news card with tag + date + title + description
+            const tag = lines[0] || "动态";
+            const date = lines.find(l => /^\d/.test(l)) || "";
+            const title = lines.find((l, i) => i > 0 && !(/^\d/.test(l)) && !l.startsWith("*")) || "";
+            const desc = lines.slice(lines.indexOf(title) + 1).filter(l => !(/^\d/.test(l))).join(" ");
+            parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:16px;background:${isDark ? c.surface : lc.bg};"><div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:11px;padding:2px 8px;background:${c.primary};color:#fff;border-radius:2px;">${tag}</span>${date ? `<span style="font-size:11px;color:${c.textTer || c.textSec};">${date}</span>` : ""}</div>${title ? `<div style="font-size:15px;font-weight:600;color:${c.text};margin-bottom:8px;line-height:1.5;">${title}</div>` : ""}${desc ? `<div style="font-size:13px;color:${c.textSec};line-height:1.7;text-align:justify;">${desc}</div>` : ""}</div>`);
+          } else if (theme.id === "tech") {
+            // Tech: spec/requirements card with key-value pairs
+            // Format: first line = header, then "key: value" or "key value" pairs
+            const header = lines[0] || "⚙️ 环境要求";
+            const kvLines = lines.slice(1);
+            const kvHtml = kvLines.map(l => {
+              const sep = l.includes("：") ? "：" : l.includes(":") ? ":" : " ";
+              const idx = l.indexOf(sep);
+              const k = idx > 0 ? l.slice(0, idx).trim() : l;
+              const v = idx > 0 ? l.slice(idx + sep.length).trim() : "";
+              return `<div style="display:flex;font-size:13px;margin-bottom:6px;"><span style="font-family:Consolas,monospace;color:${c.primary};font-weight:600;width:70px;flex-shrink:0;">${k}</span><span style="color:${c.text};">${v}</span></div>`;
+            }).join("");
+            parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:8px 16px;border-bottom:1px solid ${c.border};"><span style="font-family:Consolas,monospace;font-size:12px;color:${c.primary};font-weight:600;">${header}</span></div><div style="padding:12px 16px;">${kvHtml}</div></div>`);
+          } else {
+            // Story: profile card
+            const label = lines[0] || "人物档案";
+            const contentLines = lines.slice(1);
+            const contentHtml = contentLines.map((l, i) => {
+              if (i === 0) return `<strong>${l}</strong>`;
+              return `<div style="font-size:13px;color:${c.textSec};${i > 1 ? 'margin-top:4px;' : ''}">${l}</div>`;
+            }).join("");
+            parts.push(`<div style="margin:0 0 16px;background:${isDark ? c.surface : lc.bg};border-radius:2px;padding:20px 24px;"><div style="font-size:11px;color:${c.accent};letter-spacing:2px;margin-bottom:12px;">${label}</div><div style="font-size:15px;color:${c.text};line-height:2;">${contentHtml}</div></div>`);
+          }
+        } else if (blockType === "cta") {
+          // CTA per-theme
+          const ctaText = tok.content || "";
+          if (theme.id === "story") {
+            parts.push(`<div style="text-align:center;padding:20px 0;margin:0 0 16px;"><p style="font-size:14px;color:${c.textSec};margin-bottom:16px;">如果这个故事触动了你</p><div style="display:inline-block;padding:10px 32px;border:1px solid ${c.primary};color:${c.primary};font-size:13px;border-radius:2px;letter-spacing:2px;">分享给 TA</div></div>`);
+          } else if (theme.id === "industry") {
+            parts.push(`<div style="background:${c.primary};border-radius:2px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;"><div><div style="font-size:14px;color:#fff;font-weight:600;">订阅周报</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">每周一早8点推送</div></div><div style="padding:6px 18px;background:#fff;color:${c.primary};font-size:12px;border-radius:2px;font-weight:600;flex-shrink:0;">关注</div></div>`);
+          } else if (theme.id === "tech") {
+            parts.push(`<div style="border:1px solid ${c.border};border-radius:2px;padding:14px 18px;margin:0 0 16px;"><div style="font-size:13px;color:${c.text};margin-bottom:10px;"><span style="font-family:Consolas,monospace;color:${c.primary};">📦</span> 完整代码已开源</div><div style="background:${isDark ? c.surface : lc.bg};padding:8px 14px;border-radius:2px;font-family:Consolas,monospace;font-size:12px;color:${c.primary};word-break:break-all;">${ctaText || "github.com/example/onnx-arm-deploy"}</div><div style="margin-top:12px;display:flex;gap:10px;"><span style="padding:5px 14px;background:${c.primary};color:#fff;font-size:12px;border-radius:2px;">⭐ Star</span><span style="padding:5px 14px;border:1px solid ${c.primary};color:${c.primary};font-size:12px;border-radius:2px;">阅读原文</span></div></div>`);
+          } else {
+            // academic
+            parts.push(`<div style="text-align:center;padding:16px 0;margin:0 0 16px;"><div style="font-size:12px;color:${c.textSec};margin-bottom:12px;">${ctaText || "获取全部引用论文及数据集"}</div><div style="display:inline-block;padding:8px 28px;background:${c.primary};color:#fff;font-size:13px;border-radius:2px;">阅读原文 →</div></div>`);
+          }
+        } else if (blockType === "footer") {
+          // Footer area
+          const taglines = { academic: "深度 · 前瞻 · 严谨", industry: "洞察 · 趋势 · 时效", tech: "实践 · 原理 · 工具", story: "温度 · 叙事 · 人文" };
+          parts.push(`<div style="border-top:1px solid ${c.border};padding-top:16px;margin:16px 0 0;"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:600;color:${c.text};">公众号名称</div><div style="font-size:11px;color:${c.textSec};margin-top:4px;">${taglines[theme.id] || ""}</div></div><div style="width:48px;height:48px;background:${isDark ? c.surface : lc.bg};border:1px solid ${c.border};border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.textTer || c.textSec};">二维码</div></div><div style="margin-top:12px;font-size:11px;color:${c.textSec};">往期：<span style="color:${c.primary};">《工业视觉年度综述》</span> · <span style="color:${c.primary};">《边缘AI部署》</span></div><div style="margin-top:10px;font-size:10px;color:${c.textTer || c.textSec};">© 2025 公众号名称 · 转载请联系授权</div></div>`);
+        } else if (blockType === "readmore") {
+          // Readmore per-theme
+          const readmoreTexts = {
+            tech: { main: "点击下方「阅读原文」获取完整代码仓库", sub: "github.com/example/onnx-arm-deploy" },
+            academic: { main: "点击「阅读原文」下载论文PDF及补充材料", sub: null },
+            industry: { main: "阅读原文查看完整行业报告", sub: "↓ ↓ ↓" },
+            story: { main: "了解更多「产线上的人」系列故事", sub: null },
+          };
+          const rm = readmoreTexts[theme.id] || readmoreTexts.academic;
+          const customText = tok.content ? tok.content.trim() : null;
+          const mainText = customText || rm.main;
+          parts.push(`<div style="text-align:center;padding:16px 0 8px;border-top:1px solid ${c.border};margin:0 0 16px;"><div style="font-size:13px;color:${c.text};margin-bottom:6px;${theme.id === 'story' ? 'font-style:italic;' : ''}">${theme.id === 'tech' ? `<span style="font-family:monospace;color:${c.primary};">→ </span>` : ''}${mainText}</div>${rm.sub ? `<div style="font-size:11px;color:${theme.id === 'tech' ? (c.textTer || c.textSec) : c.accent};${theme.id === 'tech' ? 'font-family:monospace;' : ''}">${rm.sub}</div>` : `<div style="width:${theme.id === 'story' ? 30 : 40}px;height:${theme.id === 'story' ? 1 : 2}px;background:${theme.id === 'story' ? c.accent : c.primary};margin:6px auto 0;border-radius:1px;"></div>`}</div>`);
+        } else if (blockType === "label") {
+          // Section label — matches JSX fullpage mode labels
+          const labelText = tok.content ? tok.content.trim() : "";
+          const isNew = labelText.includes("[N]");
+          const cleanLabel = labelText.replace("[N]", "").trim();
+          parts.push(`<div style="font-size:9px;color:${isDark ? '#555' : '#bbb'};letter-spacing:2px;margin:20px 0 8px;display:flex;align-items:center;gap:4px;">${cleanLabel}${isNew ? '<span style="font-size:7px;padding:0 3px;background:#e74c3c;color:#fff;border-radius:2px;font-weight:600;line-height:14px;">N</span>' : ''}</div>`);
+        } else if (blockType === "note") {
+          // Note/tip (generic)
+          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${cardBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:0;"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>&nbsp; ${tok.content ? inlineFormat(tok.content, theme, isDark) : ""}</p></blockquote>`);
+        } else {
+          // Fallback: generic custom block
+          const label = `📦 ${tok.block}`;
+          const hint = "此组件需在公众号后台手动配置";
+          parts.push(`<div style="margin:0 0 16px;padding:14px 18px;background:${cardBg};border:1px dashed ${c.border};border-radius:2px;"><div style="font-size:13px;font-weight:600;color:${c.primary};margin-bottom:6px;">${label}</div>${tok.content ? `<div style="font-size:13px;color:${c.text};line-height:1.6;margin-bottom:8px;">${inlineFormat(tok.content, theme, isDark)}</div>` : ""}<div style="font-size:11px;color:${c.textSec};font-style:italic;">${hint}</div></div>`);
+        }
+        break;
+      }
+      default: break;
+    }
+  }
+  return parts.join("\n");
+}
+
+// ============================================================
+// DEFAULT MARKDOWN CONTENT — per theme, matching components.jsx
+// ============================================================
+const DEFAULT_MDS = {
+academic: `:::label
+文章头部区
+:::
+
+# 基于Transformer架构的工业异常检测：从注意力机制到实时部署
+
+> 本文系统综述了Transformer在工业视觉检测领域的最新进展，涵盖模型压缩、边缘推理及产线验证。
+
+:::label
+正文排版
+:::
+
+在工业质检场景中，传统的基于规则的视觉检测方法正面临越来越大的挑战。**产品迭代速度加快**意味着缺陷模式不断变化，[1]而人工标注的成本居高不下。近年来，~~无监督异常检测~~展现出了突破性潜力。
+
+本文将逐一拆解关键障碍，并给出[经实际验证的解决路径](https://example.com)。
+
+:::label
+二/三级标题
+:::
+
+## 2. 方法论与实验设计
+
+### 2.1 数据集构建与预处理
+
+:::label
+引用块
+:::
+
+> **研究者注：**该结论基于MVTec AD数据集验证，尚未大规模产线测试。
+
+:::label
+信息卡片
+:::
+
+:::card
+表1：主流方法性能对比
+PatchCore 99.1% / EfficientAD 98.8% / ★本文方法 99.6%
+* AUROC指标，15类缺陷加权平均
+:::
+
+:::label
+列表样式
+:::
+
+- 异常检测精度提升至99.1%
+- 推理延迟降至12ms/帧
+- 误报率控制在0.3%以下
+
+:::label
+分割线
+:::
+
+---
+
+:::label
+图片与图注
+:::
+
+![图3：各缺陷类型AUROC对比](https://example.com/chart.png)
+
+:::label
+代码/公式块
+:::
+
+\`\`\`python
+# 加载量化模型
+import onnxruntime as ort
+sess = ort.InferenceSession("model_int8.onnx")
+\`\`\`
+
+:::label
+表格
+:::
+
+| 指标 | 基线 | 优化后 | 提升 |
+| --- | --- | --- | --- |
+| 推理延迟 | 48ms | 12ms | ↓75% |
+| 模型体积 | 340MB | 42MB | ↓88% |
+| AUROC | 98.1% | 99.6% | ↑1.5% |
+
+:::label
+行动引导
+:::
+
+:::cta
+获取全部引用论文及数据集
+:::
+
+:::label
+文末固定区
+:::
+
+:::footer
+:::
+
+:::label
+音视频嵌入 [N]
+:::
+
+:::media
+作者语音解读论文核心 / 实验过程全记录
+:::
+
+:::label
+小程序卡片 [N]
+:::
+
+:::miniapp
+论文数据集浏览器 — 在线查看MVTec AD数据集
+:::
+
+:::label
+话题标签 [N]
+:::
+
+:::hashtag
+#工业异常检测 #Transformer #视觉质检
+:::
+
+:::label
+合集导航 [N]
+:::
+
+:::collection
+工业AI前沿综述系列：Vol.35 缺陷生成与数据增强 / Vol.36 联邦学习在质检中的应用 / Vol.37 Transformer异常检测（本篇）
+:::
+
+:::label
+投票互动 [N]
+:::
+
+:::vote
+你认为工业异常检测最大的落地瓶颈是？标注数据不足 / 推理速度 / 泛化能力 / 部署复杂
+:::
+
+:::label
+阅读原文引导 [N]
+:::
+
+:::readmore
+:::`,
+
+industry: `:::label
+文章头部区
+:::
+
+# 本周AI+工控领域五大事件速览
+
+:::label
+正文排版
+:::
+
+在工业质检场景中，传统的基于规则的视觉检测方法正面临越来越大的挑战。**产品迭代速度加快**意味着缺陷模式不断变化，而人工标注的成本居高不下。近年来，~~无监督异常检测~~展现出了突破性潜力。
+
+本文将逐一拆解关键障碍，并给出[经实际验证的解决路径](https://example.com)。
+
+:::label
+二/三级标题
+:::
+
+## 融资与并购
+
+### 西门子收购AI初创公司
+
+:::label
+引用块
+:::
+
+> **关键信息：**工信部新规将于2026年Q1实施，涉及工业AI安全认证。
+
+:::label
+信息卡片
+:::
+
+:::card
+融资
+12月13日
+某工业AI公司完成B轮2.5亿融资
+红杉中国领投，用于扩大制造业AI质检覆盖......
+:::
+
+:::label
+列表样式
+:::
+
+- 异常检测精度提升至99.1%
+- 推理延迟降至12ms/帧
+- 误报率控制在0.3%以下
+
+:::label
+分割线
+:::
+
+---
+
+:::label
+图片与图注
+:::
+
+![图：2025世界智能制造大会](https://example.com/event.jpg)
+
+:::label
+代码/公式块
+:::
+
+\`\`\`python
+# 加载量化模型
+import onnxruntime as ort
+sess = ort.InferenceSession("model_int8.onnx")
+\`\`\`
+
+:::label
+表格
+:::
+
+| 指标 | 基线 | 优化后 | 提升 |
+| --- | --- | --- | --- |
+| 推理延迟 | 48ms | 12ms | ↓75% |
+| 模型体积 | 340MB | 42MB | ↓88% |
+| AUROC | 98.1% | 99.6% | ↑1.5% |
+
+:::label
+行动引导
+:::
+
+:::cta
+:::
+
+:::label
+文末固定区
+:::
+
+:::footer
+:::
+
+:::label
+音视频嵌入 [N]
+:::
+
+:::media
+本期行业播客速览 / 工厂智能化改造实录
+:::
+
+:::label
+小程序卡片 [N]
+:::
+
+:::miniapp
+AI+工控产业地图 — 完整行业图谱与公司信息
+:::
+
+:::label
+话题标签 [N]
+:::
+
+:::hashtag
+#AI融资 #工业4.0 #智能制造
+:::
+
+:::label
+合集导航 [N]
+:::
+
+:::collection
+AI+工控周报合集：第49期 12月第1周 / 第50期 12月第2周 / 第51期 12月第3周（本篇）
+:::
+
+:::label
+投票互动 [N]
+:::
+
+:::vote
+2026最值得关注的AI+工控方向？具身智能 / 数字孪生 / 预测性维护 / 协作机器人
+:::
+
+:::label
+阅读原文引导 [N]
+:::
+
+:::readmore
+:::`,
+
+tech: `:::label
+文章头部区
+:::
+
+# ONNX Runtime在ARM边缘设备上的量化部署实战
+
+:::label
+正文排版
+:::
+
+在工业质检场景中，传统的基于规则的视觉检测方法正面临越来越大的挑战。**产品迭代速度加快**意味着缺陷模式不断变化，而人工标注的成本居高不下。近年来，~~无监督异常检测~~展现出了突破性潜力。
+
+本文将逐一拆解关键障碍，并给出[经实际验证的解决路径](https://example.com)。
+
+:::label
+二/三级标题
+:::
+
+## 环境配置与依赖安装
+
+### Step 1: 交叉编译工具链
+
+:::label
+引用块
+:::
+
+> 💡 提示：ARM v8架构建议直接使用预编译包，可跳过本节。
+
+:::label
+信息卡片
+:::
+
+:::card
+⚙️ 环境要求
+OS：Ubuntu 20.04+
+Python：3.8 - 3.11
+RAM：≥ 4GB
+:::
+
+:::label
+列表样式
+:::
+
+1. 使用ONNX导出PyTorch模型
+2. 执行INT8动态量化
+3. 在ARM设备上进行基准测试
+
+:::label
+分割线
+:::
+
+---
+
+:::label
+图片与图注
+:::
+
+![图：ONNX Runtime推理流程](https://example.com/arch.png)
+
+:::label
+代码/公式块
+:::
+
+\`\`\`python
+# 加载量化模型
+import onnxruntime as ort
+sess = ort.InferenceSession("model_int8.onnx")
+\`\`\`
+
+:::label
+表格
+:::
+
+| 指标 | 基线 | 优化后 | 提升 |
+| --- | --- | --- | --- |
+| 推理延迟 | 48ms | 12ms | ↓75% |
+| 模型体积 | 340MB | 42MB | ↓88% |
+| AUROC | 98.1% | 99.6% | ↑1.5% |
+
+:::label
+行动引导
+:::
+
+:::cta
+github.com/example/onnx-arm-deploy
+:::
+
+:::label
+文末固定区
+:::
+
+:::footer
+:::
+
+:::label
+音视频嵌入 [N]
+:::
+
+:::media
+技术播客：边缘部署踩坑记 / ONNX模型转换流程演示
+:::
+
+:::label
+小程序卡片 [N]
+:::
+
+:::miniapp
+代码演示环境 — 在线运行本文代码示例
+:::
+
+:::label
+话题标签 [N]
+:::
+
+:::hashtag
+#ONNX部署 #模型量化 #边缘计算
+:::
+
+:::label
+合集导航 [N]
+:::
+
+:::collection
+边缘部署实战系列：① 模型选型与压缩 / ② 量化与ONNX转换 / ③ ARM设备部署（本篇）
+:::
+
+:::label
+投票互动 [N]
+:::
+
+:::vote
+边缘部署最常遇到的问题？内存溢出 / 精度损失 / 编译配置 / 性能不达标
+:::
+
+:::label
+阅读原文引导 [N]
+:::
+
+:::readmore
+:::`,
+
+story: `:::label
+文章头部区
+:::
+
+# 「我花了八年，让产线学会自己思考」
+
+*一位从学术界转投制造业的AI工程师，和她在噪声、粉尘与数据之间走过的路。*
+
+:::label
+正文排版
+:::
+
+在工业质检场景中，传统的基于规则的视觉检测方法正面临越来越大的挑战。**产品迭代速度加快**意味着缺陷模式不断变化，而人工标注的成本居高不下。近年来，~~无监督异常检测~~展现出了突破性潜力。
+
+本文将逐一拆解关键障碍，并给出[经实际验证的解决路径](https://example.com)。
+
+:::label
+二/三级标题
+:::
+
+## 从实验室到车间
+
+### 「那是我第一次站在产线旁边调参数」
+
+:::label
+引用块
+:::
+
+> 你不能只看数据。你得听机器的声音，感受车间的温度。
+> —— 张薇，某汽车零部件厂AI负责人
+
+:::label
+信息卡片
+:::
+
+:::card
+人物档案
+张薇
+清华自动化系博士 → AI总监
+深耕工业视觉8年，主导3条产线改造
+:::
+
+:::label
+列表样式
+:::
+
+- 2015年：首次进车间调试
+- 2019年：首条AI质检产线
+- 2023年：团队扩至30人
+
+:::label
+分割线
+:::
+
+---
+
+:::label
+图片与图注
+:::
+
+![摄于2023年，某工厂产线旁](https://example.com/portrait.jpg)
+
+:::label
+代码/公式块
+:::
+
+\`\`\`python
+# 加载量化模型
+import onnxruntime as ort
+sess = ort.InferenceSession("model_int8.onnx")
+\`\`\`
+
+:::label
+表格
+:::
+
+| 指标 | 基线 | 优化后 | 提升 |
+| --- | --- | --- | --- |
+| 推理延迟 | 48ms | 12ms | ↓75% |
+| 模型体积 | 340MB | 42MB | ↓88% |
+| AUROC | 98.1% | 99.6% | ↑1.5% |
+
+:::label
+行动引导
+:::
+
+:::cta
+:::
+
+:::label
+文末固定区
+:::
+
+:::footer
+:::
+
+:::label
+音视频嵌入 [N]
+:::
+
+:::media
+访谈：张薇讲述产线改造 / 工厂智能化改造实录
+:::
+
+:::label
+小程序卡片 [N]
+:::
+
+:::miniapp
+更多人物故事 — 工业AI人物访谈合集
+:::
+
+:::label
+话题标签 [N]
+:::
+
+:::hashtag
+#工业AI人物 #技术人生 #产线故事
+:::
+
+:::label
+合集导航 [N]
+:::
+
+:::collection
+「产线上的人」系列：01 从博士到车间主任 / 02 90后女工程师的八年 / 03 算法团队的冬天（本篇）
+:::
+
+:::label
+投票互动 [N]
+:::
+
+:::vote
+最想听哪类人物的故事？一线算法工程师 / 工厂技术主管 / 学术转产业 / 创业者
+:::
+
+:::label
+阅读原文引导 [N]
+:::
+
+:::readmore
+:::`,
+};
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function WeChatTypesetter() {
+  const [themeId, setThemeId] = useState("academic");
+  const [md, setMd] = useState(DEFAULT_MDS["academic"]);
+  const [isDark, setIsDark] = useState(false);
+  const [spec, setSpec] = useState({ ...DEFAULT_SPEC });
+  const [tab, setTab] = useState("edit"); // mobile: edit | preview
+  const [copyMsg, setCopyMsg] = useState("");
+  const [showSource, setShowSource] = useState(false);
+  const [userEdited, setUserEdited] = useState(false);
+  const previewRef = useRef(null);
+  const editorRef = useRef(null);
+  const previewScrollRef = useRef(null);
+  const syncingRef = useRef(false); // prevents infinite loop
+
+  const theme = THEMES[themeId];
+
+  // Scroll sync: proportional scroll position mapping
+  const handleEditorScroll = useCallback(() => {
+    if (syncingRef.current) return;
+    const ed = editorRef.current;
+    const pv = previewScrollRef.current;
+    if (!ed || !pv) return;
+    const edMax = ed.scrollHeight - ed.clientHeight;
+    if (edMax <= 0) return;
+    const ratio = ed.scrollTop / edMax;
+    const pvMax = pv.scrollHeight - pv.clientHeight;
+    syncingRef.current = true;
+    pv.scrollTop = ratio * pvMax;
+    requestAnimationFrame(() => { syncingRef.current = false; });
+  }, []);
+
+  const handlePreviewScroll = useCallback(() => {
+    if (syncingRef.current) return;
+    const ed = editorRef.current;
+    const pv = previewScrollRef.current;
+    if (!ed || !pv) return;
+    const pvMax = pv.scrollHeight - pv.clientHeight;
+    if (pvMax <= 0) return;
+    const ratio = pv.scrollTop / pvMax;
+    const edMax = ed.scrollHeight - ed.clientHeight;
+    syncingRef.current = true;
+    ed.scrollTop = ratio * edMax;
+    requestAnimationFrame(() => { syncingRef.current = false; });
+  }, []);
+
+  // When theme changes, load its default content unless user has manually edited
+  const handleThemeChange = useCallback((newId) => {
+    setThemeId(newId);
+    if (!userEdited) {
+      setMd(DEFAULT_MDS[newId]);
+    }
+  }, [userEdited]);
+
+  const handleMdChange = useCallback((e) => {
+    setMd(e.target.value);
+    setUserEdited(true);
+  }, []);
+
+  const handleResetContent = useCallback(() => {
+    setMd(DEFAULT_MDS[themeId]);
+    setUserEdited(false);
+  }, [themeId]);
+
+  const html = useMemo(() => {
+    const tokens = parseMarkdown(md);
+    return renderTokens(tokens, theme, spec, isDark);
+  }, [md, themeId, isDark, spec]);
+
+  const wrappedHtml = useMemo(() => {
+    const c = isDark ? theme.dark : theme.colors;
+    const bgColor = isDark ? c.bg : "#fff";
+    return `<div style="padding:${spec.pageMargin}px;background:${bgColor};max-width:100%;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;">${html}</div>`;
+  }, [html, spec.pageMargin, isDark, theme]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      const blob = new Blob([wrappedHtml], { type: "text/html" });
+      const textBlob = new Blob([wrappedHtml], { type: "text/plain" });
+      await navigator.clipboard.write([
+        new ClipboardItem({ "text/html": blob, "text/plain": textBlob })
+      ]);
+      setCopyMsg("✓ 已复制富文本");
+    } catch (e) {
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = wrappedHtml;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopyMsg("✓ 已复制HTML源码");
+    }
+    setTimeout(() => setCopyMsg(""), 2000);
+  }, [wrappedHtml]);
+
+  const tc = isDark ? theme.dark : theme.colors;
+  const uiBg = isDark ? "#111" : "#f4f4f5";
+  const uiPanel = isDark ? "#1a1a1a" : "#fff";
+  const uiBorder = isDark ? "#333" : "#e0e0e0";
+  const uiText = isDark ? "#ccc" : "#333";
+  const uiTextSec = isDark ? "#888" : "#888";
+
+  return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: uiBg, fontFamily: "-apple-system, 'PingFang SC', sans-serif", color: uiText, overflow: "hidden" }}>
+      {/* ===== TOP BAR ===== */}
+      <div style={{ background: isDark ? "#0a0a0a" : "#fff", borderBottom: `1px solid ${uiBorder}`, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
+        {/* Theme pills */}
+        <div style={{ display: "flex", gap: 4 }}>
+          {Object.values(THEMES).map(t => (
+            <button key={t.id} onClick={() => handleThemeChange(t.id)} style={{
+              border: themeId === t.id ? `2px solid ${t.colors.primary}` : `1px solid ${uiBorder}`,
+              background: themeId === t.id ? (isDark ? t.dark.surface : t.colors.bg) : "transparent",
+              color: themeId === t.id ? t.colors.primary : uiTextSec,
+              padding: "4px 10px", fontSize: 12, borderRadius: 2, cursor: "pointer", fontWeight: themeId === t.id ? 600 : 400,
+            }}>
+              {t.icon} {t.name}
+            </button>
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
+        {/* Dark toggle */}
+        <button onClick={() => setIsDark(!isDark)} style={{ border: `1px solid ${uiBorder}`, background: isDark ? "#333" : "#f5f5f5", color: uiText, padding: "4px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer" }}>
+          {isDark ? "☀" : "🌙"}
+        </button>
+        {/* Copy */}
+        <button onClick={handleCopy} style={{ border: "none", background: theme.colors.primary, color: "#fff", padding: "5px 14px", fontSize: 12, borderRadius: 2, cursor: "pointer", fontWeight: 600, position: "relative" }}>
+          {copyMsg || "复制富文本"}
+        </button>
+        {/* Source toggle */}
+        <button onClick={() => setShowSource(!showSource)} style={{ border: `1px solid ${uiBorder}`, background: showSource ? theme.colors.primary : "transparent", color: showSource ? "#fff" : uiTextSec, padding: "4px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer" }}>
+          {"</>"}
+        </button>
+      </div>
+
+      {/* ===== SPEC BAR ===== */}
+      <div style={{ background: isDark ? "#151515" : "#fafafa", borderBottom: `1px solid ${uiBorder}`, padding: "6px 12px", display: "flex", gap: 16, alignItems: "center", flexShrink: 0, overflowX: "auto" }}>
+        {[
+          { label: "字号", key: "fontSize", min: 13, max: 18, unit: "px" },
+          { label: "行高", key: "lineHeight", min: 1.5, max: 2.2, step: 0.05, unit: "x" },
+          { label: "字距", key: "letterSpacing", min: 0, max: 2, step: 0.5, unit: "px" },
+          { label: "边距", key: "pageMargin", min: 0, max: 24, unit: "px" },
+        ].map(({ label, key, min, max, step, unit }) => (
+          <div key={key} style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: uiTextSec, whiteSpace: "nowrap" }}>{label}</span>
+            <input
+              type="range" min={min} max={max} step={step || 1}
+              value={spec[key]}
+              onChange={e => setSpec(s => ({ ...s, [key]: parseFloat(e.target.value) }))}
+              style={{ width: 60, accentColor: theme.colors.primary }}
+            />
+            <span style={{ fontSize: 11, color: uiText, fontFamily: "monospace", minWidth: 32 }}>{spec[key]}{unit}</span>
+          </div>
+        ))}
+        <button onClick={() => setSpec({ ...DEFAULT_SPEC })} style={{ border: `1px solid ${uiBorder}`, background: "transparent", color: uiTextSec, padding: "2px 8px", fontSize: 10, borderRadius: 2, cursor: "pointer", flexShrink: 0 }}>重置参数</button>
+        {userEdited && <button onClick={handleResetContent} style={{ border: `1px solid ${uiBorder}`, background: "transparent", color: uiTextSec, padding: "2px 8px", fontSize: 10, borderRadius: 2, cursor: "pointer", flexShrink: 0 }}>重置内容</button>}
+      </div>
+
+      {/* ===== MOBILE TAB SWITCHER ===== */}
+      <div className="mobile-tabs" style={{ display: "none", borderBottom: `1px solid ${uiBorder}`, background: uiPanel }}>
+        {["edit", "preview"].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, border: "none", background: "none", padding: "10px", fontSize: 13, fontWeight: tab === t ? 600 : 400, color: tab === t ? theme.colors.primary : uiTextSec, borderBottom: tab === t ? `2px solid ${theme.colors.primary}` : "2px solid transparent", cursor: "pointer" }}>
+            {t === "edit" ? "✏️ 编辑" : "👁 预览"}
+          </button>
+        ))}
+      </div>
+
+      {/* ===== MAIN CONTENT ===== */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+        {/* Editor */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", borderRight: `1px solid ${uiBorder}`, minWidth: 0 }}>
+          <div style={{ padding: "6px 12px", fontSize: 11, color: uiTextSec, background: isDark ? "#151515" : "#fafafa", borderBottom: `1px solid ${uiBorder}`, flexShrink: 0, display: "flex", justifyContent: "space-between" }}>
+            <span>Markdown</span>
+            <span>{md.length} 字符</span>
+          </div>
+          <textarea
+            ref={editorRef}
+            value={md}
+            onChange={handleMdChange}
+            onScroll={handleEditorScroll}
+            spellCheck={false}
+            style={{
+              flex: 1, display: "block", width: "100%",
+              border: "none", outline: "none", resize: "none",
+              padding: "12px 14px", fontSize: 13, lineHeight: 1.7,
+              fontFamily: "'SF Mono', Consolas, 'Liberation Mono', monospace",
+              background: isDark ? "#1a1a1a" : "#fff",
+              color: isDark ? "#d4d4d4" : "#1e1e1e",
+              boxSizing: "border-box", overflowY: "auto",
+            }}
+          />
+        </div>
+
+        {/* Preview */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", background: uiBg, minWidth: 0 }}>
+          <div style={{ padding: "6px 12px", fontSize: 11, color: uiTextSec, background: isDark ? "#151515" : "#fafafa", borderBottom: `1px solid ${uiBorder}`, flexShrink: 0, display: "flex", justifyContent: "space-between" }}>
+            <span>{isDark ? "🌙 深色预览" : "预览"} · {theme.name}</span>
+            <span>375px</span>
+          </div>
+          <div
+            ref={previewScrollRef}
+            onScroll={handlePreviewScroll}
+            style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "12px 8px" }}
+          >
+            {showSource ? (
+              <pre style={{
+                width: "100%", maxWidth: 500, margin: "0 auto",
+                background: isDark ? "#1a1a1a" : "#fff",
+                border: `1px solid ${uiBorder}`, borderRadius: 4,
+                padding: 14, fontSize: 11, lineHeight: 1.6,
+                color: isDark ? "#d4d4d4" : "#333",
+                fontFamily: "Consolas, monospace", whiteSpace: "pre-wrap", wordBreak: "break-all",
+              }}>
+                {wrappedHtml}
+              </pre>
+            ) : (
+              <div style={{
+                width: 375, maxWidth: "100%", margin: "0 auto",
+                background: isDark ? theme.dark.bg : "#fff",
+                borderRadius: 12,
+                boxShadow: isDark ? "0 0 0 1px #333" : "0 4px 24px rgba(0,0,0,0.08)",
+              }}>
+                {/* Phone status bar */}
+                <div style={{ height: 28, background: isDark ? "#000" : "#f8f8f8", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px 12px 0 0", position: "sticky", top: 0, zIndex: 1 }}>
+                  <span style={{ fontSize: 9, color: isDark ? "#666" : "#999" }}>微信公众号文章预览</span>
+                </div>
+                <div
+                  ref={previewRef}
+                  dangerouslySetInnerHTML={{ __html: wrappedHtml }}
+                />
+                {/* Bottom padding for scroll comfort */}
+                <div style={{ height: 40 }} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== SYNTAX HELP ===== */}
+      <div style={{ background: isDark ? "#0a0a0a" : "#fff", borderTop: `1px solid ${uiBorder}`, padding: "5px 12px", fontSize: 10, color: uiTextSec, display: "flex", gap: 12, overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span><b style={{ color: uiText }}>基础元素</b></span>
+        <span># 文章头部区</span>
+        <span>正文段落</span>
+        <span>## / ### 标题</span>
+        <span>&gt; 引用块</span>
+        <span>- / 1. 列表</span>
+        <span>--- 分割线</span>
+        <span>![] 图片与图注</span>
+        <span>``` 代码块</span>
+        <span>| 表格</span>
+        <span style={{ color: uiBorder }}>│</span>
+        <span><b style={{ color: uiText }}>扩展组件</b></span>
+        <span>:::card 信息卡片</span>
+        <span>:::cta 行动引导</span>
+        <span>:::footer 文末区</span>
+        <span>:::media 音视频</span>
+        <span>:::miniapp 小程序</span>
+        <span>:::hashtag 话题标签</span>
+        <span>:::collection 合集导航</span>
+        <span>:::vote 投票互动</span>
+        <span>:::readmore 阅读原文</span>
+        <span>:::note 提示</span>
+        <span style={{ marginLeft: "auto", color: theme.colors.primary }}>所有样式均为内联，可直接粘贴至公众号后台</span>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(WeChatTypesetter));
+</script>
+</body>
+</html>
