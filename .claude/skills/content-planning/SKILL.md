@@ -2,7 +2,9 @@
 name: content-planning
 description: >
   内容排期 — 基于栏目频率、发布历史和运营记忆生成内容日历。
-  触发条件："排期"、"内容日历"、"本月计划"、"这周写什么"、"/content-plan"。
+  触发条件："排期"、"内容日历"、"本月计划"、"这周写什么"。
+  当用户询问写什么、安排发布计划、查看内容规划时，应触发此 skill。
+allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # 内容排期

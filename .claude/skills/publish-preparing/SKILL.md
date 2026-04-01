@@ -2,7 +2,10 @@
 name: publish-preparing
 description: >
   发布准备 — 根据当前文章和栏目生成发布前/后检查清单。
-  触发条件："发布提醒"、"运营清单"、"发布前检查"、"/publish-prepare"。
+  触发条件："发布提醒"、"运营清单"、"发布前检查"。
+  当用户准备发布文章、需要发布流程指引或运营待办时，应触发此 skill。
+argument-hint: "[文章 slug]"
+allowed-tools: Read, Glob, Grep, AskUserQuestion
 ---
 
 # 发布准备清单

@@ -8,7 +8,7 @@ LLM 辅助内容创作工作流框架，基于 Claude Code 原生能力（subage
 |------|------|
 | 项目配置 + 阶段 + 校验规则 | `.inkflow.yaml` |
 | Agent 定义 | `.claude/agents/*.md`（RCCF 结构） |
-| Skill 定义 | `.claude/skills/{common,domains}/**/SKILL.md` |
+| Skill 定义 | `.claude/skills/*/SKILL.md` |
 | 约束规则 | `.claude/rules/{core,domains}/*.md` |
 | 栏目统一配置（视觉+业务） | `styles/default/columns.yaml` |
 | Markdown 扩展语法 | `styles/default/markdown-extensions.md` |

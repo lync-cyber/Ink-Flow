@@ -3,6 +3,8 @@ name: title-crafting
 description: >
   标题打磨 — 校验标题是否符合长度限制和价值标准，不合格时提供备选方案。
   由 pipeline 在 outline 阶段完成后、Checkpoint 1 前执行。
+user-invocable: false
+disable-model-invocation: true
 ---
 
 ## 标题质量门禁

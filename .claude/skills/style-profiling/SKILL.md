@@ -3,8 +3,10 @@ name: style-profiling
 description: >
   风格提取 — 分析参考文章，提取七维度结构化风格 DNA，生成 style-profile.md。
   首次使用 InkFlow 或更换写作风格时执行。
-  触发条件："分析风格"、"提取风格 DNA"、"创建风格档案"、"/style-profile"。
+  触发条件："分析风格"、"提取风格 DNA"、"创建风格档案"。
   当用户提到风格分析、写作风格、参考文章风格时，应触发此 skill。
+argument-hint: "[参考文章路径]"
+allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
 # 风格提取

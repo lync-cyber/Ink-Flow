@@ -3,8 +3,10 @@ name: style-studying
 description: >
   外部学习 — 分析用户提供的第三方参考材料（模范文章、流行模板、风格指南），
   与现有规则对比，输出可操作的改进建议并按确认写入对应文件。
-  触发条件："学习这篇文章"、"参考这个模板"、"进修"、"对标这篇"、"学习"。
-  当用户提供外部参考材料或要求改善现有规则时，应触发此 skill。
+  触发条件："学习这篇文章"、"参考这个模板"、"进修"、"对标这篇"。
+  当用户提供外部参考材料或要求改善现有写作规则时，应触发此 skill。
+argument-hint: "[参考材料路径或 URL]"
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, AskUserQuestion
 ---
 
 # 外部学习
@@ -64,8 +66,8 @@ AskUserQuestion:
 - `styles/default/style-profile.md`（若存在）
 - `styles/default/columns.yaml`
 - `.claude/rules/domains/wechat-article/quality-redline.md`
-- `.claude/skills/domains/wechat-article/writing-guiding/SKILL.md`
-- `.claude/skills/domains/wechat-article/article-structuring/SKILL.md`
+- `.claude/skills/writing-guiding/SKILL.md`
+- `.claude/skills/article-structuring/SKILL.md`
 
 逐维度输出对比结果，每条建议标注：
 - **发现**: 参考材料中的具体做法（附原文引用）

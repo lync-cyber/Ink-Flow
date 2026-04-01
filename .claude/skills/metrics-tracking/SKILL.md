@@ -2,7 +2,10 @@
 name: metrics-tracking
 description: >
   数据追踪 — 录入文章发布后的运营数据，与历史数据做基础对比。
-  触发条件："运营数据"、"录入数据"、"/metrics"、"阅读量多少"。
+  触发条件："运营数据"、"录入数据"、"阅读量多少"。
+  当用户要记录文章的阅读、分享、评论等运营指标时，应触发此 skill。
+argument-hint: "[文章 slug]"
+allowed-tools: Read, Write, Edit, Glob, AskUserQuestion
 ---
 
 # 运营数据追踪

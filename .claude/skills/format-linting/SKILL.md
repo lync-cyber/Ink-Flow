@@ -3,9 +3,9 @@ name: format-linting
 description: >
   格式校验 — 在 LLM 处理前运行确定性 lint 脚本，检查 Markdown 格式合规性。
   由 pipeline 在 publish 阶段的格式导出前执行。
-compatibility:
-  tools: [python]
-  scripts: [tools/markdown-lint/lint.py]
+user-invocable: false
+disable-model-invocation: true
+allowed-tools: Bash
 ---
 
 # 格式校验

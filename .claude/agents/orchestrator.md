@@ -18,10 +18,10 @@ skills:
 - `.inkflow.yaml` — 项目配置（stages、model_allocation、defaults）
 
 辅助参考文件（按需读取）：
-- `.claude/skills/common/pipeline-orchestrating/references/brief-template.md` — Brief frontmatter 模板
-- `.claude/skills/common/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案
-- `.claude/skills/common/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略
-- `.claude/skills/common/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
+- `.claude/skills/pipeline-orchestrating/references/brief-template.md` — Brief frontmatter 模板
+- `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案
+- `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略
+- `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
 
 ## 1. 初始化
 

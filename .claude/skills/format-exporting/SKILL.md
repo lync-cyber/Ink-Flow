@@ -3,8 +3,9 @@ name: format-exporting
 description: >
   格式导出 — 将终稿 Markdown 标准化为 typesetter 可消费格式，导出多格式。
   由 pipeline 在 publish 阶段执行。
-compatibility:
-  references: [tools/wechat-typesetter/index.html]
+user-invocable: false
+disable-model-invocation: true
+allowed-tools: Read, Write, Edit, Glob
 ---
 
 > 排版约束见 platform-base 和 wechat-platform rules。

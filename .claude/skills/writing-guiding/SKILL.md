@@ -3,6 +3,8 @@ name: writing-guiding
 description: >
   写作指导 — 栏目语气、正向替换、人味技巧和互动设计的统一指南。
   由 pipeline 在 draft 和 polish 阶段注入 writer/polisher agent。
+user-invocable: false
+disable-model-invocation: true
 ---
 
 ## 风格优先级

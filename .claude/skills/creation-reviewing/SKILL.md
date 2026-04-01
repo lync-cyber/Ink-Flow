@@ -2,9 +2,10 @@
 name: creation-reviewing
 description: >
   创作复盘 — 对比 AI 初稿与用户终审版，分类编辑修改，更新 agent 记忆。
-  触发条件："给反馈"、"复盘"、"/creation-review"、"文章发表后"。
-compatibility:
-  scripts: [.claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.py]
+  触发条件："给反馈"、"复盘"、"文章发表后"。
+  当用户完成文章编辑想回顾 AI 草稿与终稿差异、改进写作流程时，应触发此 skill。
+argument-hint: "[文章 slug]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
 # 创作复盘

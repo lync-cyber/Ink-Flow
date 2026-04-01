@@ -3,6 +3,8 @@ name: visual-theming
 description: >
   视觉主题 — 统一色板、组件规范、封面模板。从 columns.yaml 加载栏目色板，
   指导 outliner/illustrator/publish 阶段的视觉输出。
+user-invocable: false
+disable-model-invocation: true
 ---
 
 ## 品牌视觉系统

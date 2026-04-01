@@ -3,6 +3,8 @@ name: article-structuring
 description: >
   栏目结构 — 按 brief.content_column 注入对应文章骨架，指导 outliner 生成匹配栏目调性的结构。
   由 pipeline 在 outline 和 draft 阶段注入。
+user-invocable: false
+disable-model-invocation: true
 ---
 
 ## 栏目结构骨架

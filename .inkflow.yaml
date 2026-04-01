@@ -50,7 +50,7 @@ defaults:
 
 # 脚本路径
 scripts:
-  diff_extractor: .claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.py
+  diff_extractor: .claude/skills/pipeline-orchestrating/scripts/diff-extractor.py
 
 # 工作流阶段定义
 # validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
@@ -140,8 +140,7 @@ stages:
 # Skill 注册表
 registry:
   skills_paths:
-    - .claude/skills/common
-    - .claude/skills/domains/{domain}
+    - .claude/skills
 
 # 用户级覆盖（可选）
 # overrides:

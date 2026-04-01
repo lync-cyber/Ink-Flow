@@ -2,7 +2,9 @@
 name: performance-benchmarking
 description: >
   效果分析 — 对照各栏目 KPI 基准，做多维度交叉分析并提炼可操作建议。
-  触发条件："数据分析"、"KPI"、"表现怎么样"、"哪篇效果好"、"/performance"。
+  触发条件："数据分析"、"KPI"、"表现怎么样"、"哪篇效果好"。
+  当用户想了解文章表现、对比不同文章效果、优化运营策略时，应触发此 skill。
+allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # 运营效果分析

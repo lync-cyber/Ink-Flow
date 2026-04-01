@@ -3,6 +3,8 @@ name: opening-crafting
 description: >
   开篇策略 — 按 brief.opening_style 选择注入，优化"黄金 3 秒"开头。
   由 pipeline 在 draft 阶段、第一个 section 时注入 writer agent。
+user-invocable: false
+disable-model-invocation: true
 ---
 
 ## 开头策略
