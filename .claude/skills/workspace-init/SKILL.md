@@ -81,6 +81,7 @@ AskUserQuestion:
 ```bash
 # 从本地框架目录复制
 cp -r .claude/agents .claude/skills .claude/rules tools {target_dir}/
+cp .claude/settings.json {target_dir}/.claude/settings.json
 cp styles/default/columns.yaml styles/default/markdown-extensions.md {target_dir}/styles/default/
 cp tools/CLAUDE.content.md {target_dir}/CLAUDE.md
 ```
