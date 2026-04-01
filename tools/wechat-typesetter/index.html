@@ -19,6 +19,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });</script>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
@@ -119,13 +121,31 @@ function parseMarkdown(md) {
       tokens.push({ type: "ol", items });
       continue;
     }
-    // image
+    // image — markdown syntax
     const imgm = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
     if (imgm) { tokens.push({ type: "image", alt: imgm[1], src: imgm[2] }); i++; continue; }
+    // image — <img> HTML tag
+    const imgTag = line.match(/^<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i);
+    if (imgTag) {
+      const altM = line.match(/alt=["']([^"']*?)["']/i);
+      tokens.push({ type: "image", alt: altM ? altM[1] : "", src: imgTag[1] });
+      i++; continue;
+    }
+    // inline SVG block — collect until </svg>
+    if (line.trimStart().startsWith("<svg")) {
+      const svgLines = [line];
+      if (!line.includes("</svg>")) {
+        i++;
+        while (i < lines.length && !lines[i].includes("</svg>")) { svgLines.push(lines[i]); i++; }
+        if (i < lines.length) { svgLines.push(lines[i]); i++; }
+      } else { i++; }
+      tokens.push({ type: "svg", content: svgLines.join("\n") });
+      continue;
+    }
     // paragraph (collect consecutive lines)
     const para = [line];
     i++;
-    while (i < lines.length && lines[i].trim() !== "" && !lines[i].match(/^#{1,6}\s/) && !lines[i].trimStart().startsWith(">") && !lines[i].trimStart().startsWith("```") && !lines[i].trimStart().startsWith(":::") && !/^[-*_]{3,}\s*$/.test(lines[i].trim()) && !/^\s*[-*+]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i]) && !lines[i].match(/^!\[/)) {
+    while (i < lines.length && lines[i].trim() !== "" && !lines[i].match(/^#{1,6}\s/) && !lines[i].trimStart().startsWith(">") && !lines[i].trimStart().startsWith("```") && !lines[i].trimStart().startsWith(":::") && !/^[-*_]{3,}\s*$/.test(lines[i].trim()) && !/^\s*[-*+]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i]) && !lines[i].match(/^!\[/) && !lines[i].match(/^<img\s/i) && !lines[i].trimStart().startsWith("<svg")) {
       para.push(lines[i]);
       i++;
     }
@@ -323,7 +343,18 @@ function renderTokens(tokens, theme, spec, isDark) {
         parts.push(`<div style="margin:0 0 20px;text-align:center;"><img src="${tok.src}" alt="${tok.alt}" style="max-width:100%;border-radius:2px;" />${tok.alt ? `<p style="font-size:11px;color:${c.textTer || c.textSec};margin:8px 0 0;text-align:${captionAlign};${captionStyle}">${tok.alt}</p>` : ""}<div style="font-size:9px;color:${c.textTer || c.textSec};text-align:center;margin-top:4px;padding:4px 8px;background:${isDark ? '#2a2a2a' : '#f9f9f9'};border-radius:2px;line-height:1.5;">⚠ 使用透明底PNG，避免深色模式白边</div></div>`);
         break;
       }
+      case "svg": {
+        // Inline SVG — render directly with centered layout and max-width
+        parts.push(`<div style="margin:0 0 16px;text-align:center;overflow-x:auto;">${tok.content}</div>`);
+        break;
+      }
       case "code": {
+        // Mermaid code blocks — render as diagram placeholder with preview hint
+        if (tok.lang === "mermaid") {
+          const mermaidId = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;"><div style="background:${c.primary};padding:6px 14px;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,monospace;">mermaid</span></div><div id="${mermaidId}" class="mermaid-pending" style="padding:16px;background:${isDark ? '#1a1d23' : '#fff'};min-height:60px;text-align:center;">${escapeHtml(tok.content)}</div><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">💡 Mermaid 图表 — 导出到微信前需转为 SVG</div></div>`);
+          break;
+        }
         const headerBg = theme.id === "tech" ? c.primary : "#2c3e50";
         const escaped = escapeHtml(tok.content);
         const highlighted = highlightCode(escaped, tok.lang);
@@ -507,8 +538,58 @@ function renderTokens(tokens, theme, spec, isDark) {
           const cleanLabel = labelText.replace("[N]", "").trim();
           parts.push(`<div style="font-size:9px;color:${isDark ? '#555' : '#bbb'};letter-spacing:2px;margin:20px 0 8px;display:flex;align-items:center;gap:4px;">${cleanLabel}${isNew ? '<span style="font-size:7px;padding:0 3px;background:#e74c3c;color:#fff;border-radius:2px;font-weight:600;line-height:14px;">N</span>' : ''}</div>`);
         } else if (blockType === "note") {
-          // Note/tip (generic)
-          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${cardBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:0;"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>&nbsp; ${tok.content ? inlineFormat(tok.content, theme, isDark) : ""}</p></blockquote>`);
+          // Note/tip — supports multi-line content with optional title
+          const noteLines = (tok.content || "").split("\n").filter(l => l.trim());
+          let noteHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:${noteLines.length > 1 ? '8px' : '0'};"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>`;
+          if (noteLines.length <= 1) {
+            noteHtml += `<span style="font-size:13px;color:${c.textSec};line-height:1.7;">${noteLines[0] ? inlineFormat(noteLines[0], theme, isDark) : ""}</span></div>`;
+          } else {
+            // First line as title
+            noteHtml += `<span style="font-size:13px;font-weight:600;color:${c.text};line-height:1.7;">${inlineFormat(noteLines[0], theme, isDark)}</span></div>`;
+            // Remaining lines as individual paragraphs
+            noteHtml += noteLines.slice(1).map(l =>
+              `<p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:4px 0 0;">${inlineFormat(l, theme, isDark)}</p>`
+            ).join("");
+          }
+          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${cardBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;">${noteHtml}</blockquote>`);
+        } else if (blockType === "references") {
+          // References — compact bibliography section
+          const refLines = (tok.content || "").split("\n").filter(l => l.trim());
+          const refsHtml = refLines.map(l => {
+            // Parse numbered references: "1. content" or "- content"
+            const m = l.match(/^(\d+)[.、]\s*(.*)/);
+            const num = m ? m[1] : "";
+            const text = m ? m[2] : l.trim();
+            // Format links within reference text
+            const formatted = inlineFormat(text, theme, isDark);
+            return `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:12px;line-height:1.5;color:${c.textSec};">${num ? `<span style="color:${c.accent};font-weight:600;flex-shrink:0;">[${num}]</span>` : ""}<span style="word-break:break-all;">${formatted}</span></div>`;
+          }).join("");
+          parts.push(`<div style="margin:16px 0;padding:14px 16px;background:${isDark ? c.surface : lc.bgDeep || lc.bg};border-radius:2px;border-top:1px solid ${c.border};"><div style="font-size:11px;color:${c.textTer || c.textSec};letter-spacing:2px;margin-bottom:10px;font-weight:500;">参考文献</div>${refsHtml}</div>`);
+        } else if (blockType === "timeline") {
+          // Timeline — vertical timeline with date markers
+          const tlLines = (tok.content || "").split("\n").filter(l => l.trim());
+          const tlHtml = tlLines.map((l, idx) => {
+            const m = l.match(/^(\S+)\s+(.*)/);
+            const date = m ? m[1] : "";
+            const desc = m ? m[2] : l.trim();
+            const isLast = idx === tlLines.length - 1;
+            return `<div style="display:flex;gap:12px;position:relative;"><div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:16px;"><div style="width:8px;height:8px;border-radius:50%;background:${idx === 0 ? c.accent : c.primary};margin-top:4px;flex-shrink:0;"></div>${!isLast ? `<div style="width:1px;flex:1;background:${c.border};margin:4px 0;"></div>` : ""}</div><div style="padding-bottom:${isLast ? '0' : '12px'};"><div style="font-size:12px;font-weight:600;color:${c.primary};font-family:Consolas,monospace;">${date}</div><div style="font-size:13px;color:${c.text};line-height:1.6;margin-top:2px;">${inlineFormat(desc, theme, isDark)}</div></div></div>`;
+          }).join("");
+          parts.push(`<div style="margin:0 0 16px;padding:16px;background:${cardBg};border-radius:2px;">${tlHtml}</div>`);
+        } else if (blockType === "steps") {
+          // Steps — numbered step indicators
+          const stLines = (tok.content || "").split("\n").filter(l => l.trim());
+          const stHtml = stLines.map((l, idx) => {
+            const m = l.match(/^(?:Step\s*)?(\d+)[.:：]?\s*(.*)/i);
+            const num = m ? m[1] : String(idx + 1);
+            const text = m ? m[2] : l.trim();
+            // Split on first : or ： for title:description
+            const sep = text.includes("：") ? "：" : text.includes(":") ? ":" : null;
+            const titlePart = sep ? text.slice(0, text.indexOf(sep)).trim() : text;
+            const descPart = sep ? text.slice(text.indexOf(sep) + 1).trim() : "";
+            return `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:${idx < stLines.length - 1 ? '12px' : '0'};"><div style="width:24px;height:24px;border-radius:50%;background:${c.primary};color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${num}</div><div style="flex:1;padding-top:2px;"><div style="font-size:14px;font-weight:600;color:${c.text};line-height:1.5;">${inlineFormat(titlePart, theme, isDark)}</div>${descPart ? `<div style="font-size:13px;color:${c.textSec};line-height:1.6;margin-top:2px;">${inlineFormat(descPart, theme, isDark)}</div>` : ""}</div></div>`;
+          }).join("");
+          parts.push(`<div style="margin:0 0 16px;padding:16px;background:${cardBg};border-radius:2px;">${stHtml}</div>`);
         } else {
           // Fallback: generic custom block
           const label = `📦 ${tok.block}`;
@@ -1164,6 +1245,26 @@ function WeChatTypesetter() {
     const tokens = parseMarkdown(md);
     return renderTokens(tokens, theme, spec, isDark);
   }, [md, themeId, isDark, spec]);
+
+  // Render Mermaid diagrams after preview HTML is injected
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el || typeof mermaid === "undefined") return;
+    const pending = el.querySelectorAll(".mermaid-pending");
+    if (pending.length === 0) return;
+    pending.forEach(async (node, idx) => {
+      try {
+        const code = node.textContent;
+        const id = `mermaid-render-${Date.now()}-${idx}`;
+        const { svg } = await mermaid.render(id, code);
+        node.innerHTML = svg;
+        node.classList.remove("mermaid-pending");
+      } catch (e) {
+        node.innerHTML = `<pre style="font-size:11px;color:#e74c3c;white-space:pre-wrap;">Mermaid 渲染失败: ${e.message}\n\n${node.textContent}</pre>`;
+        node.classList.remove("mermaid-pending");
+      }
+    });
+  }, [html]);
 
   const wrappedHtml = useMemo(() => {
     const c = isDark ? theme.dark : theme.colors;

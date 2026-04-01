@@ -29,7 +29,13 @@ Skill 加载（按需读取 SKILL.md 正文）：
 1. **预校验**: 运行 `python tools/markdown-lint/lint.py` 做确定性格式校验
    - error 级违规 → 停止，返回 violations 给编排器
    - warning 级 → 记录，继续
-2. **语法标准化**: 确认 `:::block` 语法正确、H1 + 摘要结构、引用文献格式、图片路径、代码块语言标注
+2. **语法标准化**: 按 format-exporting skill 执行：
+   - 从 frontmatter 的 `title` 字段生成 `# {title}` 作为正文首行（**必须**，typesetter 栏目标识区依赖 H1）
+   - 非 story 栏目：H1 后紧跟 `> {tldr}` blockquote 摘要
+   - 引用文献用 `:::references` 块包裹
+   - 内联本地 SVG 引用（替换 `<img>` 本地路径）
+   - 替换 `<!-- FIGURE: -->` 占位符为 figures 目录中的内联内容
+   - 确认 `:::block` 语法正确、图片路径、代码块语言标注
 3. **语义检查**: 按栏目做内容完整性检查（学术=引用可信、行业=时效标注、技术=代码可运行、故事=场景具体）
 4. **多格式导出**: 生成 article.md（含扩展标记）、plain.md（纯 Markdown）、summary.md（≤120字摘要）
 5. **运营元数据**: 生成摘要、关键词、封面变量建议

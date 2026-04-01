@@ -18,6 +18,9 @@ rules:
       - readmore
       - label
       - note
+      - references
+      - timeline
+      - steps
 
   typography:
     enabled: true
@@ -53,6 +56,16 @@ rules:
     forbidden_tags:
       - "<style"
       - "<script"
+
+  article_structure:
+    enabled: true
+    severity: warning
+    # 文章结构完整性（frontmatter、H1+摘要、代码块语言、残留标记）
+
+  typesetter_compat:
+    enabled: true
+    severity: warning
+    # typesetter 兼容性检查（本地路径、残留占位符、引用格式）
 
   forbidden_patterns:
     enabled: true
