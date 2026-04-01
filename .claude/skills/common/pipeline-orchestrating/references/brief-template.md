@@ -10,7 +10,7 @@ slug: "{auto-generated}"            # 自动生成，全 pipeline 文件名基�
 target_length: 1500                  # 目标字数（推荐 800-2000）
 content_type: deep_dive              # quick_take | deep_dive | tutorial | opinion
 audience: tech_intermediate          # tech_beginner | tech_intermediate | tech_advanced | general
-content_column: 技术专题              # 学术前沿 | 行业趋势 | 技术专题 | 人物故事
+content_column: tech                 # academic | industry | tech | story（英文 ID）
 
 # === 流水线控制 ===
 skip_research: false
@@ -28,6 +28,15 @@ skip_seo: false
 # cover_style: auto                 # auto | custom
 ---
 ```
+
+## 栏目 ID 映射
+
+| ID | 中文名 | 说明 |
+|----|--------|------|
+| academic | 学术前沿 | 论文/研究解读 |
+| industry | 行业趋势 | 动态分析/趋势判断 |
+| tech | 技术专题 | 实战教程/深度解析 |
+| story | 人物故事 | 经验分享/人物访谈 |
 
 ## 正文引导结构
 

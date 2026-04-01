@@ -41,6 +41,8 @@ rules:
   css_safety:
     enabled: true
     severity: error
+    # 权威定义：微信公众号禁用 CSS 属性和标签
+    # wechat-platform.md rule 引用此处
     forbidden_css:
       - "position:"
       - "@media"
@@ -55,6 +57,40 @@ rules:
   forbidden_patterns:
     enabled: true
     severity: warning
+    # 权威定义：质量红线禁用词（单一事实来源）
+    # quality-redline.md 引用此处；lint.py 运行时从此配置读取
+    words:
+      # 套话词
+      - "值得注意的是"
+      - "显而易见"
+      - "毋庸置疑"
+      - "不难发现"
+      - "综上所述"
+      - "众所周知"
+      - "不可否认"
+      - "不得不说"
+      - "无可避免"
+      - "这无疑是"
+      - "毫无疑问"
+      - "不言而喻"
+      # 万能短语
+      - "从某种意义上说"
+      - "在一定程度上"
+      - "未来可期"
+      - "让我们拭目以待"
+      - "相信未来"
+      # AI 特征词
+      - "这表明"
+      - "由此可见"
+      - "通过以上分析"
+      - "不难看出"
+      - "这说明"
+      # 过渡废话
+      - "接下来我们来看"
+      - "可以看到"
+      - "需要注意的是"
+      # 结尾套话
+      - "希望本文对你有所帮助"
 
 # 栏目特有覆盖
 column_overrides:

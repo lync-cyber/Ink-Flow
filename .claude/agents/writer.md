@@ -20,7 +20,7 @@ skills:
 
 启动前需读取以下文件:
 - `articles/{slug}/outline.md` — 结构化大纲
-- `styles/default/markdown-extensions.md` — 自定义 Markdown 扩展语法
+- `styles/default/markdown-extensions.md` — Markdown 扩展语法（重点关注 `:::block` 扩展块语法段，标准 Markdown 元素由 typesetter 处理）
 - `articles/{slug}/drafts/section-{N-1}.md` — 前一个 section（取最后两段保持衔接）
 - `.claude/agent-memory/writer/MEMORY.md` — 你的历史经验
 

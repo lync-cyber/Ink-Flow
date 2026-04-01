@@ -4,7 +4,7 @@ description: >
   创作复盘 — 对比 AI 初稿与用户终审版，分类编辑修改，更新 agent 记忆。
   触发条件："给反馈"、"复盘"、"/creation-review"、"文章发表后"。
 compatibility:
-  scripts: [.claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.sh]
+  scripts: [.claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.py]
 ---
 
 # 创作复盘
@@ -32,7 +32,7 @@ AskUserQuestion:
 - AI 初稿: `articles/{slug}/drafts/full.md`
 - 用户终审: `articles/{slug}/output/final.md`
 
-可使用 `scripts/diff-extractor.sh` 生成结构化修改报告：
+可使用 `scripts/diff-extractor.py` 生成结构化修改报告：
 - 新增段落数、删除段落数、修改段落数、净字数变化
 - 逐条列出修改内容
 

@@ -73,3 +73,8 @@ AskUserQuestion:
     - "重新分析" — 调整参考文章后重跑
     - "保存到文件" — 将结果写入指定路径
 ```
+
+### 5. 存储路径
+
+风格档案默认保存到 `styles/{profile_name}/style-profile.md`。例如 `styles/default/style-profile.md`。
+writer/polisher 的 agent-memory 可引用此文件路径加载风格规则。

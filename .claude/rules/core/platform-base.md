@@ -1,11 +1,3 @@
----
-name: platform-base
-description: 通用移动端内容平台排版约束基类（段落长度、图片限制、标题层级等）。
-domain: core
-inject_at: [outline, draft, figures, audit, polish, publish]
-inject_mode: always
----
-
 ## 排版约束
 
 - 段落不超过 3 行（移动端屏幕高度限制）
