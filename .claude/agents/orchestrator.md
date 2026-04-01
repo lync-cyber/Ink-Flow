@@ -19,6 +19,7 @@ model: opus
 - `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案
 - `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略
 - `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
+- `.claude/skills/pipeline-orchestrating/references/interrupt-recovery.md` — 中断恢复策略
 
 ## 1. 初始化
 
@@ -114,6 +115,21 @@ FOR each stage from current_stage to end:
      - 所有依赖 completed 或 skipped → 继续
      - 否则 → 报错
 
+  2.5. ARTIFACT INTEGRITY CHECK（仅 resume 时执行）
+     - 对每个 requires 中标记为 completed 的依赖阶段：
+       确认其输出文件存在且非空（字符数 > 0）
+     - 文件缺失或为空 → 重置该依赖阶段为 pending，
+       用 AskUserQuestion 通知用户:
+       "{stage} 的产出文件缺失或为空，需要重新执行该阶段。"
+
+  2.6. STALE LOCK CHECK
+     - 若当前阶段 status == "in_progress"：
+       检查 started_at 时间戳，若距今 > 30 分钟 → 可能是上次崩溃的残留
+       用 AskUserQuestion 询问用户:
+       "阶段 {stage} 在 {started_at} 开始执行但未完成，可能是上次会话中断。"
+       options: ["重新执行该阶段", "跳过该阶段", "取消 pipeline"]
+     - 若 < 30 分钟 → 报错（可能有另一个 pipeline 正在运行）
+
   3. PARALLEL CHECK
      - 若 stage.parallel_with 存在
      - 同时 dispatch 当前阶段和并行阶段的 Agent 调用
@@ -130,7 +146,9 @@ FOR each stage from current_stage to end:
      - 始终包含 brief.md；被 skip 的阶段产物跳过
      - Skill 和 style 文件由各 agent 在 Context 段自行读取，编排器不拼装
 
-  5. SPAWN AGENT
+  5. MARK IN_PROGRESS + SPAWN AGENT
+     - 更新 .pipeline-states/{slug}.json:
+       设置当前 stage status = "in_progress"，记录 started_at ISO 时间戳
      - 使用 Agent tool 调用 .claude/agents/{agent}.md
      - 传入组装好的上下文（rules 由 Claude Code 自动加载，无需手动注入）
      - 等待完成
@@ -159,16 +177,25 @@ FOR each stage from current_stage to end:
 
 ## 4. Draft 分节循环
 
-Draft 阶段按 outline 的 section 逐一调用 writer agent：
+Draft 阶段按 outline 的 section 逐一调用 writer agent，支持 section 级别的中断恢复：
 
 ```
+INIT:
+  - 读取 outline，计算 section 总数
+  - 在 .pipeline-states/{slug}.json 中初始化 draft.sections 数组（若不存在）:
+    [{ "index": 1, "status": "pending" }, { "index": 2, "status": "pending" }, ...]
+  - 若 resume（sections 数组已存在），从第一个非 completed 的 section 开始
+
 FOR each section in outline:
+  - 若 draft.sections[N].status == "completed" 且对应文件存在 → SKIP
   - 读取 section 的 depends_on_previous 字段（默认 true）
   - depends_on_previous == false → 可与前序 section 并行
   - 否则 → 等待前序完成，读取其最后两段作为衔接
+  - 更新 draft.sections[N].status = "in_progress"，记录 started_at
   - 调用 writer agent（writer 自行读取所需 skill，首 section 自动加载 opening-crafting）
   - 输出到 articles/{slug}/drafts/section-{N}.md
   - 校验 section（字数 ±20%、无 forbidden_patterns）
+  - 更新 draft.sections[N].status = "completed"，记录 artifact 路径
 
 所有 section 完成后合并为 articles/{slug}/drafts/full.md
 ```

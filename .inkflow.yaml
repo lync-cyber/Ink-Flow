@@ -2,11 +2,16 @@
 # 用于标识该目录为 InkFlow 工作区
 version: "1.0.0"
 
+# workspace_mode: framework — InkFlow 框架开发模式（articles/ 被 gitignore）
+# workspace_mode: content — 内容创作模式（articles/ 纳入版本管理）
+workspace_mode: framework
+
 # 启用的领域包
 domains:
   - wechat-article
 
-# 模型分配策略（跨 pipeline 复用）
+# 模型分配策略（参考信息 — 实际模型由 .claude/agents/*.md frontmatter 的 model 字段决定）
+# 修改模型分配时需同步更新 agent frontmatter
 model_allocation:
   orchestrator: opus
   researcher: sonnet

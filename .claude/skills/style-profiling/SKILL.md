@@ -6,7 +6,7 @@ description: >
   触发条件："分析风格"、"提取风格 DNA"、"创建风格档案"。
   当用户提到风格分析、写作风格、参考文章风格时，应触发此 skill。
 argument-hint: "[参考文章路径]"
-allowed-tools: Read, Write, Edit, Glob, Grep
+allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 ---
 
 # 风格提取

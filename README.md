@@ -21,13 +21,21 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
   ├── skills/               # Skill 定义（扁平结构，每个 skill 一个目录）
   │   ├── pipeline-orchestrating/  # 编排器（含 references/）
   │   ├── style-profiling/         # 风格提取
+  │   ├── style-studying/          # 外部材料学习
+  │   ├── workspace-init/          # 工作区初始化与升级
   │   ├── writing-guiding/         # 写作指导
   │   ├── opening-crafting/        # 开篇策略
   │   ├── article-structuring/     # 栏目结构
+  │   ├── title-crafting/          # 标题打磨
   │   ├── visual-theming/          # 视觉主题
   │   ├── format-linting/          # 格式校验
   │   ├── format-exporting/        # 格式导出
-  │   └── ...                      # 更多 skill
+  │   ├── publish-preparing/       # 发布准备
+  │   ├── content-planning/        # 内容排期
+  │   ├── creation-reviewing/      # 创作复盘
+  │   ├── metrics-tracking/        # 数据追踪
+  │   ├── performance-benchmarking/ # 效果分析
+  │   └── domain-wechat-article.yaml  # 领域包定义
   └── rules/                # 声明式约束规则（自动加载到所有会话）
       ├── core/             # 跨领域通用规则
       └── domains/          # 领域特有规则
@@ -37,6 +45,15 @@ styles/                     # 风格 & 品牌资源
       ├── columns.yaml       # 栏目统一配置（视觉+业务）
       ├── style-profile.md   # 风格 DNA（由 style-profiling 生成）
       └── markdown-extensions.md
+
+tools/                      # 工具链
+  ├── wechat-typesetter/    # 排版工具（HTML 渲染）
+  ├── markdown-lint/        # 格式校验脚本 + 配置
+  ├── bootstrap.sh          # 框架部署/升级脚本
+  └── CLAUDE.content.md     # 内容工作区 CLAUDE.md 模板
+
+tests/                      # 框架质量门禁
+  └── lint-framework.py     # L0 静态校验
 
 articles/                   # 内容产物（按文章分组）
   └── {slug}/
@@ -127,6 +144,7 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 | `creation-reviewing` | 复盘 | 创作复盘（diff 分析 + 规则提炼） |
 | `metrics-tracking` | 复盘 | 运营数据追踪 |
 | `performance-benchmarking` | 复盘 | 跨文章效果分析 |
+| `workspace-init` | 准备 | 工作区初始化与框架升级 |
 
 ### 品牌视觉系统
 
@@ -143,5 +161,13 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 
 ## 领域包机制
 
-框架通过 `domain.yaml` 注册 skill 和 rule，切换领域只需修改 `.inkflow.yaml` 的 `domains` 字段。当前领域包：
-- `wechat-article` — 微信公众号文章写作
+框架通过 `.claude/skills/domain-{name}.yaml` 注册 skill 和 rule，切换领域只需修改 `.inkflow.yaml` 的 `domains` 字段。当前领域包：
+- `wechat-article` — 微信公众号文章写作（定义在 `.claude/skills/domain-wechat-article.yaml`）
+
+### 质量门禁
+
+```bash
+python tests/lint-framework.py
+```
+
+L0 静态校验，检查路径一致性、YAML schema、agent/skill frontmatter 完整性、交叉引用和领域包完整性。

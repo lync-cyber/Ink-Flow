@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: 根据写作 brief 进行针对性调研，收集事实、代码片段和对比材料。
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+tools: Read, Write, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 ---
 

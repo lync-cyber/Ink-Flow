@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# InkFlow 框架文件拉取/同步脚本
+# 职责：从远程仓库拉取或更新 InkFlow 框架文件（agents、skills、rules、tools）
+# 不负责：项目目录结构初始化、.gitignore 生成、git init（由 workspace-init skill 处理）
+#
+# 用法:
+#   bash tools/bootstrap.sh [目标目录] [仓库URL]
+#   curl -fsSL https://raw.githubusercontent.com/{owner}/InkFlow/main/tools/bootstrap.sh | bash
+#
+# 空目录 → 拉取框架文件；已有 .inkflow.yaml → 升级框架文件
+
+set -euo pipefail
+
+# ── 参数 ──────────────────────────────────────────────
+TARGET_DIR="${1:-.}"
+REPO_URL="${2:-https://github.com/hlin/InkFlow.git}"
+TEMP_DIR=""
+
+# ── 颜色 ──────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+info()  { echo -e "${GREEN}[InkFlow]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[InkFlow]${NC} $*"; }
+error() { echo -e "${RED}[InkFlow]${NC} $*" >&2; exit 1; }
+
+cleanup() { [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"; }
+trap cleanup EXIT
+
+# ── 前置检查 ──────────────────────────────────────────
+command -v git >/dev/null 2>&1 || error "需要 git，请先安装"
+
+TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || mkdir -p "$TARGET_DIR" && cd "$TARGET_DIR" && pwd)"
+
+# 检测模式
+if [ -f "$TARGET_DIR/.inkflow.yaml" ]; then
+    existing_mode=$(grep 'workspace_mode:' "$TARGET_DIR/.inkflow.yaml" 2>/dev/null | awk '{print $2}' || echo "unknown")
+    if [ "$existing_mode" = "content" ]; then
+        warn "检测到已有内容工作区，切换到升级模式"
+        UPGRADE_MODE=true
+    elif [ "$existing_mode" = "framework" ]; then
+        error "目标目录是框架开发目录 (mode: framework)，请指定内容工作区或空目录"
+    else
+        UPGRADE_MODE=false
+    fi
+else
+    UPGRADE_MODE=false
+fi
+
+# ── 克隆框架 ──────────────────────────────────────────
+TEMP_DIR="$(mktemp -d)"
+info "从 $REPO_URL 获取框架..."
+git clone --depth 1 "$REPO_URL" "$TEMP_DIR/source" 2>/dev/null || error "克隆失败: $REPO_URL"
+
+SOURCE_DIR="$TEMP_DIR/source"
+SOURCE_VERSION=$(grep 'version:' "$SOURCE_DIR/.inkflow.yaml" | head -1 | awk '{print $2}' | tr -d '"')
+info "框架版本: $SOURCE_VERSION"
+
+# ── 框架文件清单 ──────────────────────────────────────
+# 这些目录/文件属于框架层，拉取时复制、升级时覆盖
+FRAMEWORK_DIRS=(".claude/agents" ".claude/skills" ".claude/rules" "tools")
+FRAMEWORK_FILES=("styles/default/columns.yaml" "styles/default/markdown-extensions.md")
+
+# ── 同步框架文件 ─────────────────────────────────────
+sync_framework() {
+    local src="$1" dst="$2"
+
+    for dir in "${FRAMEWORK_DIRS[@]}"; do
+        if [ -d "$src/$dir" ]; then
+            mkdir -p "$(dirname "$dst/$dir")"
+            [ -d "$dst/$dir" ] && rm -rf "$dst/$dir"
+            cp -r "$src/$dir" "$(dirname "$dst/$dir")/"
+        fi
+    done
+
+    for file in "${FRAMEWORK_FILES[@]}"; do
+        if [ -f "$src/$file" ]; then
+            mkdir -p "$(dirname "$dst/$file")"
+            cp "$src/$file" "$dst/$file"
+        fi
+    done
+}
+
+# ── 执行同步 ──────────────────────────────────────────
+sync_framework "$SOURCE_DIR" "$TARGET_DIR"
+
+# 部署内容版 CLAUDE.md（非框架版）
+if [ -f "$SOURCE_DIR/tools/CLAUDE.content.md" ]; then
+    cp "$SOURCE_DIR/tools/CLAUDE.content.md" "$TARGET_DIR/CLAUDE.md"
+fi
+
+if [ "$UPGRADE_MODE" = true ]; then
+    # ── 升级模式：仅更新版本号 ────────────────────────
+    OLD_VERSION=$(grep 'inkflow_version:' "$TARGET_DIR/.inkflow.yaml" 2>/dev/null | awk '{print $2}' | tr -d '"' || echo "unknown")
+    info "升级: $OLD_VERSION → $SOURCE_VERSION"
+    sed -i "s/^inkflow_version:.*/inkflow_version: \"$SOURCE_VERSION\"/" "$TARGET_DIR/.inkflow.yaml"
+    info "框架文件已更新，用户内容未受影响"
+else
+    # ── 首次拉取：复制基础 .inkflow.yaml ──────────────
+    cp "$SOURCE_DIR/.inkflow.yaml" "$TARGET_DIR/.inkflow.yaml"
+    info "框架文件已拉取到 $TARGET_DIR"
+    echo ""
+    echo "  下一步：在 Claude Code 中打开该目录，说「初始化工作区」完成项目配置"
+    echo "  或手动创建 articles/、retro/ 等目录并修改 .inkflow.yaml 的 workspace_mode 为 content"
+fi
+
+info "完成！"

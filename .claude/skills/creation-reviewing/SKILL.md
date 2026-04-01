@@ -5,7 +5,7 @@ description: >
   触发条件："给反馈"、"复盘"、"文章发表后"。
   当用户完成文章编辑想回顾 AI 草稿与终稿差异、改进写作流程时，应触发此 skill。
 argument-hint: "[文章 slug]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # 创作复盘
