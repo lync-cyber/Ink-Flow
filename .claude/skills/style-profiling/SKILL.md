@@ -47,7 +47,7 @@ AskUserQuestion:
 
 ### 3. 执行风格分析
 
-使用 Agent tool 调用风格分析 subagent，传入所有参考文章内容。
+使用 Agent tool 调用 `.claude/agents/style-analyzer.md`（subagent_type: style-analyzer），传入所有参考文章内容。
 
 分析输出七维度风格 DNA：
 
@@ -79,4 +79,4 @@ AskUserQuestion:
 ### 5. 存储路径
 
 风格档案默认保存到 `styles/{profile_name}/style-profile.md`。例如 `styles/default/style-profile.md`。
-writer/polisher 的 agent-memory 可引用此文件路径加载风格规则。
+writer/polisher 的 writing-guiding skill 会优先使用此文件中的风格规则。

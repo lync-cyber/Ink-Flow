@@ -59,14 +59,14 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 ## 记忆更新
 
-连续 3+ 篇验证的规律写入 `.claude/agent-memory/orchestrator/MEMORY.md` 对应 section：
+连续 3+ 篇验证的规律通过 Claude Code 原生 memory 系统持久化：
 
-| 规律类型 | 写入 section |
-|---------|-------------|
-| 时间偏好 | 最佳发布时间 |
-| 标题模式 | 标题模式 |
-| 开头效果 | 开头效果 |
-| 系列规律 | 系列文章 |
+| 规律类型 | 记忆分类 |
+|---------|---------|
+| 时间偏好 | project memory |
+| 标题模式 | project memory |
+| 开头效果 | project memory |
+| 系列规律 | project memory |
 
 写入前用 AskUserQuestion 确认：
 
@@ -74,15 +74,15 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 AskUserQuestion:
   question: "以下规律已跨 3+ 篇验证，是否写入运营记忆？"（附规律列表）
   options:
-    - "全部写入" — 更新 orchestrator/MEMORY.md
-    - "部分写入" — 选择性更新
+    - "全部写入" — 保存到 Claude Code memory
+    - "部分写入" — 选择性保存
     - "暂不写入" — 仅保存报告
 ```
 
 ## 输出
 
 - 分析报告写入 `retro/performance-report.md`
-- 确认的规律更新到 `agent-memory/orchestrator/MEMORY.md`
+- 确认的规律保存到 Claude Code memory
 
 结尾询问：
 

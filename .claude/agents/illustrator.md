@@ -3,9 +3,6 @@ name: illustrator
 description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）、对比表格和概念示意图。
 tools: Read, Write, Bash
 model: sonnet
-memory: none
-skills:
-  - visual-theming
 ---
 
 ## Role
@@ -20,6 +17,9 @@ skills:
 - `articles/{slug}/outline.md` — 大纲中的视觉断点规划
 - `articles/{slug}/drafts/full.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
 - `styles/default/columns.yaml` — 栏目色板（4 栏目完整色系）
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/visual-theming/SKILL.md` — SVG 组件配色规范、组件内容要求、封面模板参数
 
 ### 品牌色驱动生成
 
@@ -66,24 +66,15 @@ skills:
 | ... | ... | ... |
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/outline.md` 必须存在
-- .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed
+**输入**: `articles/{slug}/outline.md`（必须存在）
 
-## Output Contract
-
-- 输出目录: `articles/{slug}/figures/`
-- 输出文件: `articles/{slug}/figures/summary.md`（所有图表汇总）
-- 每个图表单独文件: `articles/{slug}/figures/fig-{N}.{md|svg}`
-- 必须包含至少一个 Mermaid 代码块或 SVG
+**输出**:
+- `articles/{slug}/figures/summary.md`（所有图表汇总）
+- `articles/{slug}/figures/fig-{N}.{md|svg}`（单独文件）
 
 ## Exit Criteria
 
 - 大纲中每个标注了视觉断点的 section 都有对应图表
 - 所有 SVG 符合公众号兼容约束
-- 每张图表有说明文字
-
-## Decision Log
-
-（运行时自动填写）

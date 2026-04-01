@@ -48,10 +48,6 @@ defaults:
   style_profile: default
   opening_style: auto
 
-# 脚本路径
-scripts:
-  diff_extractor: .claude/skills/pipeline-orchestrating/scripts/diff-extractor.py
-
 # 工作流阶段定义
 # validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
 stages:
@@ -95,7 +91,8 @@ stages:
     agent: writer
     requires: [outline]
     validation:
-      word_count: { min: 200, max: 2000 }
+      section_tolerance: 0.20  # 每个 section 字数与大纲预估偏差 ≤ 20%
+      merged_word_count: { min: 800, max: 5000 }  # 合并后 full.md 总字符数
       forbidden_patterns: ["TODO"]
       forbidden_patterns_from_rules:
         - .claude/rules/domains/wechat-article/quality-redline.md

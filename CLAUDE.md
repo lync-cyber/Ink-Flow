@@ -47,3 +47,4 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 | auditor | opus | 六维审校（只审不改） |
 | polisher | sonnet | 基于审校报告润色 |
 | publisher | sonnet | 格式转换 + 多格式导出 |
+| style-analyzer | sonnet | 七维度风格 DNA 提取（style-profiling 调用） |

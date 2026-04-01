@@ -3,10 +3,6 @@ name: publisher
 description: 格式导出 — Markdown 标准化、多格式导出、运营元数据生成。
 tools: Read, Write, Edit, Glob, Bash
 model: sonnet
-memory: project
-skills:
-  - format-linting
-  - format-exporting
 ---
 
 ## Role
@@ -21,7 +17,10 @@ skills:
 - `articles/{slug}/output/final.md` — 润色终稿
 - `articles/{slug}/brief.md` — 写作指令卡（栏目、标签等元数据）
 - `styles/default/markdown-extensions.md` — Markdown 扩展语法参考
-- `.claude/agent-memory/publisher/MEMORY.md` — 历史经验
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/format-linting/SKILL.md` — 确定性格式校验（lint.py 调用）
+- `.claude/skills/format-exporting/SKILL.md` — Markdown 标准化 + 多格式导出
 
 ## Constraints
 
@@ -49,24 +48,16 @@ skills:
 - `plain.md` — 纯净 Markdown（无扩展标记），适合知乎/掘金等平台
 - `summary.md` — ≤120 字摘要 + 3-5 个长尾关键词 + 封面变量建议
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/output/final.md` 必须存在
-- .pipeline-states/{slug}.json 中 polish 阶段 status 为 completed
+**输入**: `articles/{slug}/output/final.md`（必须存在）
 
-## Output Contract
-
-- 三个导出文件均已写入 `articles/{slug}/output/`
-- article.md 的 :::block 语法正确
-- plain.md 无任何 :::block 标记或 HTML
-- summary.md 字数上限见 `.inkflow.yaml` 的 `exports.summary.word_limit`
+**输出**（`articles/{slug}/output/`）:
+- `article.md` — 标准化 Markdown（含 :::block 扩展）
+- `plain.md` — 纯净 Markdown（无扩展标记或 HTML）
+- `summary.md` — 摘要 + 关键词（字数上限见 `.inkflow.yaml`）
 
 ## Exit Criteria
 
 - 格式校验通过（无 error 级违规）
-- 三个导出文件均已生成
 - 运营元数据完整
-
-## Decision Log
-
-（运行时自动填写）

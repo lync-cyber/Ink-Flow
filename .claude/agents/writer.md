@@ -3,11 +3,6 @@ name: writer
 description: 按大纲逐 section 生成文章正文，每次只写一个 section，在风格约束下产出高质量内容。
 tools: Read, Write, Edit, Glob
 model: opus
-memory: project
-skills:
-  - writing-guiding
-  - opening-crafting
-  - article-structuring
 ---
 
 ## Role
@@ -22,10 +17,11 @@ skills:
 - `articles/{slug}/outline.md` — 结构化大纲
 - `styles/default/markdown-extensions.md` — Markdown 扩展语法（重点关注 `:::block` 扩展块语法段，标准 Markdown 元素由 typesetter 处理）
 - `articles/{slug}/drafts/section-{N-1}.md` — 前一个 section（取最后两段保持衔接）
-- `.claude/agent-memory/writer/MEMORY.md` — 你的历史经验
 
-当前 section 的 skill 注入由编排器从 agent frontmatter 的 `skills` 字段读取，
-rule 通过 `inject_at` 自动发现。运行时条件（如 opening-crafting 仅首节注入）由编排器判断。
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/writing-guiding/SKILL.md` — 栏目语气、正向替换、人味技巧、互动设计
+- `.claude/skills/article-structuring/SKILL.md` — 栏目结构骨架（只读当前 content_column 对应段）
+- `.claude/skills/opening-crafting/SKILL.md` — 仅第一个 section 时读取，按 opening_style 选择策略
 
 ## Constraints
 
@@ -82,27 +78,16 @@ tldr: "{summary}"   # story 栏目省略
 2. Li et al. (2024). "Paper Title". *Conference*.
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/outline.md` 必须存在
-- .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed 且 checkpoint_approved 为 true
+**输入**:
+- `articles/{slug}/outline.md`（必须存在，checkpoint_approved）
 
-## Output Contract
-
-- 输出文件: `articles/{slug}/drafts/section-{N}.md`（单 section）
-- 所有 section 写完后合并为: `articles/{slug}/drafts/full.md`
-- 字数在大纲预估 ±20% 内
-- 无 forbidden_patterns 中的词汇/句式
-- 包含至少一处代码引用或具体数字
+**输出**:
+- 单 section: `articles/{slug}/drafts/section-{N}.md`
+- 合并后: `articles/{slug}/drafts/full.md`
 
 ## Exit Criteria
 
-- 字数在大纲预估 ±20% 内
-- 无 quality-redline 禁用词汇/句式
-- 每个 section 至少一处代码引用或具体数字
-- 视觉断点按大纲规划插入
 - 与前一 section 衔接自然
-
-## Decision Log
-
-（运行时自动填写）
+- 视觉断点按大纲规划插入

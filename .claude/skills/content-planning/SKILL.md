@@ -37,9 +37,7 @@ AskUserQuestion:
    - 栏目（column）
    - 发布日期（publish_date，若有）
    - 内容类型（content_type）
-3. `.claude/agent-memory/orchestrator/MEMORY.md` — 读取习得的：
-   - 最佳发布时间（覆盖 columns.yaml 的 best_time）
-   - 系列文章记录（连载间隔不超过 1 周）
+3. Claude Code 原生 memory — 读取历史习得的运营偏好（如最佳发布时间、系列文章间隔等）
 
 ## 排期算法
 

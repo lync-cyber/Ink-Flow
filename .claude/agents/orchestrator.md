@@ -3,9 +3,6 @@ name: orchestrator
 description: InkFlow 编排器 — 管理内容创作全生命周期，调度各阶段 agent。
 tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 model: opus
-memory: project
-skills:
-  - pipeline-orchestrating
 ---
 
 ## Role
@@ -131,9 +128,7 @@ FOR each stage from current_stage to end:
        audit → articles/{slug}/output/audit.md
        polish → articles/{slug}/output/final.md
      - 始终包含 brief.md；被 skip 的阶段产物跳过
-     - 读取对应 .claude/agent-memory/{agent}/MEMORY.md
-       （若 agent frontmatter 声明 memory: none，跳过记忆加载）
-     - Style 相关文件（columns.yaml 等）由 skill 自行引用
+     - Skill 和 style 文件由各 agent 在 Context 段自行读取，编排器不拼装
 
   5. SPAWN AGENT
      - 使用 Agent tool 调用 .claude/agents/{agent}.md
@@ -171,8 +166,8 @@ FOR each section in outline:
   - 读取 section 的 depends_on_previous 字段（默认 true）
   - depends_on_previous == false → 可与前序 section 并行
   - 否则 → 等待前序完成，读取其最后两段作为衔接
-  - section_index == 0 → 额外注入 opening-crafting skill
-  - 调用 writer agent → 输出到 articles/{slug}/drafts/section-{N}.md
+  - 调用 writer agent（writer 自行读取所需 skill，首 section 自动加载 opening-crafting）
+  - 输出到 articles/{slug}/drafts/section-{N}.md
   - 校验 section（字数 ±20%、无 forbidden_patterns）
 
 所有 section 完成后合并为 articles/{slug}/drafts/full.md
@@ -241,14 +236,9 @@ AskUserQuestion:
 
 详见 `references/error-handling.md`。摘要：L1 自动重试（2次）→ L2 校验失败重试（附 violation 上下文）→ L3 模型降级（Opus→Sonnet）→ L4 人工介入（AskUserQuestion）。
 
-## 9. Rerun 支持
+## 9. Rerun & Dry-Run
 
-当检测到用户想重跑某阶段时：
-
-1. 解析目标阶段名称
-2. 确认重跑意图（AskUserQuestion）
-3. 重置该阶段及其后续阶段的状态为 pending
-4. 从该阶段重新开始执行通用算法
+详见 `references/rerun-and-dryrun.md`。
 
 ## 10. Pipeline 完成
 
@@ -265,14 +255,11 @@ AskUserQuestion:
     - "开始新文章" — 重新进入 Brief 创建
 ```
 
-## 11. Dry-Run 模式（Pipeline 预览）
+## Contracts
 
-当用户选择"预览 pipeline"或说"dry-run"时执行。**不 spawn 任何 agent，零 token 消耗**。
+**输入**: `.inkflow.yaml`（项目配置）、用户意图（自然语言）、`articles/{slug}/brief.md`（若已存在）、`.pipeline-states/{slug}.json`（若已存在）
 
-1. 确定目标：若有指定 slug → 读取该文章的 brief 和 state；若无 → 用 AskUserQuestion 请用户选择
-2. 从 `.inkflow.yaml` 的 stages 列表逐 stage 检查：SKIP 条件、依赖状态、上下文文件、Rule 可用性、Agent 可用性
-3. 输出汇总表（stage、状态、agent、model、上下文文件、rules）
-4. 用 AskUserQuestion 提供后续操作
+**输出**: `articles/{slug}/` 完整目录结构（各阶段产物）、`.pipeline-states/{slug}.json`（最终状态）、`retro/runs/{run_id}.log.md`（运行日志）
 
 ## Constraints
 

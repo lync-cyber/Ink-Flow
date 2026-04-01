@@ -34,14 +34,7 @@ disable-model-invocation: true
 | `border` | `columns.{id}.colors.border` | 边框色 |
 | `tagline` | `columns.{id}.tagline` | 栏目 tagline |
 
-### 栏目色板速查
-
-| 栏目 | primary | accent | personality |
-|------|---------|--------|-------------|
-| academic | #1a5276 深蓝 | #c0782b 橙棕 | 学术期刊般的克制与精确 |
-| industry | #0e6655 深绿 | #b9770e 深橙 | 简报式紧凑排布 |
-| tech | #4a235a 深紫 | #1a5276 蓝 | 工具化，装饰最少 |
-| story | #784212 暖棕 | #1a5276 蓝 | 温暖有机，大图呼吸 |
+色板数据从 `styles/default/columns.yaml` 的 `columns.{栏目}.colors` 段动态读取，不硬编码。
 
 ---
 

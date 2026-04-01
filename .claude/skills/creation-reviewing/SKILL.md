@@ -1,7 +1,7 @@
 ---
 name: creation-reviewing
 description: >
-  创作复盘 — 对比 AI 初稿与用户终审版，分类编辑修改，更新 agent 记忆。
+  创作复盘 — 对比 AI 初稿与用户终审版，分类编辑修改，提炼可复用规则。
   触发条件："给反馈"、"复盘"、"文章发表后"。
   当用户完成文章编辑想回顾 AI 草稿与终稿差异、改进写作流程时，应触发此 skill。
 argument-hint: "[文章 slug]"
@@ -33,9 +33,9 @@ AskUserQuestion:
 - AI 初稿: `articles/{slug}/drafts/full.md`
 - 用户终审: `articles/{slug}/output/final.md`
 
-可使用 `scripts/diff-extractor.py` 生成结构化修改报告：
+用 Read tool 分别读取两个文件，直接对比分析：
 - 新增段落数、删除段落数、修改段落数、净字数变化
-- 逐条列出修改内容
+- 逐条列出修改内容（LLM 语义对比，比机械 diff 更精准）
 
 ## Step 2 — LLM 辅助分类 + 用户确认
 
@@ -72,18 +72,18 @@ AskUserQuestion:
 
 ## Step 4 — 写入记忆 + 输出报告
 
-- 用户确认的项写入对应 agent 的 `.claude/agent-memory/{agent}/MEMORY.md`
+- 用户确认的规律通过 Claude Code 原生 memory 系统持久化（feedback / project 类型）
 - 输出完整复盘报告到 `articles/{slug}/retro.md`
 
-### 记忆晋升建议
+### 规则晋升建议
 
-扫描各 agent 的 MEMORY.md，找出连续 N 篇有效的规则，建议升级为正式 skill 规则：
+当同一类修改连续 N 篇出现时，建议升级为正式 skill 规则：
 
 ```
 AskUserQuestion:
   question: "以下规则连续 {N} 篇有效，是否晋升为正式规则？"
   options:
     - "晋升" — 添加到对应 skill 文件
-    - "保持为工作记忆" — 继续观察
+    - "保持为记忆" — 继续观察
     - "删除" — 该规则不再需要
 ```

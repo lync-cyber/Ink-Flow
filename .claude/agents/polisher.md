@@ -3,9 +3,6 @@ name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
-memory: project
-skills:
-  - writing-guiding
 ---
 
 ## Role
@@ -19,7 +16,9 @@ skills:
 启动前需读取以下文件:
 - `articles/{slug}/drafts/full.md` — 完整草稿（修改基准）
 - `articles/{slug}/output/audit.md` — 审校报告（修复指令）
-- `.claude/agent-memory/polisher/MEMORY.md` — 历史经验
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南
 
 ## Constraints
 
@@ -56,25 +55,15 @@ skills:
 - 长句拆分: {N} 处
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/drafts/full.md` 必须存在
-- `articles/{slug}/output/audit.md` 必须存在
-- .pipeline-states/{slug}.json 中 audit 阶段 status 为 completed
+**输入**:
+- `articles/{slug}/drafts/full.md`（修改基准）
+- `articles/{slug}/output/audit.md`（修复指令）
 
-## Output Contract
-
-- 终稿: `articles/{slug}/output/final.md`（润色后全文 + 变更摘要）
-- 无 quality-redline 禁用词汇/句式
-- 信息无损失，逻辑无断裂
+**输出**: `articles/{slug}/output/final.md`（润色后全文 + 变更摘要）
 
 ## Exit Criteria
 
-- 终稿无禁用词汇/句式
 - 终稿符合平台兼容性约束
 - 整体语气一致
-- 输出文件已写入
-
-## Decision Log
-
-（运行时自动填写）

@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 ## 风格优先级
 
-若 writer/polisher 的 agent-memory 中有通过 style-profiling 生成的风格 DNA 规则，优先使用这些规则。本 skill 的规则作为基线兜底。
+若 `styles/{profile}/style-profile.md` 存在（由 style-profiling skill 生成），优先使用其中的风格 DNA 规则。本 skill 的规则作为基线兜底。
 
 ---
 

@@ -3,11 +3,6 @@ name: outliner
 description: 基于调研备忘录生成结构化大纲，每个 section 包含论点、预估字数、关键细节和视觉断点规划。
 tools: Read, Write, Edit, Glob
 model: opus
-memory: project
-skills:
-  - article-structuring
-  - visual-theming
-  - title-crafting
 ---
 
 ## Role
@@ -21,7 +16,11 @@ skills:
 启动前需读取以下文件:
 - `articles/{slug}/brief.md` — 写作指令卡
 - `articles/{slug}/research.md` — 调研备忘录（如未跳过 research）
-- `.claude/agent-memory/outliner/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/article-structuring/SKILL.md` — 栏目结构骨架（只读当前 content_column 对应段）
+- `.claude/skills/visual-theming/SKILL.md` — 栏目推荐组件搭配、限额规则
+- `.claude/skills/title-crafting/SKILL.md` — 标题质量门禁（大纲完成后执行）
 
 ## Constraints
 
@@ -71,27 +70,17 @@ skills:
 - {从调研中继承的未解决问题}
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/brief.md` 必须存在
-- 若 research 未跳过，`articles/{slug}/research.md` 必须存在
-- .pipeline-states/{slug}.json 中 brief 阶段 status 为 completed
+**输入**:
+- `articles/{slug}/brief.md`（必须存在）
+- `articles/{slug}/research.md`（若 research 未跳过）
 
-## Output Contract
-
-- 输出文件: `articles/{slug}/outline.md`
-- 每个 section 必须包含: 论点、关键细节、预估字数
-- 每个 section 必须包含视觉断点规划
-- 第一个 section 必须标注 opening_style
-- 最后一个 section 必须包含 CTA
+**输出**: `articles/{slug}/outline.md`
+- 每个 section 包含: 论点、关键细节、预估字数、视觉断点
+- 第一个 section 标注 opening_style，最后一个包含 CTA
 
 ## Exit Criteria
 
 - 每个 section 有明确的论点陈述（非描述性标题）
-- 总预估字数与 brief.target_length 偏差 ≤ 20%
-- section 数在 3-7 之间
 - 不确定项已从调研中继承并标注处理建议
-
-## Decision Log
-
-（运行时自动填写）

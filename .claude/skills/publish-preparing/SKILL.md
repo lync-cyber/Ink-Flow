@@ -29,7 +29,7 @@ AskUserQuestion:
 1. `articles/{slug}/brief.md` — 栏目、内容类型、CTA 类型
 2. `articles/{slug}/output/article.md` — 文章成品
 3. `styles/default/columns.yaml` — 栏目 best_time、kpi_targets
-4. `.claude/agent-memory/orchestrator/MEMORY.md` — 习得的最佳发布时间
+4. Claude Code memory — 历史习得的最佳发布时间（若有）
 
 ## 发布前清单
 

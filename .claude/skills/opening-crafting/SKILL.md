@@ -93,7 +93,7 @@ disable-model-invocation: true
 ## 选择逻辑
 
 1. 读取 `articles/{slug}/brief.md` 的 `opening_style` 字段
-2. 若为 "auto" 或空，从 `columns.yaml` 读取映射:
+2. 若为 "auto" 或空，从 `styles/default/columns.yaml` 读取映射:
    - 有栏目信息 → 使用 `columns.{栏目}.default_opening`
-   - 无栏目信息 → 使用 `content_type_fallback.{content_type}`
-3. 将选定策略注入 writer agent 的第一个 section 上下文，使用示例展示语气和结构
+   - 无栏目信息 → 使用根级 `content_type_fallback.{content_type}` 映射
+3. 按选定策略的框架和示例写作第一个 section 的开头
