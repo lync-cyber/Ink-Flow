@@ -2,11 +2,16 @@
 # 用于标识该目录为 InkFlow 工作区
 version: "1.0.0"
 
+# workspace_mode: framework — InkFlow 框架开发模式（articles/ 被 gitignore）
+# workspace_mode: content — 内容创作模式（articles/ 纳入版本管理）
+workspace_mode: framework
+
 # 启用的领域包
 domains:
   - wechat-article
 
-# 模型分配策略（跨 pipeline 复用）
+# 模型分配策略（参考信息 — 实际模型由 .claude/agents/*.md frontmatter 的 model 字段决定）
+# 修改模型分配时需同步更新 agent frontmatter
 model_allocation:
   orchestrator: opus
   researcher: sonnet
@@ -47,10 +52,6 @@ defaults:
   cover_style: auto
   style_profile: default
   opening_style: auto
-
-# 脚本路径
-scripts:
-  diff_extractor: .claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.py
 
 # 工作流阶段定义
 # validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
@@ -95,7 +96,8 @@ stages:
     agent: writer
     requires: [outline]
     validation:
-      word_count: { min: 200, max: 2000 }
+      section_tolerance: 0.20  # 每个 section 字数与大纲预估偏差 ≤ 20%
+      merged_word_count: { min: 800, max: 5000 }  # 合并后 full.md 总字符数
       forbidden_patterns: ["TODO"]
       forbidden_patterns_from_rules:
         - .claude/rules/domains/wechat-article/quality-redline.md
@@ -140,8 +142,7 @@ stages:
 # Skill 注册表
 registry:
   skills_paths:
-    - .claude/skills/common
-    - .claude/skills/domains/{domain}
+    - .claude/skills
 
 # 用户级覆盖（可选）
 # overrides:

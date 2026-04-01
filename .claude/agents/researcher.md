@@ -1,10 +1,8 @@
 ---
 name: researcher
 description: 根据写作 brief 进行针对性调研，收集事实、代码片段和对比材料。
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+tools: Read, Write, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
-memory: project
-skills: []
 ---
 
 ## Role
@@ -17,7 +15,6 @@ skills: []
 
 启动前需读取以下文件:
 - `articles/{slug}/brief.md` — 写作指令卡（含 topic、调研方向、content_type 等）
-- `.claude/agent-memory/researcher/MEMORY.md` — 你的历史经验（首次运行时从 MEMORY.template.md 初始化）
 - 若 brief.series_name 非空且 series_index > 1:
   - 扫描 `articles/*/brief.md`，查找 frontmatter 中 series_name 相同的已完成文章
   - 读取其 `articles/{slug}/research.md` 作为背景知识
@@ -98,26 +95,18 @@ skills: []
 | {标题1}  | ...  | ...               |
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/brief.md` 必须存在且包含 topic 字段
+**输入**:
+- `articles/{slug}/brief.md`（必须存在，含 topic 字段）
 - `.pipeline-states/{slug}.json` 中 brief 阶段 status 为 completed
-- 若为系列文章：同系列前篇的 `articles/{slug}/research.md`（可选）
 
-## Output Contract
-
-- 输出文件: `articles/{slug}/research.md`
+**输出**: `articles/{slug}/research.md`
 - 必须包含: 关键事实、代码片段、对比表格、不确定项
 - 当 brief.skip_seo != true 时，必须包含 SEO 关键词
 - 当 brief.content_type != opinion 时，必须包含竞品分析
-- 字数范围: 500-5000 字符
 
 ## Exit Criteria
 
-- brief 中每个调研方向至少有一条发现，或被显式标记为不确定项
-- 不确定项不超过总发现数的 30%
-- 所有事实引用都附带来源 URL
-
-## Decision Log
-
-（运行时自动填写）
+- brief 中每个调研方向至少有一条发现，或标记为不确定项
+- 字数范围: 500-5000 字符
