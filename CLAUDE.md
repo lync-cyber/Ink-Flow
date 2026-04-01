@@ -13,17 +13,21 @@ LLM 辅助内容创作工作流框架，基于 Claude Code 原生能力（subage
 | 栏目统一配置（视觉+业务） | `styles/default/columns.yaml` |
 | Markdown 扩展语法 | `styles/default/markdown-extensions.md` |
 | 排版工具 | `tools/wechat-typesetter/index.html` |
+| 外部参考材料（学习用） | `references/` |
 | 文章产物 | `articles/{slug}/` |
 | 运行状态 | `.pipeline-states/{slug}.json` |
 
 ## 使用方式
 
-- **写文章**: 告诉 Claude 主题，自动触发 pipeline-orchestrating skill
-- **分析风格**: "分析风格" 或 "/style-profile"
-- **内容排期**: "排期" 或 "/content-plan"
-- **发布准备**: "发布清单" 或 "/publish-prepare"
-- **效果分析**: "数据分析" 或 "/performance"
-- **创作复盘**: "复盘" 或 "/creation-review"
+> 以下触发词为自然语言，Claude 识别意图后加载对应 skill 执行。
+
+- **写文章**: 告诉 Claude 主题 → pipeline-orchestrating skill
+- **分析风格**: "分析风格"、"提取风格 DNA" → style-profiling skill
+- **学习进修**: "学习这篇文章"、"参考这个模板" → style-studying skill（外部材料放 `references/` 目录）
+- **内容排期**: "排期"、"内容日历" → content-planning skill
+- **发布准备**: "发布清单"、"运营清单" → publish-preparing skill
+- **效果分析**: "数据分析"、"KPI" → performance-benchmarking skill
+- **创作复盘**: "复盘"、"给反馈" → creation-reviewing skill
 
 ## Pipeline 阶段
 
@@ -35,7 +39,7 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 | Agent | Model | 职责 |
 |-------|-------|------|
-| orchestrator | sonnet | 编排全流程、调度子 agent、用户交互 |
+| orchestrator | opus | 编排全流程、调度子 agent、用户交互 |
 | researcher | sonnet | 调研 + 事实收集 |
 | outliner | opus | 大纲 + 视觉断点规划 |
 | writer | opus | 逐 section 写作（含 Markdown 扩展标记） |

@@ -59,7 +59,7 @@ skills:
 - 三个导出文件均已写入 `articles/{slug}/output/`
 - article.md 的 :::block 语法正确
 - plain.md 无任何 :::block 标记或 HTML
-- summary.md ≤ 120 字
+- summary.md 字数上限见 `.inkflow.yaml` 的 `exports.summary.word_limit`
 
 ## Exit Criteria
 

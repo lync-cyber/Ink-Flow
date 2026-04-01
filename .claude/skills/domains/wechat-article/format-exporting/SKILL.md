@@ -77,6 +77,6 @@ auditor → polisher → final.md (Markdown + :::extensions)
 
 ### summary.md
 
-- ≤ 120 字摘要（公众号截断限制）
+- 摘要字数上限见 `.inkflow.yaml` 的 `exports.summary.word_limit`
 - 3-5 个长尾关键词（搜一搜优化）
 - 封面变量填充建议（封面背景色从 columns.yaml 读取）

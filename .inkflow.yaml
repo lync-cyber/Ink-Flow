@@ -8,6 +8,7 @@ domains:
 
 # 模型分配策略（跨 pipeline 复用）
 model_allocation:
+  orchestrator: opus
   researcher: sonnet
   outliner: opus
   writer: opus
@@ -31,7 +32,7 @@ exports:
   - format: summary
     description: "短摘要版（朋友圈/社群分发）"
     output: "articles/{slug}/output/summary.md"
-    word_limit: 200
+    word_limit: 120   # 公众号截断限制，全局唯一定义
 
 # Brief 字段默认值（减少每次填写量）
 defaults:
@@ -49,7 +50,7 @@ defaults:
 
 # 脚本路径
 scripts:
-  diff_extractor: .claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.sh
+  diff_extractor: .claude/skills/common/pipeline-orchestrating/scripts/diff-extractor.py
 
 # 工作流阶段定义
 # validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
@@ -70,7 +71,7 @@ stages:
         - name: "SEO 关键词"
           skip_if: "brief.skip_seo == true"
         - name: "竞品分析"
-          skip_if: "brief.content_type == opinion"
+          skip_if: "brief.content_type == opinion || brief.content_column == story"
       word_count: { min: 500, max: 5000 }
       required_patterns:
         - "\\[来源\\]\\(http"
@@ -94,9 +95,10 @@ stages:
     agent: writer
     requires: [outline]
     validation:
-      word_count: { min: 200, max: 3000 }
+      word_count: { min: 200, max: 2000 }
       forbidden_patterns: ["TODO"]
-      forbidden_patterns_from_rules: [quality-redline]
+      forbidden_patterns_from_rules:
+        - .claude/rules/domains/wechat-article/quality-redline.md
 
   - name: figures
     agent: illustrator
@@ -120,10 +122,11 @@ stages:
     validation:
       required_sections: ["润色结果"]
       forbidden_patterns: ["TODO", "待确认"]
-      forbidden_patterns_from_rules: [quality-redline]
+      forbidden_patterns_from_rules:
+        - .claude/rules/domains/wechat-article/quality-redline.md
       platform_checks:
         - type: css_safety
-          forbidden_css: ["position:", "@media", "@keyframes", ":hover", ":active", "float:"]
+          source: tools/markdown-lint/lint-config.yaml  # 单一事实来源，不重复定义 forbidden_css
         - type: heading_level
           allowed: ["##", "###", "####"]
         - type: image_width
@@ -134,14 +137,11 @@ stages:
     checkpoint: true
     requires: [polish]
 
-# Skill/Rule 注册表
+# Skill 注册表
 registry:
   skills_paths:
     - .claude/skills/common
     - .claude/skills/domains/{domain}
-  rules_paths:
-    - .claude/rules/core
-    - .claude/rules/domains/{domain}
 
 # 用户级覆盖（可选）
 # overrides:

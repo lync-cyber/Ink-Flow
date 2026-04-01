@@ -13,13 +13,13 @@
       "Bash(git commit:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
-      "Bash(.claude/validators/contract-validator.sh:*)",
       "Bash(wc:*)",
       "Bash(diff:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
       "Bash(cat:*)",
-      "Bash(chmod +x:*)"
+      "Bash(chmod +x:*)",
+      "Bash(python:*)"
     ]
   }
 }

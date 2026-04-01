@@ -74,7 +74,7 @@ columns:
       share_rate: 0.03
 
   industry:
-    name: "行业动态"
+    name: "行业趋势"
     nameEn: "Industry Pulse"
     icon: "📡"
     tagline: "洞察 · 趋势 · 时效"
@@ -113,7 +113,7 @@ columns:
       share_rate: 0.08
 
   tech:
-    name: "技术专栏"
+    name: "技术专题"
     nameEn: "Tech Deep Dive"
     icon: "⚙️"
     tagline: "实践 · 原理 · 工具"
@@ -178,7 +178,7 @@ columns:
       accent: "#5dade2"
       primary: "#d4a06a"
 
-    skeleton: personal
+    skeleton: story
     default_opening: story
     default_cta: comment
     tone: conversational

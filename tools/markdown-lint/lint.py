@@ -48,7 +48,15 @@ DEFAULT_CONFIG = {
             "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:"],
             "forbidden_tags": ["<style", "<script"],
         },
-        "forbidden_patterns": {"enabled": True, "severity": "warning"},
+        "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
+            # 与 lint-config.yaml 的 forbidden_patterns.words 同步（PyYAML 不可用时的回退）
+            "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
+            "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
+            "毫无疑问", "不言而喻", "从某种意义上说", "在一定程度上",
+            "未来可期", "让我们拭目以待", "相信未来", "这表明", "由此可见",
+            "通过以上分析", "不难看出", "这说明", "接下来我们来看",
+            "可以看到", "需要注意的是", "希望本文对你有所帮助",
+        ]},
     },
     "column_overrides": {
         "学术前沿": {"theme_constraints": {"require_references": True, "require_tldr": True}},
@@ -56,29 +64,6 @@ DEFAULT_CONFIG = {
         "技术专题": {"theme_constraints": {"require_code_block": True}},
     },
 }
-
-# 栏目名 → theme id 映射
-COLUMN_ALIASES = {
-    "学术前沿": "academic",
-    "行业趋势": "industry",
-    "技术专题": "tech",
-    "人物故事": "story",
-    "academic": "academic",
-    "industry": "industry",
-    "tech": "tech",
-    "story": "story",
-}
-
-# voice-styling 禁用词（从 SKILL.md 第一节提取的引号内中文模式）
-FORBIDDEN_WORDS = [
-    "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
-    "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
-    "毫无疑问", "不言而喻",
-    "从某种意义上说", "在一定程度上", "未来可期", "让我们拭目以待", "相信未来",
-    "这表明", "由此可见", "通过以上分析", "不难看出", "这说明",
-    "接下来我们来看", "可以看到", "需要注意的是",
-    "希望本文对你有所帮助",
-]
 
 
 def load_config(config_path: str | None) -> dict:
@@ -88,9 +73,21 @@ def load_config(config_path: str | None) -> dict:
     return DEFAULT_CONFIG
 
 
+def get_forbidden_words(config: dict) -> list[str]:
+    """从配置中读取禁用词列表（单一事实来源: lint-config.yaml）"""
+    fp = config.get("rules", {}).get("forbidden_patterns", {})
+    return fp.get("words", [])
+
+
 def get_column_overrides(config: dict, column: str) -> dict:
     overrides = config.get("column_overrides", {})
-    return overrides.get(column, {})
+    # 先直接查找，再通过别名反查（column_overrides 用中文 key，但 frontmatter 可能用英文 ID）
+    result = overrides.get(column)
+    if result is None:
+        alias_to_cn = {v: k for k, v in COLUMN_ALIASES.items() if k != v}
+        cn_name = alias_to_cn.get(column, "")
+        result = overrides.get(cn_name, {})
+    return result
 
 
 # ============================================================
@@ -550,14 +547,30 @@ def rule_block_content(lines: list[str], _config: dict, result: LintResult):
     check_block()
 
 
-def rule_forbidden_patterns(lines: list[str], _config: dict, result: LintResult):
-    """规则 G: 禁用词检查（从 voice-styling skill 提取）"""
+def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
+    """规则 G: 禁用词检查（从 lint-config.yaml 的 forbidden_patterns.words 读取）"""
+    words = get_forbidden_words(config)
+    if not words:
+        return
     for ctx in iter_lines(lines):
         if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
             continue
-        for word in FORBIDDEN_WORDS:
+        for word in words:
             if word in ctx.text:
                 result.add("G1", "warning", ctx.line_num, f"检测到禁用词: {word}")
+
+
+# 栏目名 → theme id 映射
+COLUMN_ALIASES = {
+    "学术前沿": "academic",
+    "行业趋势": "industry",
+    "技术专题": "tech",
+    "人物故事": "story",
+    "academic": "academic",
+    "industry": "industry",
+    "tech": "tech",
+    "story": "story",
+}
 
 
 # ============================================================

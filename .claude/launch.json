@@ -7,5 +7,6 @@
       "runtimeArgs": ["serve", "tools", "-l", "3000", "--no-clipboard"],
       "port": 3000
     }
-  ]
+  ],
+  "autoVerify": false
 }
