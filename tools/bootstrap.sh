@@ -61,7 +61,7 @@ info "框架版本: $SOURCE_VERSION"
 # ── 框架文件清单 ──────────────────────────────────────
 # 这些目录/文件属于框架层，拉取时复制、升级时覆盖
 FRAMEWORK_DIRS=(".claude/agents" ".claude/skills" ".claude/rules" "tools")
-FRAMEWORK_FILES=("styles/default/columns.yaml" "styles/default/markdown-extensions.md")
+FRAMEWORK_FILES=("styles/default/columns.yaml" "styles/default/markdown-extensions.md" ".claude/settings.json")
 
 # ── 同步框架文件 ─────────────────────────────────────
 sync_framework() {
