@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
             "valid_types": [
                 "card", "cta", "footer", "media", "miniapp",
                 "vote", "collection", "hashtag", "readmore", "label", "note",
+                "references", "timeline", "steps",
             ],
         },
         "typography": {
@@ -48,7 +49,15 @@ DEFAULT_CONFIG = {
             "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:"],
             "forbidden_tags": ["<style", "<script"],
         },
-        "forbidden_patterns": {"enabled": True, "severity": "warning"},
+        "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
+            # 与 lint-config.yaml 的 forbidden_patterns.words 同步（PyYAML 不可用时的回退）
+            "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
+            "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
+            "毫无疑问", "不言而喻", "从某种意义上说", "在一定程度上",
+            "未来可期", "让我们拭目以待", "相信未来", "这表明", "由此可见",
+            "通过以上分析", "不难看出", "这说明", "接下来我们来看",
+            "可以看到", "需要注意的是", "希望本文对你有所帮助",
+        ]},
     },
     "column_overrides": {
         "学术前沿": {"theme_constraints": {"require_references": True, "require_tldr": True}},
@@ -56,29 +65,6 @@ DEFAULT_CONFIG = {
         "技术专题": {"theme_constraints": {"require_code_block": True}},
     },
 }
-
-# 栏目名 → theme id 映射
-COLUMN_ALIASES = {
-    "学术前沿": "academic",
-    "行业趋势": "industry",
-    "技术专题": "tech",
-    "人物故事": "story",
-    "academic": "academic",
-    "industry": "industry",
-    "tech": "tech",
-    "story": "story",
-}
-
-# voice-styling 禁用词（从 SKILL.md 第一节提取的引号内中文模式）
-FORBIDDEN_WORDS = [
-    "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
-    "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
-    "毫无疑问", "不言而喻",
-    "从某种意义上说", "在一定程度上", "未来可期", "让我们拭目以待", "相信未来",
-    "这表明", "由此可见", "通过以上分析", "不难看出", "这说明",
-    "接下来我们来看", "可以看到", "需要注意的是",
-    "希望本文对你有所帮助",
-]
 
 
 def load_config(config_path: str | None) -> dict:
@@ -88,9 +74,21 @@ def load_config(config_path: str | None) -> dict:
     return DEFAULT_CONFIG
 
 
+def get_forbidden_words(config: dict) -> list[str]:
+    """从配置中读取禁用词列表（单一事实来源: lint-config.yaml）"""
+    fp = config.get("rules", {}).get("forbidden_patterns", {})
+    return fp.get("words", [])
+
+
 def get_column_overrides(config: dict, column: str) -> dict:
     overrides = config.get("column_overrides", {})
-    return overrides.get(column, {})
+    # 先直接查找，再通过别名反查（column_overrides 用中文 key，但 frontmatter 可能用英文 ID）
+    result = overrides.get(column)
+    if result is None:
+        alias_to_cn = {v: k for k, v in COLUMN_ALIASES.items() if k != v}
+        cn_name = alias_to_cn.get(column, "")
+        result = overrides.get(cn_name, {})
+    return result
 
 
 # ============================================================
@@ -382,6 +380,10 @@ def rule_typography(lines: list[str], config: dict, result: LintResult):
 
     flush_paragraph()
 
+    # T1: 文章必须有恰好一个 H1（typesetter 依赖 H1 触发栏目标识区）
+    if h1_count == 0:
+        result.add("T1", "error", 0, "文章缺少 H1 标题行（typesetter 需要 H1 触发栏目标识区渲染）")
+
 
 def rule_theme_constraints(lines: list[str], column: str, config: dict, result: LintResult):
     """规则 B: 栏目特有约束"""
@@ -550,14 +552,150 @@ def rule_block_content(lines: list[str], _config: dict, result: LintResult):
     check_block()
 
 
-def rule_forbidden_patterns(lines: list[str], _config: dict, result: LintResult):
-    """规则 G: 禁用词检查（从 voice-styling skill 提取）"""
+def rule_article_structure(lines: list[str], column: str, config: dict, result: LintResult):
+    """规则 S: 文章结构完整性（确定性检查，减少 LLM 验证负担）"""
+    theme_id = COLUMN_ALIASES.get(column, column) if column else ""
+    full_text = "\n".join(lines)
+    fm = parse_frontmatter(lines)
+
+    # S1: frontmatter 必须字段
+    required_fm = ["column", "title"]
+    for field in required_fm:
+        if field not in fm:
+            result.add("S1", "error", 1, f"frontmatter 缺少必须字段: {field}")
+
+    # S2: 非 story 栏目应有 tldr
+    if theme_id and theme_id != "story" and "tldr" not in fm:
+        result.add("S2", "warning", 1, "非 story 栏目建议在 frontmatter 中包含 tldr 字段")
+
+    # S3: H1 后应紧跟 blockquote (非 story)  —— 与 B2 互补，此处检查 article.md 最终输出
+    # (B2 只检查 academic，此处扩展到所有非 story)
+    if theme_id and theme_id != "story":
+        h1_idx = None
+        for i, line in enumerate(lines):
+            if re.match(r"^# [^#]", line):
+                h1_idx = i
+                break
+        if h1_idx is not None:
+            found_bq = False
+            for j in range(h1_idx + 1, len(lines)):
+                stripped = lines[j].strip()
+                if stripped:
+                    found_bq = stripped.startswith(">")
+                    break
+            if not found_bq:
+                result.add("S3", "warning", h1_idx + 1,
+                            "H1 标题后建议紧跟 > blockquote 作为文章摘要（typesetter 会渲染为摘要区）")
+
+    # S4: 代码块必须标注语言
+    in_code = False
+    for ctx in iter_lines(lines):
+        if ctx.stripped.startswith("```"):
+            if not in_code:
+                lang = ctx.stripped[3:].strip()
+                if not lang:
+                    result.add("S4", "warning", ctx.line_num,
+                                "代码块缺少语言标注（如 ```python）")
+            in_code = not in_code
+
+    # S5: USER_FILL / TODO 残留
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter:
+            continue
+        if "<!-- USER_FILL:" in ctx.text:
+            result.add("S5", "warning", ctx.line_num,
+                        "检测到 USER_FILL 占位符（发布前应替换为实际内容或删除）")
+        if not ctx.in_code_block and "TODO" in ctx.text:
+            result.add("S5", "warning", ctx.line_num,
+                        "检测到 TODO 标记（发布前应处理）")
+
+    # S6: :::block 闭合后无空行（影响后续段落解析）
+    prev_was_close = False
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            prev_was_close = False
+            continue
+        if ctx.stripped == ":::":
+            prev_was_close = True
+            continue
+        if prev_was_close and ctx.stripped:
+            # 紧接 ::: 闭合标记后有内容但无空行
+            result.add("S6", "warning", ctx.line_num,
+                        ":::block 闭合标记后建议空一行再写正文（避免解析粘连）")
+        prev_was_close = False
+
+    # S7: frontmatter column 与文件实际栏目一致性（信息性）
+    if fm.get("column") and column and fm["column"] != column:
+        fm_col = fm["column"]
+        result.add("S7", "warning", 1,
+                    f"frontmatter column={fm_col} 与命令行参数 column={column} 不一致")
+
+
+def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: LintResult):
+    """规则 T: typesetter 兼容性检查"""
+    theme_id = COLUMN_ALIASES.get(column, column) if column else ""
+    full_text = "\n".join(lines)
+
+    # T4: 本地文件路径引用
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+        if re.search(r'<img\s[^>]*src=["\']\.\./', ctx.text, re.IGNORECASE):
+            result.add("T4", "error", ctx.line_num,
+                        "检测到本地路径 <img> 引用（typesetter 无法访问本地文件，需内联 SVG）")
+        if re.search(r'!\[.*\]\(\.\./figures/', ctx.text):
+            result.add("T4", "error", ctx.line_num,
+                        "检测到本地 figures 路径引用（需内联 SVG 或使用远程 URL）")
+
+    # T5: 残留占位符
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+        if "<!-- FIGURE:" in ctx.text:
+            result.add("T5", "warning", ctx.line_num,
+                        "检测到未替换的图表占位符（format-exporting 应已替换为内联内容）")
+
+    # T6: 引用文献应使用 :::references
+    has_citation = bool(re.search(r"\[\d+\]", full_text))
+    has_ref_block = bool(re.search(r"^:::references", full_text, re.MULTILINE))
+    if has_citation and not has_ref_block:
+        # 检查是否有普通有序列表形式的引用
+        has_trailing_ol = False
+        for ctx in iter_lines(lines):
+            if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
+                continue
+            if re.match(r"^\d+\.\s+.*\[.*\]\(http", ctx.stripped):
+                has_trailing_ol = True
+                break
+        if has_trailing_ol:
+            result.add("T6", "warning", 0,
+                        "引用文献建议使用 :::references 块包裹（紧凑排版，提升移动端体验）")
+
+
+def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
+    """规则 G: 禁用词检查（从 lint-config.yaml 的 forbidden_patterns.words 读取）"""
+    words = get_forbidden_words(config)
+    if not words:
+        return
     for ctx in iter_lines(lines):
         if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
             continue
-        for word in FORBIDDEN_WORDS:
+        for word in words:
             if word in ctx.text:
                 result.add("G1", "warning", ctx.line_num, f"检测到禁用词: {word}")
+
+
+# 栏目名 → theme id 映射
+COLUMN_ALIASES = {
+    "学术前沿": "academic",
+    "行业趋势": "industry",
+    "技术专题": "tech",
+    "人物故事": "story",
+    "academic": "academic",
+    "industry": "industry",
+    "tech": "tech",
+    "story": "story",
+}
 
 
 # ============================================================
@@ -599,6 +737,12 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
 
     if rules_cfg.get("forbidden_patterns", {}).get("enabled", True):
         rule_forbidden_patterns(lines, config, result)
+
+    if rules_cfg.get("article_structure", {}).get("enabled", True):
+        rule_article_structure(lines, column, config, result)
+
+    if rules_cfg.get("typesetter_compat", {}).get("enabled", True):
+        rule_typesetter_compat(lines, column, config, result)
 
     return result
 

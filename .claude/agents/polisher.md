@@ -3,9 +3,6 @@ name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
-memory: project
-skills:
-  - writing-guiding
 ---
 
 ## Role
@@ -19,7 +16,9 @@ skills:
 启动前需读取以下文件:
 - `articles/{slug}/drafts/full.md` — 完整草稿（修改基准）
 - `articles/{slug}/output/audit.md` — 审校报告（修复指令）
-- `.claude/agent-memory/polisher/MEMORY.md` — 历史经验
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南
 
 ## Constraints
 
@@ -31,15 +30,9 @@ skills:
 - **风格偏离** → 调整至栏目语气
 - **句式问题** → 按以下三条规则处理
 
-### 润色三规则
-
-1. **删除过渡句**: 所有起承转合的过渡句直接删除（"接下来我们来看..." → 直接开始下一节）
-2. **被动转主动**: "X 被广泛使用" → "很多团队在用 X"
-3. **合并重复**: 两段表达同一意思则合并为一段
-
 ### 通用约束
 
-- 应用 writing-quality rule 的句式和段落规则（长句拆分、段首句删除测试、信息无损检查）
+- 应用 writing-quality rule 的全部规则（句式、段落、润色三规则、自检），该 rule 为权威定义
 - 确保至少 1 处 `<!-- USER_FILL -->` 标注
 - 信息无损失，逻辑无断裂
 - 整体语气一致
@@ -62,25 +55,15 @@ skills:
 - 长句拆分: {N} 处
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/drafts/full.md` 必须存在
-- `articles/{slug}/output/audit.md` 必须存在
-- .pipeline-states/{slug}.json 中 audit 阶段 status 为 completed
+**输入**:
+- `articles/{slug}/drafts/full.md`（修改基准）
+- `articles/{slug}/output/audit.md`（修复指令）
 
-## Output Contract
-
-- 终稿: `articles/{slug}/output/final.md`（润色后全文 + 变更摘要）
-- 无 quality-redline 禁用词汇/句式
-- 信息无损失，逻辑无断裂
+**输出**: `articles/{slug}/output/final.md`（润色后全文 + 变更摘要）
 
 ## Exit Criteria
 
-- 终稿无禁用词汇/句式
 - 终稿符合平台兼容性约束
 - 整体语气一致
-- 输出文件已写入
-
-## Decision Log
-
-（运行时自动填写）

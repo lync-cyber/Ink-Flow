@@ -3,9 +3,6 @@ name: illustrator
 description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）、对比表格和概念示意图。
 tools: Read, Write, Bash
 model: sonnet
-memory: none
-skills:
-  - visual-theming
 ---
 
 ## Role
@@ -21,6 +18,9 @@ skills:
 - `articles/{slug}/drafts/full.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
 - `styles/default/columns.yaml` — 栏目色板（4 栏目完整色系）
 
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/visual-theming/SKILL.md` — SVG 组件配色规范、组件内容要求、封面模板参数
+
 ### 品牌色驱动生成
 
 生成流程：
@@ -31,13 +31,32 @@ skills:
 
 ## Constraints
 
+### 视觉断点归属过滤
+
+大纲中每个视觉断点标注了 `(owner:format)`。Illustrator **只负责** `(illustrator:*)` 标注的断点，**忽略** `(writer:*)` 标注的断点（由 writer 用 :::block 或 Markdown 实现）。
+
+### 格式决策矩阵
+
+| 内容类型 | 应使用格式 | 负责 agent | 理由 |
+|---------|-----------|-----------|------|
+| key-value 数据 | :::card | writer | typesetter 有栏目特定渲染 |
+| 简单对比表 (≤5行) | Markdown 表格 | writer | typesetter 表格渲染有主题样式 |
+| 结论总结 (≤3条) | :::card | writer | 短文字无需 SVG |
+| 提示/误区文字 | :::note | writer | typesetter 原生支持 |
+| 复杂流程图/架构图 | Mermaid/SVG | **illustrator** | 需要可视化 |
+| 数据图表 | SVG | **illustrator** | 需要精确坐标绑定 |
+| 误区卡 (双列对比) | SVG | **illustrator** | 视觉冲击力，双列布局 |
+| 金句卡 | SVG | **illustrator** | 品牌视觉呈现 |
+
+### 生成约束
+
 - 架构图 / 流程图：优先使用 Mermaid，复杂场景直接生成 SVG
-- 对比表格：使用 Markdown 表格，可直接嵌入正文
 - SVG 和图片约束见 wechat-platform rule
 - 图表必须自解释 — 不依赖正文也能理解核心信息
 - 每张图表附带一行说明文字
 - 不需要持久化记忆 — 每篇文章的配图需求不同
 - 所有 SVG 中的颜色必须来自 columns.yaml 的栏目色板，不得自行选色
+- **不生成结论卡** — 结论卡由 writer 用 :::card 实现（见 visual-theming skill）
 
 ## Format
 
@@ -66,24 +85,15 @@ skills:
 | ... | ... | ... |
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/outline.md` 必须存在
-- .pipeline-states/{slug}.json 中 outline 阶段 status 为 completed
+**输入**: `articles/{slug}/outline.md`（必须存在）
 
-## Output Contract
-
-- 输出目录: `articles/{slug}/figures/`
-- 输出文件: `articles/{slug}/figures/summary.md`（所有图表汇总）
-- 每个图表单独文件: `articles/{slug}/figures/fig-{N}.{md|svg}`
-- 必须包含至少一个 Mermaid 代码块或 SVG
+**输出**:
+- `articles/{slug}/figures/summary.md`（所有图表汇总）
+- `articles/{slug}/figures/fig-{N}.{md|svg}`（单独文件）
 
 ## Exit Criteria
 
 - 大纲中每个标注了视觉断点的 section 都有对应图表
 - 所有 SVG 符合公众号兼容约束
-- 每张图表有说明文字
-
-## Decision Log
-
-（运行时自动填写）

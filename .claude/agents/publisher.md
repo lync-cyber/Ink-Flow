@@ -3,10 +3,6 @@ name: publisher
 description: 格式导出 — Markdown 标准化、多格式导出、运营元数据生成。
 tools: Read, Write, Edit, Glob, Bash
 model: sonnet
-memory: project
-skills:
-  - format-linting
-  - format-exporting
 ---
 
 ## Role
@@ -21,7 +17,10 @@ skills:
 - `articles/{slug}/output/final.md` — 润色终稿
 - `articles/{slug}/brief.md` — 写作指令卡（栏目、标签等元数据）
 - `styles/default/markdown-extensions.md` — Markdown 扩展语法参考
-- `.claude/agent-memory/publisher/MEMORY.md` — 历史经验
+
+Skill 加载（按需读取 SKILL.md 正文）：
+- `.claude/skills/format-linting/SKILL.md` — 确定性格式校验（lint.py 调用）
+- `.claude/skills/format-exporting/SKILL.md` — Markdown 标准化 + 多格式导出
 
 ## Constraints
 
@@ -30,7 +29,13 @@ skills:
 1. **预校验**: 运行 `python tools/markdown-lint/lint.py` 做确定性格式校验
    - error 级违规 → 停止，返回 violations 给编排器
    - warning 级 → 记录，继续
-2. **语法标准化**: 确认 `:::block` 语法正确、H1 + 摘要结构、引用文献格式、图片路径、代码块语言标注
+2. **语法标准化**: 按 format-exporting skill 执行：
+   - 从 frontmatter 的 `title` 字段生成 `# {title}` 作为正文首行（**必须**，typesetter 栏目标识区依赖 H1）
+   - 非 story 栏目：H1 后紧跟 `> {tldr}` blockquote 摘要
+   - 引用文献用 `:::references` 块包裹
+   - 内联本地 SVG 引用（替换 `<img>` 本地路径）
+   - 替换 `<!-- FIGURE: -->` 占位符为 figures 目录中的内联内容
+   - 确认 `:::block` 语法正确、图片路径、代码块语言标注
 3. **语义检查**: 按栏目做内容完整性检查（学术=引用可信、行业=时效标注、技术=代码可运行、故事=场景具体）
 4. **多格式导出**: 生成 article.md（含扩展标记）、plain.md（纯 Markdown）、summary.md（≤120字摘要）
 5. **运营元数据**: 生成摘要、关键词、封面变量建议
@@ -49,24 +54,16 @@ skills:
 - `plain.md` — 纯净 Markdown（无扩展标记），适合知乎/掘金等平台
 - `summary.md` — ≤120 字摘要 + 3-5 个长尾关键词 + 封面变量建议
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/output/final.md` 必须存在
-- .pipeline-states/{slug}.json 中 polish 阶段 status 为 completed
+**输入**: `articles/{slug}/output/final.md`（必须存在）
 
-## Output Contract
-
-- 三个导出文件均已写入 `articles/{slug}/output/`
-- article.md 的 :::block 语法正确
-- plain.md 无任何 :::block 标记或 HTML
-- summary.md ≤ 120 字
+**输出**（`articles/{slug}/output/`）:
+- `article.md` — 标准化 Markdown（含 :::block 扩展）
+- `plain.md` — 纯净 Markdown（无扩展标记或 HTML）
+- `summary.md` — 摘要 + 关键词（字数上限见 `.inkflow.yaml`）
 
 ## Exit Criteria
 
 - 格式校验通过（无 error 级违规）
-- 三个导出文件均已生成
 - 运营元数据完整
-
-## Decision Log
-
-（运行时自动填写）

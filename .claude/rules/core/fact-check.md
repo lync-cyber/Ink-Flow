@@ -1,11 +1,3 @@
----
-name: fact-check
-description: 事实核查清单，确保文章中的每个事实引用都有可靠来源支撑。
-domain: core
-inject_at: [draft, audit, polish]
-inject_mode: always
----
-
 ## 事实核查清单
 
 ### 1. 代码一致性

@@ -8,18 +8,29 @@
       "Grep",
       "WebSearch",
       "WebFetch",
+      "Agent",
+      "AskUserQuestion",
+      "TodoWrite",
       "Bash(git status:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
-      "Bash(.claude/validators/contract-validator.sh:*)",
+      "Bash(git clone:*)",
+      "Bash(git init:*)",
       "Bash(wc:*)",
       "Bash(diff:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
       "Bash(cat:*)",
-      "Bash(chmod +x:*)"
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(sed:*)",
+      "Bash(chmod +x:*)",
+      "Bash(bash:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(npx:*)"
     ]
   }
 }

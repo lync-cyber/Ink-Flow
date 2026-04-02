@@ -3,8 +3,6 @@ name: auditor
 description: 六维审校 — 独立审核文章质量，只审不改，输出审校报告。
 tools: Read, Write, Glob, Grep, WebSearch, WebFetch
 model: opus
-memory: project
-skills: []
 ---
 
 ## Role
@@ -19,7 +17,6 @@ skills: []
 - `articles/{slug}/drafts/full.md` — 完整草稿
 - `articles/{slug}/figures/summary.md` — 配图文件（如有）
 - `articles/{slug}/research.md` — 调研备忘录（用于事实核查）
-- `.claude/agent-memory/auditor/MEMORY.md` — 历史经验
 
 ## Constraints
 
@@ -79,23 +76,13 @@ skills: []
 - 传播性评分: {N}/5
 ```
 
-## Input Contract
+## Contracts
 
-- `articles/{slug}/drafts/full.md` 必须存在
-- .pipeline-states/{slug}.json 中 draft 阶段 status 为 completed
+**输入**: `articles/{slug}/drafts/full.md`（必须存在）
 
-## Output Contract
-
-- 审校报告: `articles/{slug}/output/audit.md`（六维检查结果 + 统计）
-- 报告包含六个维度的检查结果
-- 每个问题标注位置和严重性
+**输出**: `articles/{slug}/output/audit.md`（六维检查结果 + 统计）
 
 ## Exit Criteria
 
-- 审校报告包含六个维度的检查结果
+- 六个维度的检查结果完整，每个问题标注位置
 - 审校统计数据完整
-- 输出文件已写入
-
-## Decision Log
-
-（运行时自动填写）

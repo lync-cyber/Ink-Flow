@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """lint-framework.py — InkFlow 框架静态校验（L0 质量门禁）
 
-用法: python tests/lint-framework.py
+用法: python tests/lint-framework.py [-v|--verbose]
+
+  默认只输出错误和警告；加 -v 输出全部检查项。
 
 校验项:
   1. 路径一致性 — agent/skill 中的路径引用与目录结构一致
-  2. YAML Schema — pipeline/domain/.inkflow.yaml 必填字段
+  2. YAML Schema — .inkflow.yaml 必填字段 + stages 结构
   3. Agent Frontmatter 完整性 — 必填字段 + RCCF 正文结构
-  4. Skill Frontmatter 完整性 — 必填字段 + type 合法性
-  5. 交叉引用 — pipeline 中引用的 agent/skill/rule 文件存在
-  6. 领域包完整性 — domain.yaml 中列出的 skill/rule 均存在
+  4. Skill Frontmatter 完整性 — 必填字段
+  5. 交叉引用 — .inkflow.yaml stages 中引用的 agent 文件存在
+  6. 领域包完整性 — domain YAML 中列出的 skill/rule 均存在
 """
 
 import io
@@ -27,26 +29,40 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 errors = 0
 warnings = 0
+verbose = False
+_section_has_issue = False
+_current_section = ""
 
 
 def error(msg: str):
-    global errors
-    print(f"  \u2717 ERROR: {msg}")
+    global errors, _section_has_issue
+    if not verbose and not _section_has_issue:
+        print(f"\n=== {_current_section} ===")
+    _section_has_issue = True
+    print(f"  ✗ ERROR: {msg}")
     errors += 1
 
 
 def warn(msg: str):
-    global warnings
-    print(f"  \u26a0 WARN: {msg}")
+    global warnings, _section_has_issue
+    if not verbose and not _section_has_issue:
+        print(f"\n=== {_current_section} ===")
+    _section_has_issue = True
+    print(f"  ⚠ WARN: {msg}")
     warnings += 1
 
 
 def ok(msg: str):
-    print(f"  \u2713 {msg}")
+    if verbose:
+        print(f"  ✓ {msg}")
 
 
 def section(title: str):
-    print(f"\n=== {title} ===")
+    global _section_has_issue, _current_section
+    _section_has_issue = False
+    _current_section = title
+    if verbose:
+        print(f"\n=== {title} ===")
 
 
 # ============================================================
@@ -93,8 +109,8 @@ def grep_recursive(dirs: list[Path], pattern: str) -> list[tuple[Path, int, str]
     return results
 
 
-def extract_yaml_section(text: str, section_name: str) -> list[str]:
-    """提取顶层 YAML 段落的行（如 skills: 或 rules: 下的所有缩进行）"""
+def parse_yaml_list(text: str, section_name: str) -> list[str]:
+    """提取顶层 YAML 列表段落的值（如 skills: 或 rules: 下的 - item 行）"""
     lines = text.splitlines()
     in_section = False
     result = []
@@ -105,8 +121,38 @@ def extract_yaml_section(text: str, section_name: str) -> list[str]:
         if in_section:
             if line and not line[0].isspace() and not line.startswith("#"):
                 break
-            result.append(line)
+            m = re.match(r"\s+-\s+(\S+)", line)
+            if m:
+                result.append(m.group(1))
     return result
+
+
+def parse_stages(text: str) -> list[dict[str, str]]:
+    """从 .inkflow.yaml 提取 stages 列表中的 name 和 agent 字段"""
+    lines = text.splitlines()
+    in_stages = False
+    stages = []
+    current = {}
+    for line in lines:
+        if re.match(r"^stages:", line):
+            in_stages = True
+            continue
+        if in_stages:
+            if line and not line[0].isspace() and not line.startswith("#"):
+                break
+            # 仅匹配顶层 stage 项（缩进 2 空格 + dash），忽略嵌套的 - name:
+            m = re.match(r"  - name:\s*(\S+)", line)
+            if m:
+                if current:
+                    stages.append(current)
+                current = {"name": m.group(1)}
+                continue
+            m = re.match(r"    agent:\s*(\S+)", line)
+            if m and current:
+                current["agent"] = m.group(1)
+    if current:
+        stages.append(current)
+    return stages
 
 
 # ============================================================
@@ -127,13 +173,20 @@ def check_path_consistency(repo: Path):
         ok("无已废弃路径引用")
 
     # 检查硬编码绝对路径
-    dirs_all = dirs + [repo / ".claude" / "pipelines"]
-    hits = grep_recursive(dirs_all, r"/c/Users|C:\\Users|/home/")
+    hits = grep_recursive(dirs, r"/c/Users|C:\\Users|/home/")
     if hits:
         for path, num, line in hits:
             error(f"发现硬编码绝对路径（{path.relative_to(repo)}:{num}）")
     else:
         ok("无硬编码绝对路径")
+
+    # 检查已废弃的 pipelines 目录引用
+    hits = grep_recursive(dirs, r"\.claude/pipelines/")
+    if hits:
+        for path, num, line in hits:
+            warn(f"引用已废弃的 .claude/pipelines/ 路径（{path.relative_to(repo)}:{num}）")
+    else:
+        ok("无已废弃 pipelines 目录引用")
 
 
 def check_yaml_schema(repo: Path):
@@ -141,38 +194,65 @@ def check_yaml_schema(repo: Path):
 
     # .inkflow.yaml
     inkflow = repo / ".inkflow.yaml"
-    if inkflow.exists():
-        for field in ("version", "domains", "model_allocation"):
-            if file_contains(inkflow, rf"^{field}:"):
-                ok(f".inkflow.yaml 包含 {field}")
-            else:
-                error(f".inkflow.yaml 缺少必填字段: {field}")
-    else:
+    if not inkflow.exists():
         error(".inkflow.yaml 不存在")
+        return
 
-    # pipeline YAML
-    for pipeline in sorted((repo / ".claude" / "pipelines").glob("*.yaml")):
-        pname = pipeline.name
-        for field in ("name", "stages"):
-            if file_contains(pipeline, rf"^{field}:"):
-                ok(f"{pname} 包含 {field}")
-            else:
-                error(f"{pname} 缺少 {field} 字段")
+    for field in ("version", "domains", "model_allocation", "stages"):
+        if file_contains(inkflow, rf"^{field}:"):
+            ok(f".inkflow.yaml 包含 {field}")
+        else:
+            error(f".inkflow.yaml 缺少必填字段: {field}")
 
-    # domain.yaml
-    for domain_yaml in sorted((repo / ".claude" / "skills" / "domains").glob("*/domain.yaml")):
-        dname = domain_yaml.parent.name
-        for field in ("name", "skills", "rules"):
-            if file_contains(domain_yaml, rf"^{field}:"):
-                ok(f"domain {dname}: 包含 {field}")
+    # 校验 stages 结构：每个 stage 必须有 name
+    text = inkflow.read_text(encoding="utf-8")
+    stages = parse_stages(text)
+    if stages:
+        ok(f".inkflow.yaml 定义了 {len(stages)} 个 stage")
+        for stage in stages:
+            if "name" not in stage:
+                error(f".inkflow.yaml stage 缺少 name 字段")
+    else:
+        error(".inkflow.yaml stages 段为空")
+
+    # 校验 model_allocation 中的 agent 与 agent 文件一致
+    agents_dir = repo / ".claude" / "agents"
+    if agents_dir.exists():
+        agent_files = {f.stem for f in agents_dir.glob("*.md") if f.stem != "_template"}
+        model_lines = []
+        in_model = False
+        for line in text.splitlines():
+            if re.match(r"^model_allocation:", line):
+                in_model = True
+                continue
+            if in_model:
+                if line and not line[0].isspace() and not line.startswith("#"):
+                    break
+                m = re.match(r"\s+(\w[\w-]*):", line)
+                if m:
+                    model_lines.append(m.group(1))
+
+        for agent_name in model_lines:
+            if agent_name in agent_files:
+                ok(f"model_allocation '{agent_name}' 有对应 agent 文件")
             else:
-                error(f"domain {dname}: 缺少必填字段 {field}")
+                error(f"model_allocation '{agent_name}' 无对应 agent 文件 (.claude/agents/{agent_name}.md)")
 
 
 def check_agent_frontmatter(repo: Path):
     section("3. Agent Frontmatter 完整性")
 
-    for agent_file in sorted((repo / ".claude" / "agents").glob("*.md")):
+    agents_dir = repo / ".claude" / "agents"
+    if not agents_dir.exists():
+        error(".claude/agents/ 目录不存在")
+        return
+
+    agent_files = sorted(agents_dir.glob("*.md"))
+    if not agent_files:
+        error(".claude/agents/ 目录为空")
+        return
+
+    for agent_file in agent_files:
         aname = agent_file.stem
         if aname == "_template":
             continue
@@ -195,9 +275,17 @@ def check_agent_frontmatter(repo: Path):
 def check_skill_frontmatter(repo: Path):
     section("4. Skill Frontmatter 完整性")
 
-    valid_types = {"rule", "context", "transform", "orchestration"}
+    skills_dir = repo / ".claude" / "skills"
+    if not skills_dir.exists():
+        error(".claude/skills/ 目录不存在")
+        return
 
-    for skill_file in sorted((repo / ".claude" / "skills").rglob("SKILL.md")):
+    skill_files = sorted(skills_dir.rglob("SKILL.md"))
+    if not skill_files:
+        error("未找到任何 SKILL.md 文件")
+        return
+
+    for skill_file in skill_files:
         sname = skill_file.parent.name
 
         fm = extract_frontmatter(skill_file)
@@ -207,112 +295,112 @@ def check_skill_frontmatter(repo: Path):
             else:
                 error(f"skill {sname}: frontmatter 缺少 {field}")
 
-        type_val = fm.get("type", "").strip()
-        if type_val:
-            if type_val in valid_types:
-                ok(f"skill {sname}: type '{type_val}' 合法")
-            else:
-                error(f"skill {sname}: type '{type_val}' 不合法（允许: {', '.join(sorted(valid_types))}）")
-
-
-def resolve_skill(name: str, repo: Path) -> Path | None:
-    """按搜索优先级解析 skill: common → domains/*"""
-    p = repo / ".claude" / "skills" / "common" / name / "SKILL.md"
-    if p.exists():
-        return p
-    for domain_dir in sorted((repo / ".claude" / "skills" / "domains").iterdir()):
-        if domain_dir.is_dir():
-            p = domain_dir / name / "SKILL.md"
-            if p.exists():
-                return p
-    return None
-
-
-def resolve_rule(name: str, repo: Path) -> Path | None:
-    """按搜索优先级解析 rule: core → domains/*"""
-    p = repo / ".claude" / "rules" / "core" / f"{name}.md"
-    if p.exists():
-        return p
-    for domain_dir in sorted((repo / ".claude" / "rules" / "domains").iterdir()):
-        if domain_dir.is_dir():
-            p = domain_dir / f"{name}.md"
-            if p.exists():
-                return p
-    return None
+        # name 字段应与目录名一致
+        name_val = fm.get("name", "")
+        if name_val and name_val != sname:
+            warn(f"skill {sname}: frontmatter name '{name_val}' 与目录名 '{sname}' 不一致")
 
 
 def check_cross_references(repo: Path):
     section("5. 交叉引用完整性")
 
-    for pipeline in sorted((repo / ".claude" / "pipelines").glob("*.yaml")):
-        pname = pipeline.name
-        text = pipeline.read_text(encoding="utf-8")
+    inkflow = repo / ".inkflow.yaml"
+    if not inkflow.exists():
+        error(".inkflow.yaml 不存在，跳过交叉引用检查")
+        return
 
-        # Agent 引用
-        for m in re.finditer(r"agent:\s*(\S+)", text):
-            agent_name = re.sub(r"#.*", "", m.group(1)).strip()
-            if not agent_name:
-                continue
-            agent_path = repo / ".claude" / "agents" / f"{agent_name}.md"
-            if agent_path.exists():
-                ok(f"{pname}: agent '{agent_name}' 存在")
+    text = inkflow.read_text(encoding="utf-8")
+    stages = parse_stages(text)
+    agents_dir = repo / ".claude" / "agents"
+
+    # 检查 stages 中引用的 agent 文件存在
+    for stage in stages:
+        agent_name = stage.get("agent")
+        if not agent_name:
+            continue
+        agent_path = agents_dir / f"{agent_name}.md"
+        if agent_path.exists():
+            ok(f"stage '{stage['name']}': agent '{agent_name}' 存在")
+        else:
+            error(f"stage '{stage['name']}': agent '{agent_name}' 不存在 (.claude/agents/{agent_name}.md)")
+
+    # 检查 stages 中引用的 rules 文件存在
+    for line in text.splitlines():
+        m = re.match(r"\s+-\s+\.claude/rules/(.+\.md)", line)
+        if m:
+            rule_path = repo / ".claude" / "rules" / m.group(1)
+            if rule_path.exists():
+                ok(f"rules 引用 '{m.group(1)}' 存在")
             else:
-                error(f"{pname}: agent '{agent_name}' 不存在 (.claude/agents/{agent_name}.md)")
+                error(f"rules 引用 '{m.group(1)}' 不存在")
 
-        # Skill 引用 — 仅从 skills: 段提取
-        skills_lines = extract_yaml_section(text, "skills")
-        skill_names = set()
-        for line in skills_lines:
-            m = re.match(r"\s+- name:\s*(\S+)", line)
-            if m:
-                name = re.sub(r"#.*", "", m.group(1)).strip().strip("\"'")
-                if name and name not in ("true", "false"):
-                    skill_names.add(name)
-
-        for skill in sorted(skill_names):
-            resolved = resolve_skill(skill, repo)
-            if resolved:
-                ok(f"{pname}: skill '{skill}' \u2192 {resolved.relative_to(repo)}")
+    # 检查 stages 中引用的 validation source 文件存在
+    for line in text.splitlines():
+        m = re.match(r"\s+source:\s*(tools/.+\.yaml)", line)
+        if m:
+            source_path = repo / m.group(1)
+            if source_path.exists():
+                ok(f"validation source '{m.group(1)}' 存在")
             else:
-                error(f"{pname}: skill '{skill}' 未找到（搜索路径: common/ + domains/*/）")
-
-        # Rule 引用 — 从 rules: 段提取
-        rules_lines = extract_yaml_section(text, "rules")
-        rule_names = set()
-        for line in rules_lines:
-            m = re.match(r"\s+- ([a-z][-a-z_]+)", line)
-            if m:
-                name = m.group(1)
-                if name not in ("global", "stages"):
-                    rule_names.add(name)
-
-        for rule in sorted(rule_names):
-            resolved = resolve_rule(rule, repo)
-            if resolved:
-                ok(f"{pname}: rule '{rule}' \u2192 {resolved.relative_to(repo)}")
-            else:
-                error(f"{pname}: rule '{rule}' 未找到（搜索路径: rules/core/ + rules/domains/*/）")
+                error(f"validation source '{m.group(1)}' 不存在")
 
 
 def check_domain_completeness(repo: Path):
     section("6. 领域包完整性")
 
-    for domain_yaml in sorted((repo / ".claude" / "skills" / "domains").glob("*/domain.yaml")):
-        domain_dir = domain_yaml.parent
-        dname = domain_dir.name
+    skills_dir = repo / ".claude" / "skills"
+    rules_dir = repo / ".claude" / "rules"
+
+    # 查找 domain-*.yaml 文件（新结构：扁平化在 .claude/skills/ 下）
+    domain_files = sorted(skills_dir.glob("domain-*.yaml"))
+    if not domain_files:
+        warn("未找到任何 domain-*.yaml 领域包文件")
+        return
+
+    for domain_yaml in domain_files:
+        dname = domain_yaml.stem.replace("domain-", "")
         text = domain_yaml.read_text(encoding="utf-8")
 
-        for m in re.finditer(r"^\s*- (\S+)", text, re.MULTILINE):
-            item = m.group(1).strip()
-            if not item:
-                continue
+        # 检查必填字段
+        for field in ("name", "skills", "rules"):
+            if re.search(rf"^{field}:", text, re.MULTILINE):
+                ok(f"domain {dname}: 包含 {field}")
+            else:
+                error(f"domain {dname}: 缺少必填字段 {field}")
 
-            skill_path = domain_dir / item / "SKILL.md"
+        # 检查 skills 列表中的 skill 是否存在
+        skill_names = parse_yaml_list(text, "skills")
+        for skill in skill_names:
+            skill_path = skills_dir / skill / "SKILL.md"
             if skill_path.exists():
-                ok(f"domain {dname}: skill '{item}' 存在")
-            elif resolve_rule(item, repo):
-                ok(f"domain {dname}: rule '{item}' 存在")
-            # else: 可能是 export format 名，不报错
+                ok(f"domain {dname}: skill '{skill}' 存在")
+            else:
+                error(f"domain {dname}: skill '{skill}' 不存在 (.claude/skills/{skill}/SKILL.md)")
+
+        # 检查 rules 列表中的 rule 是否存在
+        rule_names = parse_yaml_list(text, "rules")
+        for rule in rule_names:
+            # 搜索 core/ 和 domains/*/ 下的 rule 文件
+            found = False
+            for rule_file in rules_dir.rglob(f"{rule}.md"):
+                found = True
+                break
+            if found:
+                ok(f"domain {dname}: rule '{rule}' 存在")
+            else:
+                error(f"domain {dname}: rule '{rule}' 不存在")
+
+    # 检查 .inkflow.yaml 中的 domains 引用都有对应的 domain YAML
+    inkflow = repo / ".inkflow.yaml"
+    if inkflow.exists():
+        inkflow_text = inkflow.read_text(encoding="utf-8")
+        domain_refs = parse_yaml_list(inkflow_text, "domains")
+        for domain_ref in domain_refs:
+            domain_path = skills_dir / f"domain-{domain_ref}.yaml"
+            if domain_path.exists():
+                ok(f".inkflow.yaml domain '{domain_ref}' 有对应领域包文件")
+            else:
+                error(f".inkflow.yaml domain '{domain_ref}' 无对应领域包文件 (.claude/skills/domain-{domain_ref}.yaml)")
 
 
 # ============================================================
@@ -320,6 +408,9 @@ def check_domain_completeness(repo: Path):
 # ============================================================
 
 def main():
+    global verbose
+    verbose = "-v" in sys.argv or "--verbose" in sys.argv
+
     repo = Path(__file__).resolve().parent.parent
     if not (repo / ".inkflow.yaml").exists():
         print(f"错误: 未找到 .inkflow.yaml，请在 InkFlow 项目根目录运行", file=sys.stderr)
@@ -338,10 +429,10 @@ def main():
     print("================================")
 
     if errors > 0:
-        print("\u274c 未通过质量门禁")
+        print("❌ 未通过质量门禁")
         sys.exit(1)
     else:
-        print("\u2705 通过质量门禁")
+        print("✅ 通过质量门禁")
         sys.exit(0)
 
 
