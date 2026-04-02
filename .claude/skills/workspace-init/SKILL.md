@@ -107,7 +107,7 @@ references/          ← articles/ + style-guides/ + templates/（各含 .gitkee
 修改 Step 2 拉取的 `.inkflow.yaml`：
 - `workspace_mode: content`
 - 追加 `inkflow_source`: GitHub 仓库 URL 或本地路径
-- 追加 `inkflow_version`: 从源读取的版本号
+- 追加 `inkflow_version`: 从 `git describe --tags --always` 获取的版本号（由 bootstrap.sh 写入）
 - 其他配置（stages、defaults、exports 等）保持不变
 
 ### Step 5 — 生成内容模式 .gitignore
