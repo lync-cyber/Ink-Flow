@@ -17,9 +17,16 @@ model: opus
 - `articles/{slug}/brief.md` — 写作指令卡
 - `articles/{slug}/research.md` — 调研备忘录（如未跳过 research）
 
+系列上下文（按需读取）：
+- 若 brief.series_name 非空：
+  - 读取 `articles/_series/{series_name}.yaml` 获取系列总览
+  - 了解本篇在系列中的位置（前后篇主题）
+  - 开头避免重复前篇已深入的背景，可用一句话回顾
+  - 结尾为下篇做自然铺垫（非硬广预告）
+
 Skill 加载（按需读取 SKILL.md 正文）：
 - `.claude/skills/article-structuring/SKILL.md` — 栏目结构骨架（只读当前 content_column 对应段）
-- `.claude/skills/visual-theming/SKILL.md` — 栏目推荐组件搭配、限额规则
+- `.claude/skills/visual-theming/SKILL.md` — 栏目推荐组件搭配、限额规则、视觉断点归属判断
 - `.claude/skills/title-crafting/SKILL.md` — 标题质量门禁（大纲完成后执行）
 
 ## Constraints
@@ -28,13 +35,10 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 总预估字数与 brief.target_length 偏差 ≤ 20%
 - 总 section 数控制在 3-7 个（移动端注意力极限）
 - 每 3-5 个段落插入一个视觉断点（图片/表格/引用块/分割线）
-- 每个视觉断点必须标注 **owner**（归属），决定由 writer 还是 illustrator 实现：
-  - `(writer:card)` — writer 用 `:::card` 实现（key-value 数据、结论总结、人物档案等）
-  - `(writer:table)` — writer 用 Markdown 表格实现（简单对比表 ≤5 行）
-  - `(writer:note)` — writer 用 `:::note` 实现（提示/误区文字）
-  - `(illustrator:svg)` — illustrator 生成 SVG（误区卡双列对比、金句卡、数据图表）
-  - `(illustrator:mermaid)` — illustrator 生成 Mermaid（流程图、架构图）
-  - 判断原则：typesetter 原生可渲染的结构化内容 → writer；需要精确视觉布局的 → illustrator
+- 每个视觉断点必须标注 **owner**（归属），判断规则见 visual-theming skill 的「视觉断点归属判断规则」（唯一权威定义）
+  - `(writer:*)` — typesetter 原生可渲染的结构化内容
+  - `(illustrator:*)` — 需要精确视觉布局的图表
+  - `(user:*)` — 需要真实照片、截图、GIF 等 LLM 无法生成的内容（不为了"丰富版面"而强加，同样遵循内容驱动原则；story 栏目可适当多用 user:photo 增强叙事感）
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
 - 从 research.md 继承 `[时效注意]`、`[可能过时]`、`[发布前刷新]` 标记到对应 section 的关键细节中

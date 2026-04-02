@@ -37,7 +37,8 @@ AskUserQuestion:
    - 栏目（column）
    - 发布日期（publish_date，若有）
    - 内容类型（content_type）
-3. Claude Code 原生 memory — 读取历史习得的运营偏好（如最佳发布时间、系列文章间隔等）
+3. `articles/_series/*.yaml` — 扫描进行中的系列，将 `status: planned` 的文章自动纳入排期
+4. Claude Code 原生 memory — 读取历史习得的运营偏好（如最佳发布时间、系列文章间隔等）
 
 ## 排期算法
 

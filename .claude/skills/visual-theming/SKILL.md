@@ -87,6 +87,38 @@ disable-model-invocation: true
 | 数据图 | SVG | 有 3+ 数据点需要趋势/对比可视化 | 只有 1-2 个数字，正文内嵌即可 |
 | 架构图 | Mermaid / SVG | 多模块交互关系 | 组件少于 3 个 |
 
+### 视觉断点归属判断规则（唯一权威定义）
+
+每个视觉断点必须标注 **owner**，决定由谁实现：
+
+| 内容类型 | 归属标注 | 负责方 | 判断依据 |
+|---------|---------|-------|---------|
+| key-value 数据、环境信息 | `(writer:card)` | writer | typesetter 有栏目特定 :::card 渲染 |
+| 简单对比表 (≤5行) | `(writer:table)` | writer | typesetter 表格渲染有主题样式 |
+| 结论总结 (≤3条) | `(writer:card)` | writer | 短文字无需 SVG |
+| 提示/误区文字 | `(writer:note)` | writer | typesetter 原生 :::note 支持 |
+| 线性操作步骤 | `(writer:steps)` | writer | typesetter 原生 :::steps 支持 |
+| 复杂流程图/架构图 | `(illustrator:mermaid)` | illustrator | 需要可视化布局 |
+| 数据图表 (3+ 数据点) | `(illustrator:svg)` | illustrator | 需要精确坐标绑定 |
+| 误区卡 (双列对比) | `(illustrator:svg)` | illustrator | 视觉冲击力，双列布局 |
+| 金句卡 | `(illustrator:svg)` | illustrator | 品牌视觉呈现 |
+| 实物照片、人物肖像 | `(user:photo)` | 用户 | 需要真实感，LLM 无法生成 |
+| UI 截图、运行结果 | `(user:screenshot)` | 用户 | 需要精确还原真实界面 |
+| 操作演示、交互效果 | `(user:gif)` | 用户 | 需要动态过程展示 |
+| 引用第三方已有图表 | `(user:image)` | 用户 | 已有现成图片，无需重绘 |
+
+**判断原则**：
+- typesetter 原生可渲染的结构化内容 → writer
+- 需要精确视觉布局的 → illustrator
+- 需要"真实感"或"精确还原"的内容 → user（LLM 标注位置和要求，用户在 CP2 提供实际图片）
+- 可用 SVG/Mermaid 重绘的简单图 → illustrator，而非 user:image
+
+**user:* 断点的处理方式**：
+- outliner 标注断点位置和内容要求（如"此处需要产品截图，展示设置面板"）
+- writer 在对应位置插入占位符 `<!-- MEDIA: {type} | {描述需要什么样的图片} -->`
+- 用户在 CP2 阶段用 `![图注](url)` 替换占位符
+- publisher 检查所有 `<!-- MEDIA:` 占位符已被替换
+
 ### :::block 原生组件（writer 使用，无需 SVG）
 
 | 组件 | 适用场景 | 不适用场景 |

@@ -35,18 +35,9 @@ Skill 加载（按需读取 SKILL.md 正文）：
 
 大纲中每个视觉断点标注了 `(owner:format)`。Illustrator **只负责** `(illustrator:*)` 标注的断点，**忽略** `(writer:*)` 标注的断点（由 writer 用 :::block 或 Markdown 实现）。
 
-### 格式决策矩阵
+### 格式决策
 
-| 内容类型 | 应使用格式 | 负责 agent | 理由 |
-|---------|-----------|-----------|------|
-| key-value 数据 | :::card | writer | typesetter 有栏目特定渲染 |
-| 简单对比表 (≤5行) | Markdown 表格 | writer | typesetter 表格渲染有主题样式 |
-| 结论总结 (≤3条) | :::card | writer | 短文字无需 SVG |
-| 提示/误区文字 | :::note | writer | typesetter 原生支持 |
-| 复杂流程图/架构图 | Mermaid/SVG | **illustrator** | 需要可视化 |
-| 数据图表 | SVG | **illustrator** | 需要精确坐标绑定 |
-| 误区卡 (双列对比) | SVG | **illustrator** | 视觉冲击力，双列布局 |
-| 金句卡 | SVG | **illustrator** | 品牌视觉呈现 |
+完整的归属判断矩阵见 visual-theming skill 的「视觉断点归属判断规则」（唯一权威定义）。
 
 ### 生成约束
 

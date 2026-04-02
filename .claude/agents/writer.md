@@ -85,6 +85,7 @@ tldr: "{summary}"   # story 栏目省略
 大纲中每个视觉断点标注了归属 `owner`：
 - `(writer:card)` / `(writer:table)` / `(writer:note)` — 由 writer 用 `:::block` 或 Markdown 表格实现
 - `(illustrator:svg)` / `(illustrator:mermaid)` — 由 illustrator 生成，writer 在对应位置插入占位符 `<!-- FIGURE: fig-{N} -->`，不自行生成该断点的内容
+- `(user:photo)` / `(user:screenshot)` / `(user:gif)` / `(user:image)` — 由用户提供，writer 在对应位置插入占位符 `<!-- MEDIA: {type} | {具体描述：需要什么内容的图片，建议尺寸/比例} -->`，用户在 CP2 阶段用 `![图注](url)` 替换
 
 ### 文末引用列表（academic 栏目必须）
 

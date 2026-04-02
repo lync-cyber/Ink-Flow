@@ -15,6 +15,9 @@ model: sonnet
 
 启动前需读取以下文件:
 - `articles/{slug}/brief.md` — 写作指令卡（含 topic、调研方向、content_type 等）
+- 若 brief.series_name 非空且 series_index == 1:
+  - 读取 `articles/_series/{series_name}.yaml` 了解系列总览
+  - 调研范围覆盖系列整体主题（为后续篇目奠基），但输出聚焦本篇
 - 若 brief.series_name 非空且 series_index > 1:
   - 扫描 `articles/*/brief.md`，查找 frontmatter 中 series_name 相同的已完成文章
   - 读取其 `articles/{slug}/research.md` 作为背景知识

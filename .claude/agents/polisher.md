@@ -18,7 +18,8 @@ model: sonnet
 - `articles/{slug}/output/audit.md` — 审校报告（修复指令）
 
 Skill 加载（按需读取 SKILL.md 正文）：
-- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南
+- 若 `styles/{style_profile}/style-profile.md` 存在（style_profile 从 brief.md frontmatter 读取，默认 `default`），优先加载作为风格基线（同 writing-guiding skill 的风格优先级规则）
+- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南（style-profile 不存在时的兜底基线）
 
 ## Constraints
 
@@ -43,6 +44,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 对严重性为"高"的事实准确性条目，修改前必须通过 WebSearch 验证当前数据
 - 涉及具体产品名称、模型版本、价格数据的修改，必须回查 research.md 原始数据源，不可凭记忆替换
 - 拒绝审校建议时必须给出具体理由
+- 变更溯源表必须覆盖 audit.md 中所有严重性为"高"的条目（缺失会触发编排器 post-polish 复核失败）
 
 ## Format
 

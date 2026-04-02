@@ -17,13 +17,15 @@ skip_research: false
 no_figures: false
 skip_seo: false
 
+# === 系列参数（独立文章留空即可） ===
+series_name: ""                      # 系列名称（空=独立文章，对应 articles/_series/{name}.yaml）
+series_index: 0                      # 系列中的位置（0=非系列，1=首篇，2+=后续篇）
+
 # === 高级参数（通常使用默认值，按需覆盖） ===
 # opening_style: auto               # pain_point | story | contrast | question | blunt | auto
 # style_profile: default            # 对应 styles/{style_profile}/ 目录
 # tone_override: ""                 # 空=使用 style-profile 默认值
 # publish_timing: evening           # morning | noon | evening | custom
-# series_name: ""                   # 系列名称（空=独立文章）
-# series_index: 0
 # cta_type: follow                  # follow | comment | share | mini_program | none
 # cover_style: auto                 # auto | custom
 ---

@@ -614,7 +614,9 @@ function renderTokens(tokens, theme, spec, isDark, meta, options) {
             const formatted = inlineFormat(text, theme, isDark);
             return `<div style="display:flex;margin-bottom:4px;font-size:12px;line-height:1.5;color:${c.textSec};">${num ? `<span style="color:${c.accent};font-weight:600;flex-shrink:0;margin-right:6px;">[${num}]</span>` : ""}<span style="word-break:break-word;overflow-wrap:break-word;">${formatted}</span></div>`;
           }).join("");
-          parts.push(`<div style="margin:16px 0;padding:14px 16px;background:${isDark ? c.surface : lc.bgDeep || lc.bg};border-radius:2px;border-top:1px solid ${c.border};"><div style="font-size:11px;color:${c.textTer || c.textSec};letter-spacing:2px;margin-bottom:10px;font-weight:500;">参考文献</div>${refsHtml}</div>`);
+          // Enable scrollable container for long reference lists (>5 items)
+          const scrollStyle = refLines.length > 5 ? "max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;" : "";
+          parts.push(`<div style="margin:16px 0;padding:14px 16px;background:${isDark ? c.surface : lc.bgDeep || lc.bg};border-radius:2px;border-top:1px solid ${c.border};${scrollStyle}"><div style="font-size:11px;color:${c.textTer || c.textSec};letter-spacing:2px;margin-bottom:10px;font-weight:500;">参考文献</div>${refsHtml}</div>`);
         } else if (blockType === "timeline") {
           // Timeline — vertical timeline with date markers
           const tlLines = (tok.content || "").split("\n").filter(l => l.trim());

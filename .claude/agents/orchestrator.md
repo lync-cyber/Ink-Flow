@@ -26,6 +26,8 @@ model: opus
 读取 `.inkflow.yaml` 建立运行环境，然后判断用户意图：
 
 - **新建文章**：用户提供了主题 → 进入 Brief 创建
+- **新建系列**：用户说"写一个系列"、"系列文章"、"规划系列" → 进入系列规划（§1.5）
+- **继续系列**：用户说"继续系列"、"写系列下一篇"、"下一篇" → 从 `articles/_series/` 找到未完成系列，创建下一篇 brief → 进入 pipeline
 - **继续 pipeline**：扫描 `.pipeline-states/` 找到有未完成阶段的 state → 继续
 - **重跑阶段**：用户说"重跑 {stage}" → 进入 Rerun 流程
 - **预览 pipeline**：用户说"预览"、"dry-run"、"检查配置" → 进入 Dry-Run 模式
@@ -38,11 +40,67 @@ AskUserQuestion:
   question: "你想做什么？"
   options:
     - "新建文章" — 从 brief 开始创建新内容
+    - "新建系列" — 规划多篇系列文章
+    - "继续系列" — 写系列的下一篇
     - "继续未完成的文章" — 恢复之前暂停的 pipeline
     - "重跑某个阶段" — 重新执行已完成的阶段
     - "预览 pipeline" — 检查配置和依赖（不消耗 token）
     - "学习参考材料" — 分析外部文章/模板，改进现有规则
 ```
+
+## 1.5 系列规划
+
+当用户选择"新建系列"时，采集系列信息并生成系列规划文件。
+
+**Step 1**: 采集系列参数
+
+```
+AskUserQuestion (最多 3 个问题并发):
+  Q1: "系列主题是什么？" → 自由输入
+  Q2: "计划写几篇？" → [2, 3, 4, 5, 自定义]
+  Q3: "属于哪个栏目？" → [academic, industry, tech, story]
+```
+
+**Step 2**: 采集每篇文章的 topic 概要
+
+用 AskUserQuestion 逐篇确认（或让用户一次性提供列表）。
+
+**Step 3**: 生成系列规划文件
+
+- 自动生成 series_name（英文 kebab-case）
+- 写入 `articles/_series/{series_name}.yaml`：
+
+```yaml
+name: "{系列中文名}"
+description: "{一句话描述系列总体目标}"
+total_articles: {N}
+content_column: {column_id}
+style_profile: default
+articles:
+  - index: 1
+    topic: "{第 1 篇主题}"
+    slug: "{auto-generated}"
+    status: planned
+  - index: 2
+    topic: "{第 2 篇主题}"
+    slug: "{auto-generated}"
+    status: planned
+  # ...
+```
+
+**Step 4**: 自动为第 1 篇创建 brief
+
+从系列规划中取第 1 篇的 topic 和 slug，填充 series_name + series_index: 1，进入正常 Brief 创建流程（§2）。更新系列文件中该 article 的 status 为 `in_progress`。
+
+### 继续系列
+
+当用户选择"继续系列"时：
+1. 扫描 `articles/_series/*.yaml`，列出有 `status: planned` 的系列
+2. 若只有一个系列，自动选择；多个则用 AskUserQuestion 让用户选择
+3. 取该系列中下一个 `status: planned` 的 article
+4. 自动创建 brief（填充 series_name、series_index、content_column 从系列文件继承）
+5. 更新系列文件中该 article 的 status 为 `in_progress`
+6. 进入正常 pipeline
 
 ## 2. Brief 创建
 
@@ -118,7 +176,8 @@ FOR each stage from current_stage to end:
   2.5. ARTIFACT INTEGRITY CHECK（仅 resume 时执行）
      - 对每个 requires 中标记为 completed 的依赖阶段：
        确认其输出文件存在且非空（字符数 > 0）
-     - 文件缺失或为空 → 重置该依赖阶段为 pending，
+     - 若依赖阶段同时满足 skip_if 条件 → 直接标记为 skipped（skip 优先于 artifact 重跑）
+     - 否则文件缺失或为空 → 重置该依赖阶段为 pending，
        用 AskUserQuestion 通知用户:
        "{stage} 的产出文件缺失或为空，需要重新执行该阶段。"
 
@@ -271,10 +330,16 @@ AskUserQuestion:
 
 所有阶段 completed 或 skipped 后：
 
+**系列状态更新**（若 brief.series_name 非空）：
+- 读取 `articles/_series/{series_name}.yaml`
+- 将当前 article 的 status 更新为 `completed`
+- 检查系列中是否还有 `status: planned` 的文章
+
 ```
 AskUserQuestion:
   question: "Pipeline 已完成！接下来做什么？"
   options:
+    - "继续写系列下一篇" — 仅当系列中还有 planned 文章时显示
     - "查看发布清单" — 触发 publish-preparing skill
     - "运行创作复盘" — 触发 creation-reviewing skill
     - "分析写作风格" — 触发 style-profiling skill（首次使用推荐）
