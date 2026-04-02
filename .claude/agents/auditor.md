@@ -1,7 +1,7 @@
 ---
 name: auditor
 description: 六维审校 — 独立审核文章质量，只审不改，输出审校报告。
-tools: Read, Write, Glob, Grep, WebSearch, WebFetch
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: opus
 ---
 

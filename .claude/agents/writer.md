@@ -1,7 +1,7 @@
 ---
 name: writer
 description: 按大纲逐 section 生成文章正文，每次只写一个 section，在风格约束下产出高质量内容。
-tools: Read, Write, Edit, Glob
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 ---
 
@@ -30,9 +30,16 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 每个 section 至少一处代码引用或具体数字
 - 严格遵守 writing-guiding skill 的正向替换规则和 quality-redline rule 的禁用模式
 - 按大纲中的视觉断点规划插入图/表/引用
-- 使用 `:::block` 扩展语法（:::card, :::note, :::cta 等）和标准 Markdown，语法参考见 `markdown-extensions.md`
+- 使用 `:::block` 扩展语法（:::card, :::note, :::cta 等）和标准 Markdown，语法和栏目特化格式见 `styles/default/markdown-extensions.md`
+- 视觉组件使用遵循内容驱动原则——没有组件是"必备"的，只在内容确实需要时使用，每篇最多 2-3 个 `:::block` 组件
 - 需要用户填写个人经验的地方标注 `<!-- USER_FILL: {提示内容} -->`
 - 禁止: 所有 forbidden_patterns 中的词汇和句式
+
+### Section 间分隔
+
+- 每个 `## {Section 标题}` 之前（除第一个 section 外）必须插入 `---` 水平分割线
+- typesetter 依赖 `---` 渲染栏目特有的主题分隔符（academic=§, industry=色条, tech=· · ·, story=圆点）
+- 缺少 `---` 会导致 section 之间无视觉间隔
 
 ## Format
 
@@ -57,7 +64,7 @@ tldr: "{summary}"   # story 栏目省略
 {正文内容，文内用 [N] 标注引用}
 
 :::card
-{数据对比/环境需求/新闻卡/人物档案 — 格式因栏目而异，见下方栏目格式}
+{数据对比/环境需求/新闻卡/人物档案 — 栏目特化格式见 markdown-extensions.md}
 :::
 
 :::note
@@ -69,46 +76,9 @@ tldr: "{summary}"   # story 栏目省略
 <!-- USER_FILL: {这里建议用户补充什么} -->
 ```
 
-### :::card 栏目格式（必须严格遵循，typesetter 按此解析）
+### :::block 栏目格式
 
-**tech** — 第 1 行=标题，后续行=`key: value` 键值对：
-```
-:::card
-⚙️ 环境要求
-Python: ≥3.10
-PyTorch: ≥2.0
-GPU: RTX 3060+
-:::
-```
-
-**academic** — 标题行 + 指标行用 `/` 分隔 + `*` 脚注 + `★` 高亮：
-```
-:::card
-核心性能对比
-PatchCore 99.1% / EfficientAD 98.8% / ★本文方法 99.6%
-准确率 / 召回率 / F1
-* AUROC指标，15类缺陷加权平均
-:::
-```
-
-**industry** — 标签 + 日期 + 标题 + 描述：
-```
-:::card
-融资
-2025.12.15
-XX公司完成B轮2亿融资
-专注工业AI视觉检测，估值达15亿
-:::
-```
-
-**story** — 标签 + 人物信息：
-```
-:::card
-人物档案
-张工，38岁
-某汽车零部件厂质检主管
-:::
-```
+`:::card`、`:::note`、`:::cta` 等扩展块的栏目特化格式定义在 `styles/default/markdown-extensions.md`（单一事实来源）。严格按该文档格式输出，typesetter 按此解析。
 
 ### 视觉断点协作
 

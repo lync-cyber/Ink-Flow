@@ -1,7 +1,7 @@
 ---
 name: style-analyzer
 description: 风格分析 — 分析参考文章，提取七维度结构化风格 DNA。
-tools: Read, Write, Glob, Grep
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 ---
 

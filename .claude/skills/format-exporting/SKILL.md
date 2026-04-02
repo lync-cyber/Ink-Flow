@@ -70,7 +70,10 @@ auditor → polisher → final.md (Markdown + :::extensions)
 将引用的本地文件内联到 article.md，确保 typesetter 可渲染：
 
 1. **SVG 内联** — 扫描 `<img src="...svg">` 和 `![...](....svg)` 引用，读取对应 SVG 文件内容，替换为内联 `<svg>...</svg>` 源码
-2. **图表占位符替换** — 将 `<!-- FIGURE: fig-{N} -->` 占位符替换为 `articles/{slug}/figures/` 中对应文件的内容（SVG 直接内联，Mermaid 保留代码块供 typesetter 预览渲染）
+2. **图表占位符替换** — 将 `<!-- FIGURE: fig-{N} -->` 占位符替换为 `articles/{slug}/figures/` 中对应文件的内容（SVG 直接内联）
+   - **Mermaid 预渲染**: 通过 `python tools/mermaid-render.py input.md output.md` 将 Mermaid 代码块转换为内联 SVG（自动调用 svg-sanitize 净化）
+   - 若 mmdc 不可用或渲染失败，保留 Mermaid 代码块并在对应位置上方添加 `<!-- WARNING: Mermaid 未预渲染，需 typesetter 客户端渲染 -->`
+   - typesetter 仍支持客户端 Mermaid 渲染作为 fallback
 3. **内联 SVG 校验** — 确认内联的 SVG 符合微信约束：无 `id` 属性、无 `<style>`/`<script>`/`<a>` 标签、无 `background url()` 带引号
 4. **残留检查** — 确认无 `<!-- FIGURE:` 占位符残留、无 `<img src="../` 本地路径引用
 

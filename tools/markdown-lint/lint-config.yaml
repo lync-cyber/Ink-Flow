@@ -53,6 +53,7 @@ rules:
       - ":hover"
       - ":active"
       - "float:"
+      - "gap:"           # 旧版微信 WebView 不支持 flex gap
     forbidden_tags:
       - "<style"
       - "<script"

@@ -19,4 +19,4 @@
 概要：
 - 可用: font-size, color, font-weight, letter-spacing, margin, padding, line-height, text-align, border-radius, box-shadow, opacity, border
 - 慎用（iOS/Android 不一致）: transform, linear-gradient
-- 禁用: 见 lint-config.yaml（position, @media, @keyframes, :hover, :active, float 等）
+- 禁用: 见 lint-config.yaml（position, @media, @keyframes, :hover, :active, float, gap 等）

@@ -1,7 +1,7 @@
 ---
 name: outliner
 description: 基于调研备忘录生成结构化大纲，每个 section 包含论点、预估字数、关键细节和视觉断点规划。
-tools: Read, Write, Edit, Glob
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 ---
 
@@ -37,6 +37,8 @@ Skill 加载（按需读取 SKILL.md 正文）：
   - 判断原则：typesetter 原生可渲染的结构化内容 → writer；需要精确视觉布局的 → illustrator
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
+- 从 research.md 继承 `[时效注意]`、`[可能过时]`、`[发布前刷新]` 标记到对应 section 的关键细节中
+- 对依赖定价、版本号、市场数据的关键细节，即使 research.md 未标注，也主动添加 `[发布前刷新]`
 ## Format
 
 输出必须遵循以下结构:
@@ -55,6 +57,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 关键细节: {支撑论点的具体事实/数据/代码}
 - 预估字数: {N}
 - 视觉断点: {代码块/对比表格/引用块/分割线/无} ({owner}:{format})
+- 时效敏感项: {继承的 [时效注意]/[发布前刷新] 标记，或"无"}
 - depends_on_previous: {true|false}  # 可选，false 允许与前序 section 并行写作
 - opening_style: {pain_point|story|contrast|question|blunt}
 
@@ -63,6 +66,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 关键细节: ...
 - 预估字数: {N}
 - 视觉断点: {类型} ({owner}:{format})
+- 时效敏感项: {继承的时效标记，或"无"}
 
 ...
 

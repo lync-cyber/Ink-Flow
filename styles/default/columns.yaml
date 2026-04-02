@@ -172,7 +172,7 @@ columns:
       textSecondary: "#8a8a8a"
       border: "#3a3a3a"
       accent: "#5dade2"
-      primary: "#d4a06a"
+      primary: "#e8b87a"
 
     skeleton: story
     default_opening: story

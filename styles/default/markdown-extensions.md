@@ -1,8 +1,9 @@
 # Markdown 扩展语法参考
 
-> Writer 输出与 typesetter 渲染共用一套语法。
-> 标准 Markdown + `:::block` 扩展块语法。
-> Typesetter（`tools/wechat-typesetter/index.html`）为排版引擎。
+> Writer 输出与 typesetter 渲染共用一套语法，本文件为 `:::block` 栏目特化格式的**单一事实来源**。
+> 标准 Markdown + `:::block` 扩展块语法。Typesetter（`tools/wechat-typesetter/index.html`）为排版引擎。
+>
+> **职责分工**: 本文件定义组件"怎么写"（语法、格式、栏目差异）。"选什么组件"的决策指南见 `.claude/skills/visual-theming/SKILL.md`。
 
 ---
 
@@ -13,8 +14,8 @@ typesetter 会根据栏目主题自动应用不同样式（颜色、标记符号
 | 元素 | 语法 | 栏目差异化 |
 |------|------|-----------|
 | H1 标题 | `# title` | 首个 H1 渲染为栏目标识+标题区（每栏目布局不同） |
-| H2 标题 | `## heading` | academic=底线, industry=色块, tech=`##`前缀, story=居中装饰 |
-| H3 标题 | `### heading` | academic=左边框, industry=圆点, tech=`###`前缀, story=斜体居中 |
+| H2 标题 | `## heading` | academic=底线, industry=色块, tech=左侧色条+monospace, story=居中装饰 |
+| H3 标题 | `### heading` | academic=左边框, industry=圆点, tech=圆点前缀+monospace, story=斜体居中 |
 | 段落 | 自然段落 | story 行高 2.0，其余 1.75 |
 | 引用 | `> text` | story=居中大引号, tech=提示块（含💡时）, 其余=左侧色条 |
 | 无序列表 | `- item` | academic=■, industry=→+交替背景, tech=▸, story=空心圆 |
@@ -56,6 +57,9 @@ story 栏目不使用 TL;DR（无摘要区）。
 以 `:::type` 开始，`:::` 结束，中间为内容。
 
 ### :::card — 信息卡片
+
+**适用**: key-value 环境信息、数据指标对比、人物简档、事件概要（≤5 行内容）
+**不适用**: 超过 5 行内容（改用 Markdown 表格）；纯装饰性列举（用正文即可）
 
 每个栏目渲染为不同卡片类型：
 
@@ -104,6 +108,10 @@ GPU: RTX 3060+
 
 ### :::cta — 行动引导
 
+**适用**: 文末引导读者行动（收藏/分享/关注/实操）；每篇最多 1 个
+**不适用**: 文中中间位置（CTA 应在文末或文末前一段）
+另见: `writing-guiding` skill 的栏目 CTA 推荐表
+
 每栏目不同 CTA 样式：
 
 ```markdown
@@ -118,6 +126,8 @@ GPU: RTX 3060+
 - story: 「分享给 TA」边框按钮
 
 ### :::footer — 文末区
+
+**适用**: 每篇文章末尾（公众号名称、tagline、二维码、往期推荐）
 
 ```markdown
 :::footer
@@ -159,6 +169,8 @@ GPU: RTX 3060+
 
 ### :::collection — 合集导航
 
+**适用**: 系列文章导航（多篇连载、专题系列）
+
 ```markdown
 :::collection
 系列名称：第1篇标题 / 第2篇（本篇）/ 第3篇标题
@@ -187,6 +199,9 @@ GPU: RTX 3060+
 
 ### :::note — 提示/注释
 
+**适用**: 重要提示、常见误区澄清、注意事项（≤3 行）
+**不适用**: 超过 3 行的说明（融入正文段落）；纯补充信息（用 blockquote）
+
 单行提示：
 
 ```markdown
@@ -207,6 +222,9 @@ GPU: RTX 3060+
 
 ### :::references — 引用文献
 
+**适用**: academic 栏目必须；其他栏目有外部引用时使用
+**不适用**: 无外部引用的文章（story 栏目通常不需要）
+
 紧凑排版的文末引用区，12px 字号、accent 色编号、浅色背景。替代普通有序列表，提升移动端阅读体验。
 
 ```markdown
@@ -222,6 +240,9 @@ GPU: RTX 3060+
 
 ### :::timeline — 时间轴
 
+**适用**: 3+ 个时间节点的事件演进（项目里程碑、版本历史）
+**不适用**: 仅 2 个时间点（用正文叙述）；无时间维度的列举（用列表）
+
 纵向时间轴，每行格式为 `日期 描述`：
 
 ```markdown
@@ -233,6 +254,9 @@ GPU: RTX 3060+
 ```
 
 ### :::steps — 步骤条
+
+**适用**: 线性操作步骤（安装流程、配置过程），3-6 步为宜
+**不适用**: 有分支判断的流程（用 Mermaid 流程图）；超过 6 步（拆分为多个 section）
 
 编号步骤卡片，每行格式为 `Step N 标题: 描述`（或 `N. 标题: 描述`）：
 

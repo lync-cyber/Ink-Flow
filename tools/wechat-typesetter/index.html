@@ -26,39 +26,68 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
 // ============================================================
 // THEME SYSTEM — 4 columns with complete inline style maps
+// Source of truth: styles/default/columns.yaml
+// Sync command: python tools/sync-themes.py
 // ============================================================
+// THEME_START — auto-generated from columns.yaml, do not edit manually
 const THEMES = {
   academic: {
     id: "academic", name: "学术前沿", icon: "📐",
     colors: { primary: "#1a5276", accent: "#c0782b", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#e4edf4", bgDeep: "#c5d9e8", border: "#bfc5cb" },
-    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#c0782b", primary: "#4a9fd4" },
+    dark: { bg: "#191919", surface: "#222222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#c0782b", primary: "#4a9fd4" },
   },
   industry: {
-    id: "industry", name: "行业动态", icon: "📡",
+    id: "industry", name: "行业趋势", icon: "📡",
     colors: { primary: "#0e6655", accent: "#b9770e", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#dceee8", bgDeep: "#b8ddd3", border: "#b5bfba" },
-    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#b9770e", primary: "#2ecc9a" },
+    dark: { bg: "#191919", surface: "#222222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#b9770e", primary: "#2ecc9a" },
   },
   tech: {
-    id: "tech", name: "技术专栏", icon: "⚙️",
+    id: "tech", name: "技术专题", icon: "⚙️",
     colors: { primary: "#4a235a", accent: "#1a5276", text: "#3f3f3f", textSec: "#595959", textTer: "#888888", bg: "#ece3f0", bgDeep: "#d4c2dd", border: "#b5b5bf" },
-    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#bb8fce" },
+    dark: { bg: "#191919", surface: "#222222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#bb8fce" },
   },
   story: {
     id: "story", name: "人物故事", icon: "✍️",
     colors: { primary: "#784212", accent: "#1a5276", text: "#3f3f3f", textSec: "#6e5c50", textTer: "#888888", bg: "#f0e0d0", bgDeep: "#e8cdb3", border: "#c4b5a5" },
-    dark: { bg: "#191919", surface: "#222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#d4a06a" },
+    dark: { bg: "#191919", surface: "#222222", text: "#c3c3c3", textSec: "#8a8a8a", border: "#3a3a3a", accent: "#5dade2", primary: "#e8b87a" },
   },
 };
+// THEME_END
 
+// SPEC_START — auto-generated from columns.yaml, do not edit manually
 const DEFAULT_SPEC = { fontSize: 15, lineHeight: 1.75, letterSpacing: 1, pageMargin: 12 };
+// SPEC_END
 
 // ============================================================
 // MARKDOWN PARSER — custom, no dependencies
 // ============================================================
+function parseFrontmatter(md) {
+  const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return {};
+  const meta = {};
+  m[1].split("\n").forEach(function(line) {
+    const kv = line.match(/^(\w[\w_]*):\s*(.*)/);
+    if (!kv) return;
+    let val = kv[2].trim().replace(/^["']|["']$/g, "");
+    // Parse YAML array: [a, b, c]
+    if (val.startsWith("[") && val.endsWith("]")) {
+      val = val.slice(1, -1).split(",").map(function(s) { return s.trim().replace(/^["']|["']$/g, ""); });
+    }
+    meta[kv[1]] = val;
+  });
+  return meta;
+}
+
 function parseMarkdown(md) {
   const lines = md.split("\n");
   const tokens = [];
   let i = 0;
+  // Skip frontmatter block
+  if (lines[0] && lines[0].trim() === "---") {
+    i = 1;
+    while (i < lines.length && lines[i].trim() !== "---") i++;
+    if (i < lines.length) i++; // skip closing ---
+  }
   while (i < lines.length) {
     const line = lines[i];
     // blank
@@ -162,7 +191,7 @@ function inlineFormat(text, theme, isDark) {
   // italic
   s = s.replace(/\*(.+?)\*/g, `<em style="font-style:italic;">$1</em>`);
   // inline code
-  s = s.replace(/`([^`]+)`/g, `<code style="font-family:Consolas,monospace;font-size:13px;background:${isDark ? '#333' : '#f0f0f0'};padding:1px 5px;border-radius:2px;color:${c.primary};">$1</code>`);
+  s = s.replace(/`([^`]+)`/g, `<code style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:13px;background:${isDark ? '#333' : '#f0f0f0'};padding:1px 5px;border-radius:2px;color:${c.primary};">$1</code>`);
   // dashed underline ~~text~~
   s = s.replace(/~~(.+?)~~/g, `<span style="border-bottom:1px dashed ${c.accent};padding-bottom:1px;">$1</span>`);
   // links
@@ -197,7 +226,8 @@ function highlightCode(escaped, lang) {
 // ============================================================
 // RENDER TOKENS → INLINE-STYLED HTML
 // ============================================================
-function renderTokens(tokens, theme, spec, isDark) {
+function renderTokens(tokens, theme, spec, isDark, meta, options) {
+  const showDevHints = options && options.showDevHints;
   const c = isDark ? theme.dark : theme.colors;
   const lc = theme.colors; // always-light colors for reference
   const bgColor = isDark ? c.bg : "#fff";
@@ -216,7 +246,8 @@ function renderTokens(tokens, theme, spec, isDark) {
           if (isFirstH1) {
             isFirstH1 = false;
             if (theme.id === "academic") {
-              parts.push(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid ${c.border};"><div style="width:4px;height:28px;background:${c.primary};border-radius:2px;"></div><span style="font-size:12px;color:${c.primary};letter-spacing:4px;font-weight:500;">学术前沿</span><span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;font-family:monospace;">VOL.037</span></div>`);
+              const acIssue = meta && meta.issue ? `VOL.${String(meta.issue).padStart(3, "0")}` : "";
+              parts.push(`<div style="display:flex;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid ${c.border};"><div style="width:4px;height:28px;background:${c.primary};border-radius:2px;"></div><span style="font-size:12px;color:${c.primary};letter-spacing:4px;font-weight:500;margin-left:10px;">${theme.name}</span>${acIssue ? `<span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;font-family:monospace;">${acIssue}</span>` : ""}</div>`);
               parts.push(`<h1 style="font-size:22px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 16px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
               // Check if next token is a blockquote (used as abstract)
               if (ti + 1 < tokens.length && tokens[ti + 1].type === "blockquote") {
@@ -224,17 +255,29 @@ function renderTokens(tokens, theme, spec, isDark) {
                 parts.push(`<p style="font-size:13px;color:${c.textSec};line-height:1.8;margin:0 0 16px;padding-left:12px;border-left:2px solid ${c.accent};">${inlineFormat(tokens[ti].content, theme, isDark)}</p>`);
               }
             } else if (theme.id === "industry") {
-              parts.push(`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><div style="background:${c.primary};color:#fff;font-size:11px;padding:4px 12px;border-radius:2px;font-weight:600;letter-spacing:2px;">行业动态</div><div style="height:1px;flex:1;background:${c.border};"></div><span style="font-size:10px;color:${c.textTer || c.textSec};">2025.12 周报</span></div>`);
+              const indDate = meta && meta.date ? meta.date : "";
+              parts.push(`<div style="display:flex;align-items:center;margin-bottom:16px;"><div style="background:${c.primary};color:#fff;font-size:11px;padding:4px 12px;border-radius:2px;font-weight:600;letter-spacing:2px;">${theme.name}</div><div style="height:1px;flex:1;background:${c.border};margin-left:8px;"></div>${indDate ? `<span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:8px;">${indDate}</span>` : ""}</div>`);
               parts.push(`<h1 style="font-size:20px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 12px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
-              // Inject tag pills
-              parts.push(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">政策</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">融资</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">产品</span><span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;">技术突破</span></div>`);
+              // Inject tag pills from frontmatter
+              const indTags = meta && meta.tags ? (Array.isArray(meta.tags) ? meta.tags : [meta.tags]) : [];
+              if (indTags.length > 0) {
+                const pillsHtml = indTags.map(function(t) { return `<span style="font-size:11px;padding:2px 10px;background:${isDark ? c.surface : lc.bg};color:${c.primary};border-radius:2px;margin:0 6px 6px 0;">${t}</span>`; }).join("");
+                parts.push(`<div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">${pillsHtml}</div>`);
+              }
             } else if (theme.id === "tech") {
-              parts.push(`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="font-family:Consolas,monospace;font-size:12px;color:${c.primary};font-weight:600;">// 技术专栏</span><span style="font-size:10px;color:${c.textTer || c.textSec};font-family:Consolas,monospace;">#部署 #量化</span></div>`);
+              const metaTags = meta && meta.tags ? (Array.isArray(meta.tags) ? meta.tags : [meta.tags]).map(function(t) { return "#" + t; }).join(" ") : "";
+              parts.push(`<div style="display:flex;align-items:center;margin-bottom:16px;"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;color:${c.primary};font-weight:600;">// ${theme.name}</span>${metaTags ? `<span style="font-size:10px;color:${c.textTer || c.textSec};font-family:Consolas,'Courier New','Liberation Mono',monospace;margin-left:8px;">${metaTags}</span>` : ""}</div>`);
               parts.push(`<h1 style="font-size:20px;font-weight:700;line-height:1.5;color:${c.text};margin:0 0 12px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
-              parts.push(`<div style="background:${isDark ? c.surface : lc.bg};border-left:3px solid ${c.primary};padding:10px 14px;font-size:12px;color:${c.textSec};line-height:1.7;margin-bottom:16px;"><strong style="color:${c.text};">12分钟</strong> · 难度 ⬤⬤⬤○○ · 前置：PyTorch基础</div>`);
+              const metaParts = [];
+              if (meta && meta.read_time) metaParts.push(`<strong style="color:${c.text};">${meta.read_time}</strong>`);
+              if (meta && meta.difficulty) metaParts.push(`难度 ${meta.difficulty}`);
+              if (meta && meta.prerequisites) metaParts.push(`前置：${meta.prerequisites}`);
+              if (metaParts.length > 0) {
+                parts.push(`<div style="background:${isDark ? c.surface : lc.bg};border-left:3px solid ${c.primary};padding:10px 14px;font-size:12px;color:${c.textSec};line-height:1.7;margin-bottom:16px;">${metaParts.join(" · ")}</div>`);
+              }
             } else {
               // story
-              parts.push(`<div style="font-size:11px;color:${c.accent};letter-spacing:6px;margin-bottom:20px;font-weight:500;">人物故事</div>`);
+              parts.push(`<div style="font-size:11px;color:${c.accent};letter-spacing:6px;margin-bottom:20px;font-weight:500;">${theme.name}</div>`);
               parts.push(`<h1 style="font-size:24px;font-weight:400;line-height:1.7;color:${c.text};margin:0 0 20px;padding:0;">${inlineFormat(tok.content, theme, isDark)}</h1>`);
               // Check if next token is an italic paragraph (subtitle)
               if (ti + 1 < tokens.length && tokens[ti + 1].type === "paragraph" && tokens[ti + 1].content.startsWith("*") && tokens[ti + 1].content.endsWith("*")) {
@@ -252,18 +295,18 @@ function renderTokens(tokens, theme, spec, isDark) {
           } else if (theme.id === "industry") {
             parts.push(`<h2 style="display:inline-block;font-size:17px;font-weight:700;color:#fff;margin:28px 0 12px;padding:8px 16px;border-radius:2px;background:${c.primary};">${inlineFormat(tok.content, theme, isDark)}</h2>`);
           } else if (theme.id === "tech") {
-            parts.push(`<h2 style="font-size:17px;font-weight:700;color:${c.text};margin:28px 0 12px;font-family:Consolas,monospace;display:flex;align-items:center;gap:8px;"><span style="color:${c.primary};font-size:14px;">##</span>${inlineFormat(tok.content, theme, isDark)}</h2>`);
+            parts.push(`<h2 style="font-size:17px;font-weight:700;color:${c.text};margin:28px 0 12px;font-family:Consolas,'Courier New','Liberation Mono',monospace;border-left:3px solid ${c.primary};padding-left:12px;">${inlineFormat(tok.content, theme, isDark)}</h2>`);
           } else {
             // story: centered + decorative divider below
-            parts.push(`<h2 style="font-size:20px;font-weight:400;color:${c.text};margin:28px 0 0;text-align:center;">${inlineFormat(tok.content, theme, isDark)}</h2><div style="display:flex;justify-content:center;gap:4px;margin:8px 0 12px;"><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span><span style="display:inline-block;width:4px;height:4px;background:${c.accent};border-radius:50%;"></span><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span></div>`);
+            parts.push(`<h2 style="font-size:20px;font-weight:400;color:${c.text};margin:28px 0 0;text-align:center;">${inlineFormat(tok.content, theme, isDark)}</h2><div style="display:flex;justify-content:center;margin:8px 0 12px;"><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span><span style="display:inline-block;width:4px;height:4px;background:${c.accent};border-radius:50%;margin:0 4px;"></span><span style="display:inline-block;width:20px;height:1.5px;background:${c.border};"></span></div>`);
           }
         } else {
           if (theme.id === "tech") {
-            parts.push(`<h3 style="font-size:14px;font-weight:600;color:${c.textSec};margin:20px 0 10px;font-family:Consolas,monospace;"><span style="color:${c.primary};margin-right:6px;">###</span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
+            parts.push(`<h3 style="font-size:14px;font-weight:600;color:${c.textSec};margin:20px 0 10px;font-family:Consolas,'Courier New','Liberation Mono',monospace;display:flex;align-items:center;"><span style="display:inline-block;width:6px;height:6px;background:${c.accent};border-radius:50%;margin-right:8px;flex-shrink:0;"></span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
           } else if (theme.id === "academic") {
             parts.push(`<h3 style="font-size:15px;font-weight:600;color:${c.primary};margin:20px 0 10px;padding-left:12px;border-left:3px solid ${c.accent};">${inlineFormat(tok.content, theme, isDark)}</h3>`);
           } else if (theme.id === "industry") {
-            parts.push(`<h3 style="font-size:15px;font-weight:600;color:${c.primary};margin:20px 0 10px;display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:6px;height:6px;background:${c.accent};border-radius:50%;"></span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
+            parts.push(`<h3 style="font-size:15px;font-weight:600;color:${c.primary};margin:20px 0 10px;display:flex;align-items:center;"><span style="display:inline-block;width:6px;height:6px;background:${c.accent};border-radius:50%;margin-right:8px;"></span>${inlineFormat(tok.content, theme, isDark)}</h3>`);
           } else {
             // story: italic centered
             parts.push(`<h3 style="font-size:15px;font-weight:400;color:${c.primary};margin:20px 0 10px;font-style:italic;text-align:center;">${inlineFormat(tok.content, theme, isDark)}</h3>`);
@@ -290,7 +333,7 @@ function renderTokens(tokens, theme, spec, isDark) {
         } else if (theme.id === "tech" && (content.includes("💡") || content.includes("提示"))) {
           // Tech: tip block with badge
           const tipText = content.replace(/^💡\s*提示[：:]\s*/, "").replace(/^💡\s*/, "");
-          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${bqBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:0;"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>&nbsp; ${inlineFormat(tipText, theme, isDark)}</p></blockquote>`);
+          parts.push(`<blockquote style="margin:0 0 16px;padding:12px 16px;background:${bqBg};border-left:3px solid ${c.primary};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.7;margin:0;"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;color:${c.primary};font-weight:600;">提示</span>&nbsp; ${inlineFormat(tipText, theme, isDark)}</p></blockquote>`);
         } else {
           const bqBorder = theme.id === "industry" ? c.accent : c.primary;
           parts.push(`<blockquote style="margin:0 0 16px;padding:14px 18px;background:${bqBg};border-left:3px solid ${bqBorder};border-radius:0 2px 2px 0;"><p style="font-size:13px;color:${c.textSec};line-height:1.8;margin:0;text-align:justify;">${inlineFormat(content, theme, isDark)}</p></blockquote>`);
@@ -301,15 +344,15 @@ function renderTokens(tokens, theme, spec, isDark) {
         const items = tok.items.map((item, idx) => {
           if (theme.id === "story") {
             // Hollow circle with border
-            return `<div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;"><span style="width:8px;height:8px;border:1.5px solid ${c.accent};border-radius:50%;flex-shrink:0;margin-top:8px;"></span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+            return `<div style="display:flex;margin-bottom:14px;align-items:flex-start;"><span style="width:8px;height:8px;border:1.5px solid ${c.accent};border-radius:50%;flex-shrink:0;margin-top:8px;"></span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:10px;">${inlineFormat(item, theme, isDark)}</span></div>`;
           } else if (theme.id === "industry") {
-            const itemBg = idx % 2 === 0 ? `background:${isDark ? c.surface : lc.bg};border-radius:2px;padding:6px 12px;` : "";
-            return `<div style="display:flex;gap:10px;margin-bottom:8px;${itemBg}align-items:flex-start;"><span style="color:${c.accent};flex-shrink:0;font-weight:700;">→</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+            const itemBg = idx % 2 === 0 ? `background:${isDark ? c.surface : lc.bg};` : "";
+            return `<div style="display:flex;margin-bottom:8px;${itemBg}border-radius:2px;padding:6px 12px;align-items:flex-start;"><span style="color:${c.accent};flex-shrink:0;font-weight:700;">→</span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:10px;">${inlineFormat(item, theme, isDark)}</span></div>`;
           } else if (theme.id === "academic") {
-            return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:8px;margin-top:7px;">■</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+            return `<div style="display:flex;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:8px;margin-top:7px;">■</span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:10px;">${inlineFormat(item, theme, isDark)}</span></div>`;
           } else {
             // tech
-            return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:13px;">▸</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+            return `<div style="display:flex;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};flex-shrink:0;font-size:13px;">▸</span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:10px;">${inlineFormat(item, theme, isDark)}</span></div>`;
           }
         }).join("");
         parts.push(`<div style="margin:0 0 16px;">${items}</div>`);
@@ -318,29 +361,30 @@ function renderTokens(tokens, theme, spec, isDark) {
       case "ol": {
         const items = tok.items.map((item, idx) => {
           if (theme.id === "tech") {
-            return `<div style="display:flex;gap:12px;margin-bottom:10px;align-items:flex-start;"><span style="font-family:Consolas,monospace;font-size:11px;color:#fff;background:${c.primary};border-radius:2px;padding:2px 7px;flex-shrink:0;font-weight:600;">${idx + 1}</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+            return `<div style="display:flex;margin-bottom:10px;align-items:flex-start;"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:11px;color:#fff;background:${c.primary};border-radius:2px;padding:2px 7px;flex-shrink:0;font-weight:600;">${idx + 1}</span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:12px;">${inlineFormat(item, theme, isDark)}</span></div>`;
           }
-          return `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};font-weight:600;flex-shrink:0;font-size:14px;">${idx + 1}.</span><span style="font-size:14px;line-height:1.8;color:${c.text};text-align:justify;">${inlineFormat(item, theme, isDark)}</span></div>`;
+          return `<div style="display:flex;margin-bottom:8px;align-items:flex-start;"><span style="color:${c.primary};font-weight:600;flex-shrink:0;font-size:14px;">${idx + 1}.</span><span style="font-size:${spec.fontSize}px;line-height:1.8;color:${c.text};text-align:justify;margin-left:10px;">${inlineFormat(item, theme, isDark)}</span></div>`;
         }).join("");
         parts.push(`<div style="margin:0 0 16px;">${items}</div>`);
         break;
       }
       case "hr": {
         if (theme.id === "academic") {
-          parts.push(`<div style="display:flex;align-items:center;gap:12px;padding:12px 0;margin:0 0 16px;"><div style="flex:1;height:1px;background:${c.border};"></div><span style="font-size:10px;color:${c.textTer || c.textSec};font-family:monospace;">§</span><div style="flex:1;height:1px;background:${c.border};"></div></div>`);
+          parts.push(`<div style="display:flex;align-items:center;padding:12px 0;margin:0 0 16px;"><div style="flex:1;height:1px;background:${c.border};"></div><span style="font-size:10px;color:${c.textTer || c.textSec};font-family:monospace;margin:0 12px;">§</span><div style="flex:1;height:1px;background:${c.border};"></div></div>`);
         } else if (theme.id === "industry") {
           parts.push(`<div style="height:2px;background:${c.primary};border-radius:1px;margin:16px 0;opacity:0.5;"></div>`);
         } else if (theme.id === "tech") {
           parts.push(`<div style="padding:12px 0;margin:0 0 16px;font-family:monospace;font-size:12px;color:${c.border};text-align:center;letter-spacing:4px;">· · ·</div>`);
         } else {
-          parts.push(`<div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:16px 0;margin:0 0 16px;"><div style="width:24px;height:1px;background:${c.border};"></div><div style="width:5px;height:5px;background:${c.accent};border-radius:50%;"></div><div style="width:24px;height:1px;background:${c.border};"></div></div>`);
+          parts.push(`<div style="display:flex;justify-content:center;align-items:center;padding:16px 0;margin:0 0 16px;"><div style="width:24px;height:1px;background:${c.border};"></div><div style="width:5px;height:5px;background:${c.accent};border-radius:50%;margin:0 8px;"></div><div style="width:24px;height:1px;background:${c.border};"></div></div>`);
         }
         break;
       }
       case "image": {
         const captionAlign = theme.id === "story" ? "right" : "center";
         const captionStyle = theme.id === "story" ? "font-style:italic;" : "";
-        parts.push(`<div style="margin:0 0 20px;text-align:center;"><img src="${tok.src}" alt="${tok.alt}" style="max-width:100%;border-radius:2px;" />${tok.alt ? `<p style="font-size:11px;color:${c.textTer || c.textSec};margin:8px 0 0;text-align:${captionAlign};${captionStyle}">${tok.alt}</p>` : ""}<div style="font-size:9px;color:${c.textTer || c.textSec};text-align:center;margin-top:4px;padding:4px 8px;background:${isDark ? '#2a2a2a' : '#f9f9f9'};border-radius:2px;line-height:1.5;">⚠ 使用透明底PNG，避免深色模式白边</div></div>`);
+        const devHint = showDevHints ? `<div style="font-size:9px;color:${c.textTer || c.textSec};text-align:center;margin-top:4px;padding:4px 8px;background:${isDark ? '#2a2a2a' : '#f9f9f9'};border-radius:2px;line-height:1.5;">⚠ 使用透明底PNG，避免深色模式白边</div>` : "";
+        parts.push(`<div style="margin:0 0 20px;text-align:center;"><img src="${tok.src}" alt="${tok.alt}" style="max-width:100%;border-radius:2px;" />${tok.alt ? `<p style="font-size:11px;color:${c.textTer || c.textSec};margin:8px 0 0;text-align:${captionAlign};${captionStyle}">${tok.alt}</p>` : ""}${devHint}</div>`);
         break;
       }
       case "svg": {
@@ -352,33 +396,36 @@ function renderTokens(tokens, theme, spec, isDark) {
         // Mermaid code blocks — render as diagram placeholder with preview hint
         if (tok.lang === "mermaid") {
           const mermaidId = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
-          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;"><div style="background:${c.primary};padding:6px 14px;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,monospace;">mermaid</span></div><div id="${mermaidId}" class="mermaid-pending" style="padding:16px;background:${isDark ? '#1a1d23' : '#fff'};min-height:60px;text-align:center;">${escapeHtml(tok.content)}</div><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">💡 Mermaid 图表 — 导出到微信前需转为 SVG</div></div>`);
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;"><div style="background:${c.primary};padding:6px 14px;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,'Courier New','Liberation Mono',monospace;">mermaid</span></div><div id="${mermaidId}" class="mermaid-pending" style="padding:16px;background:${isDark ? '#1a1d23' : '#fff'};min-height:60px;text-align:center;">${escapeHtml(tok.content)}</div><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">💡 Mermaid 图表 — 导出到微信前需转为 SVG</div></div>`);
           break;
         }
         const headerBg = theme.id === "tech" ? c.primary : "#2c3e50";
         const escaped = escapeHtml(tok.content);
         const highlighted = highlightCode(escaped, tok.lang);
         const codeHint = "✅ Markdown兼容：" + "```" + (tok.lang || "code") + " 自动映射此样式";
-        parts.push(`<div style="border-radius:2px;overflow:hidden;border:1px solid ${c.border};margin:0 0 16px;"><div style="background:${headerBg};padding:6px 14px;display:flex;justify-content:space-between;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,monospace;">${tok.lang || "code"}</span><span style="font-size:10px;color:rgba(255,255,255,0.4);">复制</span></div><pre style="background:#1a1d23;padding:14px 16px;margin:0;overflow-x:auto;"><code style="font-family:Consolas,monospace;font-size:12px;line-height:1.8;color:#e2e8f0;white-space:pre;">${highlighted}</code></pre><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">${codeHint}</div></div>`);
+        parts.push(`<div style="border-radius:2px;overflow:hidden;border:1px solid ${c.border};margin:0 0 16px;"><div style="background:${headerBg};padding:6px 14px;display:flex;justify-content:space-between;"><span style="font-size:11px;color:rgba(255,255,255,0.7);font-family:Consolas,'Courier New','Liberation Mono',monospace;">${tok.lang || "code"}</span><span style="font-size:10px;color:rgba(255,255,255,0.4);">复制</span></div><pre style="background:#1a1d23;padding:14px 16px;margin:0;overflow-x:auto;"><code style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;line-height:1.8;color:#e2e8f0;white-space:pre;">${highlighted}</code></pre><div style="font-size:9px;color:${c.textTer || c.textSec};padding:5px 14px;background:${isDark ? '#222' : '#f5f5f5'};border-top:1px solid ${c.border};">${codeHint}</div></div>`);
         break;
       }
       case "table": {
-        const thStyle = `padding:8px 10px;font-weight:600;text-align:left;font-size:12px;color:#fff;background:${c.primary};`;
-        const ths = tok.headers.map(h => `<th style="${thStyle}">${h}</th>`).join("");
         const colCount = tok.headers.length;
+        const tFontSize = colCount > 3 ? '11px' : '12px';
+        const tCellPad = colCount > 3 ? '5px 6px' : '7px 10px';
+        const tThPad = colCount > 3 ? '6px 8px' : '8px 10px';
+        const thStyle = `padding:${tThPad};font-weight:600;text-align:left;font-size:${tFontSize};color:#fff;background:${c.primary};`;
+        const ths = tok.headers.map(h => `<th style="${thStyle}">${h}</th>`).join("");
         const trs = tok.rows.map((row, ri) => {
           const rowBg = ri % 2 === 0 ? bgColor : (isDark ? c.surface : lc.bg);
           const tds = row.map((cell, ci) => {
             const isLast = ci === colCount - 1;
             const isFirst = ci === 0;
             const cellColor = isLast ? c.accent : c.text;
-            const cellWeight = isFirst ? 'font-weight:600;' : '';
-            const cellFont = !isFirst ? 'font-family:Consolas,monospace;' : '';
-            return `<td style="padding:7px 10px;border-top:1px solid ${c.border};font-size:12px;color:${cellColor};${cellWeight}${cellFont}">${inlineFormat(cell, theme, isDark)}</td>`;
+            const cellWeight = isFirst ? 'font-weight:600;white-space:nowrap;' : '';
+            const cellFont = !isFirst ? "font-family:Consolas,'Courier New','Liberation Mono',monospace;" : '';
+            return `<td style="padding:${tCellPad};border-top:1px solid ${c.border};font-size:${tFontSize};color:${cellColor};${cellWeight}${cellFont}">${inlineFormat(cell, theme, isDark)}</td>`;
           }).join("");
           return `<tr style="background:${rowBg};">${tds}</tr>`;
         }).join("");
-        parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`);
+        parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;"><table style="width:100%;border-collapse:collapse;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`);
         break;
       }
       case "custom": {
@@ -393,7 +440,7 @@ function renderTokens(tokens, theme, spec, isDark) {
           const videoTitle = contentLines[1] || "视频内容";
           parts.push(`<div style="margin:0 0 16px;">` +
             // Audio player
-            `<div style="border:1px solid ${c.border};border-radius:2px;padding:12px 16px;background:${isDark ? c.surface : '#fff'};margin-bottom:12px;display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:${c.primary};font-size:16px;">▶</span></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${c.text};">${audioTitle}</div><div style="font-size:11px;color:${c.textTer || c.textSec};margin-top:4px;display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:55%;height:3px;background:${isDark ? c.border : lc.bgDeep};border-radius:2px;"></span><span>03:42</span></div></div></div>` +
+            `<div style="border:1px solid ${c.border};border-radius:2px;padding:12px 16px;background:${isDark ? c.surface : '#fff'};margin-bottom:12px;display:flex;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:${c.primary};font-size:16px;">▶</span></div><div style="flex:1;margin-left:12px;"><div style="font-size:13px;font-weight:600;color:${c.text};">${audioTitle}</div><div style="font-size:11px;color:${c.textTer || c.textSec};margin-top:4px;display:flex;align-items:center;"><span style="display:inline-block;width:55%;height:3px;background:${isDark ? c.border : lc.bgDeep};border-radius:2px;"></span><span style="margin-left:8px;">03:42</span></div></div></div>` +
             // Video card
             `<div style="border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:#1a1a1a;"><div style="height:80px;display:flex;align-items:center;justify-content:center;"><div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:16px;margin-left:2px;">▶</span></div></div><div style="padding:8px 12px;background:${isDark ? c.surface : '#fff'};border-top:1px solid ${c.border};"><div style="font-size:12px;color:${c.text};">${videoTitle}</div></div></div>` +
             `<div style="font-size:9px;color:${c.textTer || c.textSec};margin-top:6px;text-align:center;">使用 &lt;mpvoice&gt; / &lt;mpvideo&gt; 标签嵌入 · 请在公众号后台插入</div></div>`);
@@ -403,7 +450,7 @@ function renderTokens(tokens, theme, spec, isDark) {
           const appName = contentParts[0] || "小程序";
           const appDesc = contentParts[1] || "";
           const icons = { academic: "📊", industry: "🗺", tech: "💻", story: "👤" };
-          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:14px 16px;background:${isDark ? c.surface : '#fff'};display:flex;align-items:center;gap:12px;"><div style="width:44px;height:44px;border-radius:8px;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${icons[theme.id] || "📱"}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${c.text};">${appName}</div>${appDesc ? `<div style="font-size:11px;color:${c.textSec};margin-top:2px;">${appDesc}</div>` : ""}</div><div style="font-size:10px;color:${c.textTer || c.textSec};flex-shrink:0;"><div>小程序</div><div style="margin-top:2px;text-align:right;">→</div></div></div>`);
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:14px 16px;background:${isDark ? c.surface : '#fff'};display:flex;align-items:center;"><div style="width:44px;height:44px;border-radius:8px;background:${isDark ? c.surface : lc.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${icons[theme.id] || "📱"}</div><div style="flex:1;margin-left:12px;"><div style="font-size:13px;font-weight:600;color:${c.text};">${appName}</div>${appDesc ? `<div style="font-size:11px;color:${c.textSec};margin-top:2px;">${appDesc}</div>` : ""}</div><div style="font-size:10px;color:${c.textTer || c.textSec};flex-shrink:0;"><div>小程序</div><div style="margin-top:2px;text-align:right;">→</div></div></div>`);
         } else if (blockType === "vote") {
           // Vote UI with options
           const lines = tok.content ? tok.content.split(/[/／]/).map(s => s.trim()) : [];
@@ -423,7 +470,7 @@ function renderTokens(tokens, theme, spec, isDark) {
             const selected = oi === 0;
             const optBg = selected ? (isDark ? c.surface : lc.bg) : "transparent";
             const borderColor = selected ? c.primary : c.border;
-            return `<div style="margin-bottom:8px;padding:8px 14px;border-radius:2px;border:1px solid ${c.border};font-size:13px;color:${c.text};display:flex;align-items:center;gap:10px;background:${optBg};"><span style="width:16px;height:16px;border-radius:50%;border:2px solid ${borderColor};flex-shrink:0;display:flex;align-items:center;justify-content:center;">${selected ? `<span style="width:8px;height:8px;border-radius:50%;background:${c.primary};"></span>` : ""}</span><span>${opt}</span>${selected ? `<span style="margin-left:auto;font-size:11px;color:${c.primary};font-weight:600;">42%</span>` : ""}</div>`;
+            return `<div style="margin-bottom:8px;padding:8px 14px;border-radius:2px;border:1px solid ${c.border};font-size:13px;color:${c.text};display:flex;align-items:center;background:${optBg};"><span style="width:16px;height:16px;border-radius:50%;border:2px solid ${borderColor};flex-shrink:0;display:flex;align-items:center;justify-content:center;">${selected ? `<span style="width:8px;height:8px;border-radius:50%;background:${c.primary};"></span>` : ""}</span><span style="margin-left:10px;">${opt}</span>${selected ? `<span style="margin-left:auto;font-size:11px;color:${c.primary};font-weight:600;">42%</span>` : ""}</div>`;
           }).join("");
           parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;padding:16px;background:${isDark ? c.surface : '#fff'};"><div style="font-size:14px;font-weight:600;color:${c.text};margin-bottom:14px;line-height:1.6;">${question}</div>${optHtml}<div style="font-size:10px;color:${c.textTer || c.textSec};margin-top:8px;">微信原生投票 · 328人参与</div></div>`);
         } else if (blockType === "collection") {
@@ -442,15 +489,15 @@ function renderTokens(tokens, theme, spec, isDark) {
             const itemBg = isCurrent ? (isDark ? c.surface : lc.bg) : "transparent";
             return `<div style="padding:10px 16px;border-bottom:${ii < items.length - 1 ? `1px solid ${c.border}` : 'none'};display:flex;align-items:center;background:${itemBg};"><span style="font-size:13px;color:${isCurrent ? c.primary : c.text};font-weight:${isCurrent ? 600 : 400};flex:1;">${item}</span>${isCurrent ? `<span style="font-size:10px;color:${c.primary};">当前</span>` : ""}</div>`;
           }).join("");
-          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:10px 16px;border-bottom:1px solid ${c.border};display:flex;align-items:center;gap:8px;"><span style="font-size:12px;font-weight:600;color:${c.primary};">📚 ${title}</span><span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;">${items.length}篇</span></div>${itemsHtml}</div>`);
+          parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:10px 16px;border-bottom:1px solid ${c.border};display:flex;align-items:center;"><span style="font-size:12px;font-weight:600;color:${c.primary};">📚 ${title}</span><span style="font-size:10px;color:${c.textTer || c.textSec};margin-left:auto;">${items.length}篇</span></div>${itemsHtml}</div>`);
         } else if (blockType === "hashtag") {
           // Colored tag group
           const tags = tok.content ? tok.content.split(/\s+/).filter(t => t.startsWith("#")) : [];
           if (tags.length === 0 && tok.content) {
             tags.push(...tok.content.split(/\s+/));
           }
-          const tagsHtml = tags.map(t => `<span style="font-size:13px;color:${c.primary};">${t}</span>`).join(" ");
-          parts.push(`<div style="margin:0 0 16px;"><div style="display:flex;gap:8px;flex-wrap:wrap;">${tagsHtml}</div><div style="font-size:9px;color:${c.textTer || c.textSec};margin-top:8px;padding:4px 8px;background:${isDark ? '#222' : '#f9f9f9'};border-radius:2px;">话题标签可被微信搜索索引，提升分发触达</div></div>`);
+          const tagsHtml = tags.map(t => `<span style="font-size:13px;color:${c.primary};margin:0 8px 8px 0;">${t}</span>`).join(" ");
+          parts.push(`<div style="margin:0 0 16px;"><div style="display:flex;flex-wrap:wrap;">${tagsHtml}</div><div style="font-size:9px;color:${c.textTer || c.textSec};margin-top:8px;padding:4px 8px;background:${isDark ? '#222' : '#f9f9f9'};border-radius:2px;">话题标签可被微信搜索索引，提升分发触达</div></div>`);
         } else if (blockType === "card") {
           // Info card per-theme — parse "key: value" lines or free-form content
           const lines = tok.content ? tok.content.split("\n").map(s => s.trim()).filter(Boolean) : [];
@@ -482,16 +529,16 @@ function renderTokens(tokens, theme, spec, isDark) {
           } else if (theme.id === "tech") {
             // Tech: spec/requirements card with key-value pairs
             // Format: first line = header, then "key: value" or "key value" pairs
-            const header = lines[0] || "⚙️ 环境要求";
+            const header = lines[0] || "环境要求";
             const kvLines = lines.slice(1);
             const kvHtml = kvLines.map(l => {
               const sep = l.includes("：") ? "：" : l.includes(":") ? ":" : " ";
               const idx = l.indexOf(sep);
               const k = idx > 0 ? l.slice(0, idx).trim() : l;
               const v = idx > 0 ? l.slice(idx + sep.length).trim() : "";
-              return `<div style="display:flex;font-size:13px;margin-bottom:6px;"><span style="font-family:Consolas,monospace;color:${c.primary};font-weight:600;width:70px;flex-shrink:0;">${k}</span><span style="color:${c.text};">${v}</span></div>`;
+              return `<div style="display:flex;font-size:13px;margin-bottom:6px;"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;color:${c.primary};font-weight:600;width:70px;flex-shrink:0;">${k}</span><span style="color:${c.text};">${v}</span></div>`;
             }).join("");
-            parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:8px 16px;border-bottom:1px solid ${c.border};"><span style="font-family:Consolas,monospace;font-size:12px;color:${c.primary};font-weight:600;">${header}</span></div><div style="padding:12px 16px;">${kvHtml}</div></div>`);
+            parts.push(`<div style="margin:0 0 16px;border:1px solid ${c.border};border-radius:2px;overflow:hidden;background:${isDark ? c.surface : '#fff'};"><div style="background:${isDark ? c.surface : lc.bg};padding:8px 16px;border-bottom:1px solid ${c.border};"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;color:${c.primary};font-weight:600;">${header}</span></div><div style="padding:12px 16px;">${kvHtml}</div></div>`);
           } else {
             // Story: profile card
             const label = lines[0] || "人物档案";
@@ -503,29 +550,32 @@ function renderTokens(tokens, theme, spec, isDark) {
             parts.push(`<div style="margin:0 0 16px;background:${isDark ? c.surface : lc.bg};border-radius:2px;padding:20px 24px;"><div style="font-size:11px;color:${c.accent};letter-spacing:2px;margin-bottom:12px;">${label}</div><div style="font-size:15px;color:${c.text};line-height:2;">${contentHtml}</div></div>`);
           }
         } else if (blockType === "cta") {
-          // CTA per-theme
-          const ctaText = tok.content || "";
+          // CTA per-theme — multi-line: line1=title, line2=url/code, line3=button text
+          const ctaLines = (tok.content || "").split("\n").filter(l => l.trim());
+          const ctaTitle = ctaLines[0] || null;
+          const ctaUrl = ctaLines[1] || null;
+          const ctaBtn = ctaLines[2] || null;
           if (theme.id === "story") {
-            parts.push(`<div style="text-align:center;padding:20px 0;margin:0 0 16px;"><p style="font-size:14px;color:${c.textSec};margin-bottom:16px;">如果这个故事触动了你</p><div style="display:inline-block;padding:10px 32px;border:1px solid ${c.primary};color:${c.primary};font-size:13px;border-radius:2px;letter-spacing:2px;">分享给 TA</div></div>`);
+            parts.push(`<div style="text-align:center;padding:20px 0;margin:0 0 16px;">${ctaTitle ? `<p style="font-size:14px;color:${c.textSec};margin-bottom:16px;">${ctaTitle}</p>` : ""}<div style="display:inline-block;padding:10px 32px;border:1px solid ${c.primary};color:${c.primary};font-size:13px;border-radius:2px;letter-spacing:2px;">${ctaBtn || "分享"}</div></div>`);
           } else if (theme.id === "industry") {
-            parts.push(`<div style="background:${c.primary};border-radius:2px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;"><div><div style="font-size:14px;color:#fff;font-weight:600;">订阅周报</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">每周一早8点推送</div></div><div style="padding:6px 18px;background:#fff;color:${c.primary};font-size:12px;border-radius:2px;font-weight:600;flex-shrink:0;">关注</div></div>`);
+            parts.push(`<div style="background:${c.primary};border-radius:2px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;"><div><div style="font-size:14px;color:#fff;font-weight:600;">${ctaTitle || "订阅更新"}</div>${ctaUrl ? `<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">${ctaUrl}</div>` : ""}</div><div style="padding:6px 18px;background:#fff;color:${c.primary};font-size:12px;border-radius:2px;font-weight:600;flex-shrink:0;">${ctaBtn || "关注"}</div></div>`);
           } else if (theme.id === "tech") {
-            parts.push(`<div style="border:1px solid ${c.border};border-radius:2px;padding:14px 18px;margin:0 0 16px;"><div style="font-size:13px;color:${c.text};margin-bottom:10px;"><span style="font-family:Consolas,monospace;color:${c.primary};">📦</span> 完整代码已开源</div><div style="background:${isDark ? c.surface : lc.bg};padding:8px 14px;border-radius:2px;font-family:Consolas,monospace;font-size:12px;color:${c.primary};word-break:break-all;">${ctaText || "github.com/example/onnx-arm-deploy"}</div><div style="margin-top:12px;display:flex;gap:10px;"><span style="padding:5px 14px;background:${c.primary};color:#fff;font-size:12px;border-radius:2px;">⭐ Star</span><span style="padding:5px 14px;border:1px solid ${c.primary};color:${c.primary};font-size:12px;border-radius:2px;">阅读原文</span></div></div>`);
+            parts.push(`<div style="border:1px solid ${c.border};border-radius:2px;padding:14px 18px;margin:0 0 16px;">${ctaTitle ? `<div style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:13px;font-weight:600;color:${c.primary};margin-bottom:10px;letter-spacing:0.5px;">${ctaTitle}</div>` : ""}${ctaUrl ? `<div style="background:${isDark ? c.surface : lc.bg};padding:8px 14px;border-radius:2px;font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;color:${c.primary};word-break:break-all;">${ctaUrl}</div>` : ""}<div style="margin-top:${ctaTitle || ctaUrl ? '12px' : '0'};display:flex;">${ctaBtn ? `<span style="padding:5px 14px;background:${c.primary};color:#fff;font-size:12px;border-radius:2px;">⭐ ${ctaBtn}</span>` : ""}<span style="padding:5px 14px;border:1px solid ${c.primary};color:${c.primary};font-size:12px;border-radius:2px;${ctaBtn ? 'margin-left:10px;' : ''}">阅读原文</span></div></div>`);
           } else {
             // academic
-            parts.push(`<div style="text-align:center;padding:16px 0;margin:0 0 16px;"><div style="font-size:12px;color:${c.textSec};margin-bottom:12px;">${ctaText || "获取全部引用论文及数据集"}</div><div style="display:inline-block;padding:8px 28px;background:${c.primary};color:#fff;font-size:13px;border-radius:2px;">阅读原文 →</div></div>`);
+            parts.push(`<div style="text-align:center;padding:16px 0;margin:0 0 16px;">${ctaTitle ? `<div style="font-size:12px;color:${c.textSec};margin-bottom:12px;">${ctaTitle}</div>` : ""}<div style="display:inline-block;padding:8px 28px;background:${c.primary};color:#fff;font-size:13px;border-radius:2px;">${ctaBtn || "阅读原文"}</div></div>`);
           }
         } else if (blockType === "footer") {
           // Footer area
           const taglines = { academic: "深度 · 前瞻 · 严谨", industry: "洞察 · 趋势 · 时效", tech: "实践 · 原理 · 工具", story: "温度 · 叙事 · 人文" };
-          parts.push(`<div style="border-top:1px solid ${c.border};padding-top:16px;margin:16px 0 0;"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:600;color:${c.text};">公众号名称</div><div style="font-size:11px;color:${c.textSec};margin-top:4px;">${taglines[theme.id] || ""}</div></div><div style="width:48px;height:48px;background:${isDark ? c.surface : lc.bg};border:1px solid ${c.border};border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.textTer || c.textSec};">二维码</div></div><div style="margin-top:12px;font-size:11px;color:${c.textSec};">往期：<span style="color:${c.primary};">《工业视觉年度综述》</span> · <span style="color:${c.primary};">《边缘AI部署》</span></div><div style="margin-top:10px;font-size:10px;color:${c.textTer || c.textSec};">© 2025 公众号名称 · 转载请联系授权</div></div>`);
+          parts.push(`<div style="border-top:1px solid ${c.border};padding-top:16px;margin:16px 0 0;"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:13px;font-weight:600;color:${c.text};">${meta.author || "公众号名称"}</div><div style="font-size:11px;color:${c.textSec};margin-top:4px;">${taglines[theme.id] || ""}</div></div><div style="width:48px;height:48px;background:${isDark ? c.surface : lc.bg};border:1px solid ${c.border};border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.textTer || c.textSec};">二维码</div></div>${tok.content ? `<div style="margin-top:12px;font-size:11px;color:${c.textSec};">${inlineFormat(tok.content, theme, isDark)}</div>` : ""}<div style="margin-top:10px;font-size:10px;color:${c.textTer || c.textSec};">© ${new Date().getFullYear()} ${meta.author || "公众号名称"} · 转载请联系授权</div></div>`);
         } else if (blockType === "readmore") {
           // Readmore per-theme
           const readmoreTexts = {
-            tech: { main: "点击下方「阅读原文」获取完整代码仓库", sub: "github.com/example/onnx-arm-deploy" },
-            academic: { main: "点击「阅读原文」下载论文PDF及补充材料", sub: null },
-            industry: { main: "阅读原文查看完整行业报告", sub: "↓ ↓ ↓" },
-            story: { main: "了解更多「产线上的人」系列故事", sub: null },
+            tech: { main: "点击下方「阅读原文」查看更多", sub: null },
+            academic: { main: "点击「阅读原文」获取补充材料", sub: null },
+            industry: { main: "阅读原文查看完整报告", sub: null },
+            story: { main: "点击「阅读原文」了解更多", sub: null },
           };
           const rm = readmoreTexts[theme.id] || readmoreTexts.academic;
           const customText = tok.content ? tok.content.trim() : null;
@@ -536,11 +586,11 @@ function renderTokens(tokens, theme, spec, isDark) {
           const labelText = tok.content ? tok.content.trim() : "";
           const isNew = labelText.includes("[N]");
           const cleanLabel = labelText.replace("[N]", "").trim();
-          parts.push(`<div style="font-size:9px;color:${isDark ? '#555' : '#bbb'};letter-spacing:2px;margin:20px 0 8px;display:flex;align-items:center;gap:4px;">${cleanLabel}${isNew ? '<span style="font-size:7px;padding:0 3px;background:#e74c3c;color:#fff;border-radius:2px;font-weight:600;line-height:14px;">N</span>' : ''}</div>`);
+          parts.push(`<div style="font-size:9px;color:${isDark ? '#555' : '#bbb'};letter-spacing:2px;margin:20px 0 8px;display:flex;align-items:center;">${cleanLabel}${isNew ? '<span style="font-size:7px;padding:0 3px;background:#e74c3c;color:#fff;border-radius:2px;font-weight:600;line-height:14px;margin-left:4px;">N</span>' : ''}</div>`);
         } else if (blockType === "note") {
           // Note/tip — supports multi-line content with optional title
           const noteLines = (tok.content || "").split("\n").filter(l => l.trim());
-          let noteHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:${noteLines.length > 1 ? '8px' : '0'};"><span style="font-family:Consolas,monospace;background:${isDark ? '#333' : '#fff'};padding:1px 6px;border-radius:2px;font-size:12px;color:${c.primary};">💡 提示</span>`;
+          let noteHtml = `<div style="display:flex;align-items:center;margin-bottom:${noteLines.length > 1 ? '8px' : '0'};"><span style="font-family:Consolas,'Courier New','Liberation Mono',monospace;font-size:12px;color:${c.primary};font-weight:600;margin-right:6px;">提示</span>`;
           if (noteLines.length <= 1) {
             noteHtml += `<span style="font-size:13px;color:${c.textSec};line-height:1.7;">${noteLines[0] ? inlineFormat(noteLines[0], theme, isDark) : ""}</span></div>`;
           } else {
@@ -562,7 +612,7 @@ function renderTokens(tokens, theme, spec, isDark) {
             const text = m ? m[2] : l.trim();
             // Format links within reference text
             const formatted = inlineFormat(text, theme, isDark);
-            return `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:12px;line-height:1.5;color:${c.textSec};">${num ? `<span style="color:${c.accent};font-weight:600;flex-shrink:0;">[${num}]</span>` : ""}<span style="word-break:break-all;">${formatted}</span></div>`;
+            return `<div style="display:flex;margin-bottom:4px;font-size:12px;line-height:1.5;color:${c.textSec};">${num ? `<span style="color:${c.accent};font-weight:600;flex-shrink:0;margin-right:6px;">[${num}]</span>` : ""}<span style="word-break:break-word;overflow-wrap:break-word;">${formatted}</span></div>`;
           }).join("");
           parts.push(`<div style="margin:16px 0;padding:14px 16px;background:${isDark ? c.surface : lc.bgDeep || lc.bg};border-radius:2px;border-top:1px solid ${c.border};"><div style="font-size:11px;color:${c.textTer || c.textSec};letter-spacing:2px;margin-bottom:10px;font-weight:500;">参考文献</div>${refsHtml}</div>`);
         } else if (blockType === "timeline") {
@@ -573,7 +623,7 @@ function renderTokens(tokens, theme, spec, isDark) {
             const date = m ? m[1] : "";
             const desc = m ? m[2] : l.trim();
             const isLast = idx === tlLines.length - 1;
-            return `<div style="display:flex;gap:12px;position:relative;"><div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:16px;"><div style="width:8px;height:8px;border-radius:50%;background:${idx === 0 ? c.accent : c.primary};margin-top:4px;flex-shrink:0;"></div>${!isLast ? `<div style="width:1px;flex:1;background:${c.border};margin:4px 0;"></div>` : ""}</div><div style="padding-bottom:${isLast ? '0' : '12px'};"><div style="font-size:12px;font-weight:600;color:${c.primary};font-family:Consolas,monospace;">${date}</div><div style="font-size:13px;color:${c.text};line-height:1.6;margin-top:2px;">${inlineFormat(desc, theme, isDark)}</div></div></div>`;
+            return `<div style="display:flex;position:relative;"><div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:16px;"><div style="width:8px;height:8px;border-radius:50%;background:${idx === 0 ? c.accent : c.primary};margin-top:4px;flex-shrink:0;"></div>${!isLast ? `<div style="width:1px;flex:1;background:${c.border};margin:4px 0;"></div>` : ""}</div><div style="padding-bottom:${isLast ? '0' : '12px'};margin-left:12px;"><div style="font-size:12px;font-weight:600;color:${c.primary};font-family:Consolas,'Courier New','Liberation Mono',monospace;">${date}</div><div style="font-size:13px;color:${c.text};line-height:1.6;margin-top:2px;">${inlineFormat(desc, theme, isDark)}</div></div></div>`;
           }).join("");
           parts.push(`<div style="margin:0 0 16px;padding:16px;background:${cardBg};border-radius:2px;">${tlHtml}</div>`);
         } else if (blockType === "steps") {
@@ -587,12 +637,12 @@ function renderTokens(tokens, theme, spec, isDark) {
             const sep = text.includes("：") ? "：" : text.includes(":") ? ":" : null;
             const titlePart = sep ? text.slice(0, text.indexOf(sep)).trim() : text;
             const descPart = sep ? text.slice(text.indexOf(sep) + 1).trim() : "";
-            return `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:${idx < stLines.length - 1 ? '12px' : '0'};"><div style="width:24px;height:24px;border-radius:50%;background:${c.primary};color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${num}</div><div style="flex:1;padding-top:2px;"><div style="font-size:14px;font-weight:600;color:${c.text};line-height:1.5;">${inlineFormat(titlePart, theme, isDark)}</div>${descPart ? `<div style="font-size:13px;color:${c.textSec};line-height:1.6;margin-top:2px;">${inlineFormat(descPart, theme, isDark)}</div>` : ""}</div></div>`;
+            return `<div style="display:flex;align-items:flex-start;margin-bottom:${idx < stLines.length - 1 ? '12px' : '0'};"><div style="width:24px;height:24px;border-radius:50%;background:${c.primary};color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${num}</div><div style="flex:1;padding-top:2px;margin-left:12px;"><div style="font-size:14px;font-weight:600;color:${c.text};line-height:1.5;">${inlineFormat(titlePart, theme, isDark)}</div>${descPart ? `<div style="font-size:13px;color:${c.textSec};line-height:1.6;margin-top:2px;">${inlineFormat(descPart, theme, isDark)}</div>` : ""}</div></div>`;
           }).join("");
           parts.push(`<div style="margin:0 0 16px;padding:16px;background:${cardBg};border-radius:2px;">${stHtml}</div>`);
         } else {
           // Fallback: generic custom block
-          const label = `📦 ${tok.block}`;
+          const label = tok.block;
           const hint = "此组件需在公众号后台手动配置";
           parts.push(`<div style="margin:0 0 16px;padding:14px 18px;background:${cardBg};border:1px dashed ${c.border};border-radius:2px;"><div style="font-size:13px;font-weight:600;color:${c.primary};margin-bottom:6px;">${label}</div>${tok.content ? `<div style="font-size:13px;color:${c.text};line-height:1.6;margin-bottom:8px;">${inlineFormat(tok.content, theme, isDark)}</div>` : ""}<div style="font-size:11px;color:${c.textSec};font-style:italic;">${hint}</div></div>`);
         }
@@ -916,14 +966,14 @@ tech: `:::label
 引用块
 :::
 
-> 💡 提示：ARM v8架构建议直接使用预编译包，可跳过本节。
+> 提示：ARM v8架构建议直接使用预编译包，可跳过本节。
 
 :::label
 信息卡片
 :::
 
 :::card
-⚙️ 环境要求
+环境要求
 OS：Ubuntu 20.04+
 Python：3.8 - 3.11
 RAM：≥ 4GB
@@ -974,7 +1024,9 @@ sess = ort.InferenceSession("model_int8.onnx")
 :::
 
 :::cta
-github.com/example/onnx-arm-deploy
+完整代码已开源
+github.com/user/project
+Star
 :::
 
 :::label
@@ -1186,6 +1238,7 @@ function WeChatTypesetter() {
   const [tab, setTab] = useState("edit"); // mobile: edit | preview
   const [copyMsg, setCopyMsg] = useState("");
   const [showSource, setShowSource] = useState(false);
+  const [showDevHints, setShowDevHints] = useState(false);
   const [userEdited, setUserEdited] = useState(false);
   const previewRef = useRef(null);
   const editorRef = useRef(null);
@@ -1242,16 +1295,20 @@ function WeChatTypesetter() {
   }, [themeId]);
 
   const html = useMemo(() => {
+    const meta = parseFrontmatter(md);
     const tokens = parseMarkdown(md);
-    return renderTokens(tokens, theme, spec, isDark);
-  }, [md, themeId, isDark, spec]);
+    return renderTokens(tokens, theme, spec, isDark, meta, { showDevHints });
+  }, [md, themeId, isDark, spec, showDevHints]);
 
   // Render Mermaid diagrams after preview HTML is injected
+  const [mermaidRendering, setMermaidRendering] = useState(false);
   useEffect(() => {
     const el = previewRef.current;
     if (!el || typeof mermaid === "undefined") return;
     const pending = el.querySelectorAll(".mermaid-pending");
     if (pending.length === 0) return;
+    setMermaidRendering(true);
+    let remaining = pending.length;
     pending.forEach(async (node, idx) => {
       try {
         const code = node.textContent;
@@ -1263,6 +1320,8 @@ function WeChatTypesetter() {
         node.innerHTML = `<pre style="font-size:11px;color:#e74c3c;white-space:pre-wrap;">Mermaid 渲染失败: ${e.message}\n\n${node.textContent}</pre>`;
         node.classList.remove("mermaid-pending");
       }
+      remaining--;
+      if (remaining <= 0) setMermaidRendering(false);
     });
   }, [html]);
 
@@ -1272,16 +1331,62 @@ function WeChatTypesetter() {
     return `<div style="padding:${spec.pageMargin}px;background:${bgColor};max-width:100%;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;">${html}</div>`;
   }, [html, spec.pageMargin, isDark, theme]);
 
+  // Convert SVG element to PNG data URL for WeChat compatibility (WeChat strips SVG id attributes)
+  async function svgToPngDataUrl(svgEl, scale) {
+    scale = scale || 2;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    await new Promise(function(resolve, reject) { img.onload = resolve; img.onerror = reject; img.src = url; });
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    return canvas.toDataURL("image/png");
+  }
+
+  // Sanitize HTML for WeChat: strip id, class, <style>, <script>, unwrap <a>
+  function sanitizeForWechat(htmlStr) {
+    return htmlStr
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+      .replace(/\s+id="[^"]*"/gi, "")
+      .replace(/\s+class="[^"]*"/gi, "");
+  }
+
   const handleCopy = useCallback(async () => {
     try {
-      const blob = new Blob([wrappedHtml], { type: "text/html" });
-      const textBlob = new Blob([wrappedHtml], { type: "text/plain" });
+      const el = previewRef.current;
+      if (!el) throw new Error("Preview not ready");
+      // Clone DOM to avoid mutating the preview
+      const clone = el.cloneNode(true);
+      // Convert all SVGs to PNG images for WeChat compatibility
+      const svgs = clone.querySelectorAll("svg");
+      for (let i = 0; i < svgs.length; i++) {
+        try {
+          const dataUrl = await svgToPngDataUrl(svgs[i]);
+          const imgTag = document.createElement("img");
+          imgTag.src = dataUrl;
+          imgTag.style.cssText = "max-width:100%;height:auto;";
+          svgs[i].parentNode.replaceChild(imgTag, svgs[i]);
+        } catch (err) { /* keep original SVG if conversion fails */ }
+      }
+      const renderedHtml = sanitizeForWechat(clone.innerHTML);
+      const blob = new Blob([renderedHtml], { type: "text/html" });
+      const textBlob = new Blob([renderedHtml], { type: "text/plain" });
       await navigator.clipboard.write([
         new ClipboardItem({ "text/html": blob, "text/plain": textBlob })
       ]);
       setCopyMsg("✓ 已复制富文本");
     } catch (e) {
-      // fallback
+      // fallback: use wrappedHtml string
       const ta = document.createElement("textarea");
       ta.value = wrappedHtml;
       document.body.appendChild(ta);
@@ -1318,13 +1423,17 @@ function WeChatTypesetter() {
           ))}
         </div>
         <div style={{ flex: 1 }} />
+        {/* Dev hints toggle */}
+        <button onClick={() => setShowDevHints(!showDevHints)} style={{ border: `1px solid ${uiBorder}`, background: showDevHints ? "#fff3cd" : "transparent", color: uiText, padding: "4px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer" }} title="显示/隐藏开发提示">
+          {showDevHints ? "⚠" : "💡"}
+        </button>
         {/* Dark toggle */}
         <button onClick={() => setIsDark(!isDark)} style={{ border: `1px solid ${uiBorder}`, background: isDark ? "#333" : "#f5f5f5", color: uiText, padding: "4px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer" }}>
           {isDark ? "☀" : "🌙"}
         </button>
         {/* Copy */}
-        <button onClick={handleCopy} style={{ border: "none", background: theme.colors.primary, color: "#fff", padding: "5px 14px", fontSize: 12, borderRadius: 2, cursor: "pointer", fontWeight: 600, position: "relative" }}>
-          {copyMsg || "复制富文本"}
+        <button onClick={handleCopy} disabled={mermaidRendering} style={{ border: "none", background: mermaidRendering ? "#999" : theme.colors.primary, color: "#fff", padding: "5px 14px", fontSize: 12, borderRadius: 2, cursor: mermaidRendering ? "not-allowed" : "pointer", fontWeight: 600, position: "relative" }}>
+          {mermaidRendering ? "图表渲染中..." : (copyMsg || "复制富文本")}
         </button>
         {/* Source toggle */}
         <button onClick={() => setShowSource(!showSource)} style={{ border: `1px solid ${uiBorder}`, background: showSource ? theme.colors.primary : "transparent", color: showSource ? "#fff" : uiTextSec, padding: "4px 10px", fontSize: 11, borderRadius: 2, cursor: "pointer" }}>

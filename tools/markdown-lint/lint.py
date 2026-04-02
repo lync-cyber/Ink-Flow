@@ -46,7 +46,7 @@ DEFAULT_CONFIG = {
         "css_safety": {
             "enabled": True,
             "severity": "error",
-            "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:"],
+            "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:", "gap:"],
             "forbidden_tags": ["<style", "<script"],
         },
         "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
