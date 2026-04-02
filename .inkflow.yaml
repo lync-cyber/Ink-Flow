@@ -122,7 +122,7 @@ stages:
     checkpoint: true
     requires: [audit]
     validation:
-      required_sections: ["润色结果"]
+      required_sections: ["润色结果", "变更溯源表"]
       forbidden_patterns: ["TODO", "待确认"]
       forbidden_patterns_from_rules:
         - .claude/rules/domains/wechat-article/quality-redline.md
@@ -144,6 +144,7 @@ stages:
       forbidden_patterns:
         - "<!-- FIGURE:"     # 未替换的图表占位符
         - '<img src="\.\./'  # 本地路径引用（需已内联）
+        - '<svg[^>]* id='    # SVG 中残留 id 属性（微信会剥离导致内部引用断裂）
 
 # Skill 注册表
 registry:
