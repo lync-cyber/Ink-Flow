@@ -10,8 +10,8 @@ workspace_mode: framework
 domains:
   - wechat-article
 
-# 模型分配策略（参考信息 — 实际模型由 .claude/agents/*.md frontmatter 的 model 字段决定）
-# 修改模型分配时需同步更新 agent frontmatter
+# 模型分配（只读参考）— 实际模型由 .claude/agents/*.md frontmatter 的 model 字段决定
+# 修改模型需直接编辑对应 agent 的 frontmatter；此处仅供一览，不会被 pipeline 读取
 model_allocation:
   orchestrator: opus
   researcher: sonnet
@@ -143,6 +143,7 @@ stages:
         - "^# "              # H1 标题（typesetter 栏目标识区依赖）
       forbidden_patterns:
         - "<!-- FIGURE:"     # 未替换的图表占位符
+        - "<!-- MEDIA:"      # 未替换的媒体占位符（用户应在 CP2 提供实际图片）
         - '<img src="\.\./'  # 本地路径引用（需已内联）
         - '<svg[^>]* id='    # SVG 中残留 id 属性（微信会剥离导致内部引用断裂）
 

@@ -30,6 +30,7 @@ LLM 辅助内容创作工作流框架，基于 Claude Code 原生能力（subage
 | 内容版 CLAUDE 模板 | `tools/CLAUDE.content.md` |
 | 外部参考材料（学习用） | `references/` |
 | 文章产物 | `articles/{slug}/` |
+| 系列规划 | `articles/_series/{series_name}.yaml` |
 | 运行状态 | `.pipeline-states/{slug}.json` |
 | 领域包定义 | `.claude/skills/domain-{name}.yaml` |
 | 框架质量门禁 | `tests/lint-framework.py` |
@@ -39,6 +40,8 @@ LLM 辅助内容创作工作流框架，基于 Claude Code 原生能力（subage
 > 以下触发词为自然语言，Claude 识别意图后加载对应 skill 执行。
 
 - **写文章**: 告诉 Claude 主题 → pipeline-orchestrating skill
+- **写系列**: "写一个系列"、"系列文章" → pipeline-orchestrating skill（系列规划模式）
+- **继续系列**: "继续系列"、"写下一篇" → pipeline-orchestrating skill（系列续写模式）
 - **分析风格**: "分析风格"、"提取风格 DNA" → style-profiling skill
 - **学习进修**: "学习这篇文章"、"参考这个模板" → style-studying skill（外部材料放 `references/` 目录）
 - **内容排期**: "排期"、"内容日历" → content-planning skill

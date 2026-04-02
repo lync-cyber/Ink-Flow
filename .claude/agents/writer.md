@@ -26,7 +26,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 ## Constraints
 
 - 每次只写一个 section，严格控制字数在大纲预估的 ±20% 范围内
-- 接收前一个 section 的最后两段保持衔接
+- 若编排器传入了前一个 section 的最后两段，以此保持衔接；若未传入（`depends_on_previous: false` 允许并行时），独立起笔，不依赖前序 section
 - 每个 section 至少一处代码引用或具体数字
 - 严格遵守 writing-guiding skill 的正向替换规则和 quality-redline rule 的禁用模式
 - 按大纲中的视觉断点规划插入图/表/引用
@@ -85,6 +85,7 @@ tldr: "{summary}"   # story 栏目省略
 大纲中每个视觉断点标注了归属 `owner`：
 - `(writer:card)` / `(writer:table)` / `(writer:note)` — 由 writer 用 `:::block` 或 Markdown 表格实现
 - `(illustrator:svg)` / `(illustrator:mermaid)` — 由 illustrator 生成，writer 在对应位置插入占位符 `<!-- FIGURE: fig-{N} -->`，不自行生成该断点的内容
+- `(user:photo)` / `(user:screenshot)` / `(user:gif)` / `(user:image)` — 由用户提供，writer 在对应位置插入占位符 `<!-- MEDIA: {type} | {具体描述：需要什么内容的图片，建议尺寸/比例} -->`，用户在 CP2 阶段用 `![图注](url)` 替换
 
 ### 文末引用列表（academic 栏目必须）
 
