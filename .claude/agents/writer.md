@@ -57,11 +57,11 @@ tldr: "{summary}"   # story 栏目省略
 {正文内容，文内用 [N] 标注引用}
 
 :::card
-{数据对比/环境需求/新闻卡/人物档案 — 格式因栏目而异，见 markdown-extensions.md}
+{数据对比/环境需求/新闻卡/人物档案 — 格式因栏目而异，见下方栏目格式}
 :::
 
 :::note
-{关键发现或提示信息}
+{关键发现或提示信息 — 多行时第一行为标题}
 :::
 
 {正文内容}
@@ -69,13 +69,62 @@ tldr: "{summary}"   # story 栏目省略
 <!-- USER_FILL: {这里建议用户补充什么} -->
 ```
 
-文末引用列表（academic 栏目必须）：
+### :::card 栏目格式（必须严格遵循，typesetter 按此解析）
+
+**tech** — 第 1 行=标题，后续行=`key: value` 键值对：
+```
+:::card
+⚙️ 环境要求
+Python: ≥3.10
+PyTorch: ≥2.0
+GPU: RTX 3060+
+:::
+```
+
+**academic** — 标题行 + 指标行用 `/` 分隔 + `*` 脚注 + `★` 高亮：
+```
+:::card
+核心性能对比
+PatchCore 99.1% / EfficientAD 98.8% / ★本文方法 99.6%
+准确率 / 召回率 / F1
+* AUROC指标，15类缺陷加权平均
+:::
+```
+
+**industry** — 标签 + 日期 + 标题 + 描述：
+```
+:::card
+融资
+2025.12.15
+XX公司完成B轮2亿融资
+专注工业AI视觉检测，估值达15亿
+:::
+```
+
+**story** — 标签 + 人物信息：
+```
+:::card
+人物档案
+张工，38岁
+某汽车零部件厂质检主管
+:::
+```
+
+### 视觉断点协作
+
+大纲中每个视觉断点标注了归属 `owner`：
+- `(writer:card)` / `(writer:table)` / `(writer:note)` — 由 writer 用 `:::block` 或 Markdown 表格实现
+- `(illustrator:svg)` / `(illustrator:mermaid)` — 由 illustrator 生成，writer 在对应位置插入占位符 `<!-- FIGURE: fig-{N} -->`，不自行生成该断点的内容
+
+### 文末引用列表（academic 栏目必须）
+
+使用 `:::references` 块包裹，而非普通有序列表：
 
 ```markdown
----
-
+:::references
 1. Zhang et al. (2025). "Paper Title". *Journal Name*.
-2. Li et al. (2024). "Paper Title". *Conference*.
+2. [文章标题](https://url). 来源, 日期.
+:::
 ```
 
 ## Contracts

@@ -11,7 +11,17 @@ allowed-tools: Read, Write, Edit, Glob
 > 排版约束见 platform-base 和 wechat-platform rules。
 > Markdown 扩展语法参考见 `styles/default/markdown-extensions.md`。
 > HTML 排版由 typesetter（`tools/wechat-typesetter/index.html`）程序化生成，本 skill 不生成 HTML。
-> 确定性格式校验由 format-linting skill 独立执行（lint.py），本 skill 不重复。
+> **确定性格式校验由 lint.py 自动执行**（format-linting skill）。lint.py 已覆盖以下检查，LLM 无需重复验证：
+> - :::block 语法闭合、类型合法性（A 系列规则）
+> - 段落/句子长度、标题层级、首行缩进（C 系列规则）
+> - 栏目约束：引用文献[N]、H1+blockquote、代码块存在性（B 系列规则）
+> - CSS 安全、禁用标签、SVG id（F 系列规则）
+> - 图片 alt、路径格式（E 系列规则）
+> - 禁用词检查（G 系列规则）
+> - frontmatter 完整性、代码块语言标注、残留 TODO/USER_FILL（S 系列规则）
+> - typesetter 兼容：H1 存在性、本地路径、占位符残留（T 系列规则）
+>
+> **LLM 只需做 Step 2（格式转换操作）和 Step 3（语义内容检查）**。
 
 ## 架构
 
@@ -42,11 +52,27 @@ auditor → polisher → final.md (Markdown + :::extensions)
 将终稿的 Markdown 标准化为 typesetter 可解析的格式：
 
 1. **确认 `:::block` 语法正确** — 开始标记 `:::type` 和结束标记 `:::` 各占一行
-2. **H1 + 摘要** — 确保首个 H1 后紧跟 blockquote 作为摘要（story 栏目除外）
-3. **引用文献** — 文内用 `[N]` 上标标注，文末用有序列表或 `---` 分隔后列出
+2. **H1 标题 + 摘要（关键）** — typesetter 依赖首个 H1 触发栏目标识区渲染：
+   - 从 frontmatter 的 `title` 字段提取标题
+   - 在 frontmatter `---` 之后、正文第一行之前，插入 `# {title}`
+   - 若非 story 栏目，紧跟 `> {tldr}` blockquote（从 frontmatter 的 `tldr` 字段提取）
+   - story 栏目不插入 blockquote（typesetter 会在 H1 后检测斜体副标题）
+   - **缺少 H1 会导致栏目标识区（// 技术专栏、学术前沿 VOL.xxx 等）完全丢失**
+3. **引用文献** — 文内用 `[N]` 上标标注，文末用 `:::references` 块包裹引用列表
+   - 学术引用：`作者 (年份). "标题". *期刊/会议*.`
+   - 网页引用：`[标题](URL). 来源, 日期.`
 4. **图片路径** — 转换为相对路径，确认 alt 属性包含图注文字
 5. **代码块** — 确认语言标注（` ```python ` 而非 ` ``` `）
 6. **清理残留** — 移除 `<!-- USER_FILL: -->` 注释、`TODO` 标记等
+
+### Step 2.5: 视觉资产内联
+
+将引用的本地文件内联到 article.md，确保 typesetter 可渲染：
+
+1. **SVG 内联** — 扫描 `<img src="...svg">` 和 `![...](....svg)` 引用，读取对应 SVG 文件内容，替换为内联 `<svg>...</svg>` 源码
+2. **图表占位符替换** — 将 `<!-- FIGURE: fig-{N} -->` 占位符替换为 `articles/{slug}/figures/` 中对应文件的内容（SVG 直接内联，Mermaid 保留代码块供 typesetter 预览渲染）
+3. **内联 SVG 校验** — 确认内联的 SVG 符合微信约束：无 `id` 属性、无 `<style>`/`<script>`/`<a>` 标签、无 `background url()` 带引号
+4. **残留检查** — 确认无 `<!-- FIGURE:` 占位符残留、无 `<img src="../` 本地路径引用
 
 ### Step 3: 语义内容检查（LLM 专属）
 

@@ -187,9 +187,60 @@ GPU: RTX 3060+
 
 ### :::note — 提示/注释
 
+单行提示：
+
 ```markdown
 :::note
 这是一条提示信息，会显示为带左侧色条的 💡 提示块。
+:::
+```
+
+多行提示（第一行加粗为标题，后续行各自独立渲染）：
+
+```markdown
+:::note
+常见误解 vs 真相
+"调了 cancel() 就停了" — 多数框架只标记状态，不终止执行中的 LLM 调用。
+"超时会自动清理资源" — 超时触发后，已发出的 API 请求仍在运行。
+:::
+```
+
+### :::references — 引用文献
+
+紧凑排版的文末引用区，12px 字号、accent 色编号、浅色背景。替代普通有序列表，提升移动端阅读体验。
+
+```markdown
+:::references
+1. Zhang et al. (2025). "Paper Title". *Journal Name*.
+2. [文章标题](https://url). 来源, 日期.
+3. Li et al. (2024). "Paper Title". *Conference*.
+:::
+```
+
+学术引用格式：`作者 (年份). "标题". *期刊/会议*.`
+网页引用格式：`[标题](URL). 来源, 日期.`
+
+### :::timeline — 时间轴
+
+纵向时间轴，每行格式为 `日期 描述`：
+
+```markdown
+:::timeline
+2024-03 项目立项，完成技术选型
+2024-06 v1.0 发布，支持基础检测
+2024-12 v2.0 发布，引入 AI 模型
+:::
+```
+
+### :::steps — 步骤条
+
+编号步骤卡片，每行格式为 `Step N 标题: 描述`（或 `N. 标题: 描述`）：
+
+```markdown
+:::steps
+Step 1 环境准备: 安装 Python 3.10+ 和 PyTorch
+Step 2 数据导入: 将训练数据放入 data/ 目录
+Step 3 模型训练: 运行 train.py 启动训练
 :::
 ```
 
@@ -207,18 +258,19 @@ GPU: RTX 3060+
 
 ## 引用文献
 
-使用标准上标引用 `[N]` 标记文内引用，文末用有序列表汇总：
+使用标准上标引用 `[N]` 标记文内引用，文末用 `:::references` 块汇总（紧凑排版）：
 
 ```markdown
 近年来，无监督异常检测展现出了突破性潜力[1]。
 
----
-
-1. Zhang et al., "Industrial Anomaly Detection via Transformer", CVPR 2025
-2. Li et al., "EfficientAD: Accurate Visual Anomaly Detection", NeurIPS 2024
+:::references
+1. Zhang et al. (2025). "Industrial Anomaly Detection via Transformer". *CVPR 2025*.
+2. Li et al. (2024). "EfficientAD: Accurate Visual Anomaly Detection". *NeurIPS 2024*.
+3. [边缘AI部署实战](https://example.com/edge-ai). TechBlog, 2025-01.
+:::
 ```
 
-academic 栏目应始终包含文末引用列表。
+academic 栏目必须包含文末引用列表。引用统一使用 `:::references` 而非普通有序列表。
 
 ---
 

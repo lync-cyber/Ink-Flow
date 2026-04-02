@@ -63,9 +63,8 @@ columns:
     default_opening: blunt                # opening-crafting 默认策略
     default_cta: bookmark                 # writing-guiding CTA 推荐
     tone: objective_with_judgment         # writing-guiding 栏目语气
-    required_components:                  # visual-theming 必备组件
+    suggested_components:                 # visual-theming 建议组件（按需选用，非强制）
       - data_chart
-      - conclusion_card
     frequency: "2-3/月"
     best_time: "周三/四 20:30-21:30"
     kpi_targets:
@@ -103,9 +102,8 @@ columns:
     default_opening: contrast
     default_cta: share
     tone: opinionated
-    required_components:
-      - comparison_card
-      - conclusion_card
+    suggested_components:
+      - comparison_table
     frequency: "周报+突发"
     best_time: "周一 07:30-08:30"
     kpi_targets:
@@ -142,10 +140,8 @@ columns:
     default_opening: pain_point
     default_cta: bookmark_try
     tone: practical_direct
-    required_components:
-      - misconception_card
+    suggested_components:
       - flow_chart
-      - conclusion_card
     frequency: "2-4/月"
     best_time: "周二/四 21:00-22:00"
     kpi_targets:
@@ -182,9 +178,7 @@ columns:
     default_opening: story
     default_cta: comment
     tone: conversational
-    required_components:
-      - quote_card
-      - conclusion_card
+    suggested_components: []              # story 以叙事为主，视觉组件克制使用
     frequency: "1/月"
     best_time: "周六上午/周日晚"
     kpi_targets:

@@ -28,6 +28,13 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 总预估字数与 brief.target_length 偏差 ≤ 20%
 - 总 section 数控制在 3-7 个（移动端注意力极限）
 - 每 3-5 个段落插入一个视觉断点（图片/表格/引用块/分割线）
+- 每个视觉断点必须标注 **owner**（归属），决定由 writer 还是 illustrator 实现：
+  - `(writer:card)` — writer 用 `:::card` 实现（key-value 数据、结论总结、人物档案等）
+  - `(writer:table)` — writer 用 Markdown 表格实现（简单对比表 ≤5 行）
+  - `(writer:note)` — writer 用 `:::note` 实现（提示/误区文字）
+  - `(illustrator:svg)` — illustrator 生成 SVG（误区卡双列对比、金句卡、数据图表）
+  - `(illustrator:mermaid)` — illustrator 生成 Mermaid（流程图、架构图）
+  - 判断原则：typesetter 原生可渲染的结构化内容 → writer；需要精确视觉布局的 → illustrator
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
 ## Format
@@ -47,7 +54,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 论点: {一句话论点陈述，不是描述性标题}
 - 关键细节: {支撑论点的具体事实/数据/代码}
 - 预估字数: {N}
-- 视觉断点: {代码块/对比表格/引用块/分割线/无}
+- 视觉断点: {代码块/对比表格/引用块/分割线/无} ({owner}:{format})
 - depends_on_previous: {true|false}  # 可选，false 允许与前序 section 并行写作
 - opening_style: {pain_point|story|contrast|question|blunt}
 
@@ -55,7 +62,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 论点: ...
 - 关键细节: ...
 - 预估字数: {N}
-- 视觉断点: {类型}
+- 视觉断点: {类型} ({owner}:{format})
 
 ...
 
@@ -63,7 +70,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 论点: ...
 - 关键细节: ...
 - 预估字数: {N}
-- 视觉断点: {类型}
+- 视觉断点: {类型} ({owner}:{format})  # 可选，根据内容决定是否需要收尾组件
 - CTA: {cta_type} — {CTA 文案方向}
 
 ## 不确定项

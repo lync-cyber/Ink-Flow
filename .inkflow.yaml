@@ -138,6 +138,12 @@ stages:
     agent: publisher
     checkpoint: true
     requires: [polish]
+    validation:
+      required_patterns:
+        - "^# "              # H1 标题（typesetter 栏目标识区依赖）
+      forbidden_patterns:
+        - "<!-- FIGURE:"     # 未替换的图表占位符
+        - '<img src="\.\./'  # 本地路径引用（需已内联）
 
 # Skill 注册表
 registry:
