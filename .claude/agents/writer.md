@@ -26,7 +26,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 ## Constraints
 
 - 每次只写一个 section，严格控制字数在大纲预估的 ±20% 范围内
-- 接收前一个 section 的最后两段保持衔接
+- 若编排器传入了前一个 section 的最后两段，以此保持衔接；若未传入（`depends_on_previous: false` 允许并行时），独立起笔，不依赖前序 section
 - 每个 section 至少一处代码引用或具体数字
 - 严格遵守 writing-guiding skill 的正向替换规则和 quality-redline rule 的禁用模式
 - 按大纲中的视觉断点规划插入图/表/引用

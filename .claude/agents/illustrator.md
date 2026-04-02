@@ -16,6 +16,7 @@ model: sonnet
 启动前需读取以下文件:
 - `articles/{slug}/outline.md` — 大纲中的视觉断点规划
 - `articles/{slug}/drafts/full.md` — 完整草稿（如已生成；若与 draft 并行则读 outline）
+- `articles/{slug}/research.md` — 调研备忘录（与 draft 并行时尤为重要，提供数据和事实上下文）
 - `styles/default/columns.yaml` — 栏目色板（4 栏目完整色系）
 
 Skill 加载（按需读取 SKILL.md 正文）：

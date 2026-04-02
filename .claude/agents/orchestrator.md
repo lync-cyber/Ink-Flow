@@ -298,15 +298,18 @@ INIT:
 FOR each section in outline:
   - 若 draft.sections[N].status == "completed" 且对应文件存在 → SKIP
   - 读取 section 的 depends_on_previous 字段（默认 true）
-  - depends_on_previous == false → 可与前序 section 并行
-  - 否则 → 等待前序完成，读取其最后两段作为衔接
+  - depends_on_previous == false → 可与前序 section 并行，不传入前序 section 上下文（writer 独立起笔）
+  - 否则 → 等待前序完成，读取其最后两段作为衔接传给 writer
   - 更新 draft.sections[N].status = "in_progress"，记录 started_at
   - 调用 writer agent（writer 自行读取所需 skill，首 section 自动加载 opening-crafting）
   - 输出到 articles/{slug}/drafts/section-{N}.md
   - 校验 section（字数 ±20%、无 forbidden_patterns）
   - 更新 draft.sections[N].status = "completed"，记录 artifact 路径
 
-所有 section 完成后合并为 articles/{slug}/drafts/full.md
+所有 section 完成后合并为 articles/{slug}/drafts/full.md:
+  - 取 section-1.md 的 YAML frontmatter 作为 full.md 的 frontmatter
+  - 按 section 序号依次拼接正文，section 之间保留 writer 输出的 `---` 分隔符
+  - 编排器执行合并（Read 各 section 文件 → Write full.md），不调用 agent
 ```
 
 ## 5. Audit + Polish 子步骤
