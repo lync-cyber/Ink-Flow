@@ -18,10 +18,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 
 | 意图 | 信号 | 动作 |
 |------|------|------|
-| 新建文章 | 用户提供了主题 | 进入 Brief 创建（orchestrator §2，含选题评估 + 大纲审查） |
-| 新建系列 | "写一个系列"、"系列文章" | 进入系列规划（orchestrator §1.5） |
+| 新建文章 | 用户提供了主题 | 进入 Brief 创建（orchestrator §3，含选题评估 + 大纲审查） |
+| 新建系列 | "写一个系列"、"系列文章" | 进入系列规划（orchestrator §2） |
 | 继续系列 | "继续系列"、"写下一篇" | 从 `_series/` 取下一篇 → Brief 创建 |
-| 继续 pipeline | 存在未完成的 `.pipeline-states/*.json` | 从上次暂停处继续（orchestrator §3） |
+| 继续 pipeline | 存在未完成的 `.pipeline-states/*.json` | 从上次暂停处继续（orchestrator §4） |
 | 重跑阶段 | "重跑 {stage}" | 详见 `references/rerun-and-dryrun.md` |
 | 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `references/rerun-and-dryrun.md` |
 | 运营操作 | "排期"、"数据分析"、"发布清单" | 提示触发对应运营 skill（不进入 pipeline） |

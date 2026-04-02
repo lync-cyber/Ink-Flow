@@ -26,7 +26,7 @@ model: opus
 读取 `.inkflow.yaml` 建立运行环境，然后判断用户意图：
 
 - **新建文章**：用户提供了主题 → 进入 Brief 创建
-- **新建系列**：用户说"写一个系列"、"系列文章"、"规划系列" → 进入系列规划（§1.5）
+- **新建系列**：用户说"写一个系列"、"系列文章"、"规划系列" → 进入系列规划（§2）
 - **继续系列**：用户说"继续系列"、"写系列下一篇"、"下一篇" → 从 `articles/_series/` 找到未完成系列，创建下一篇 brief → 进入 pipeline
 - **继续 pipeline**：扫描 `.pipeline-states/` 找到有未完成阶段的 state → 继续
 - **重跑阶段**：用户说"重跑 {stage}" → 进入 Rerun 流程
@@ -48,7 +48,7 @@ AskUserQuestion:
     - "学习参考材料" — 分析外部文章/模板，改进现有规则
 ```
 
-## 1.5 系列规划
+## 2. 系列规划
 
 当用户选择"新建系列"时，采集系列信息并生成系列规划文件。
 
@@ -90,7 +90,7 @@ articles:
 
 **Step 4**: 自动为第 1 篇创建 brief
 
-从系列规划中取第 1 篇的 topic 和 slug，填充 series_name + series_index: 1，进入正常 Brief 创建流程（§2）。更新系列文件中该 article 的 status 为 `in_progress`。
+从系列规划中取第 1 篇的 topic 和 slug，填充 series_name + series_index: 1，进入正常 Brief 创建流程（§3）。更新系列文件中该 article 的 status 为 `in_progress`。
 
 ### 继续系列
 
@@ -102,7 +102,7 @@ articles:
 5. 更新系列文件中该 article 的 status 为 `in_progress`
 6. 进入正常 pipeline
 
-## 2. Brief 创建
+## 3. Brief 创建
 
 当需要新建文章时，通过 AskUserQuestion 分步采集参数。
 
@@ -206,7 +206,7 @@ AskUserQuestion:
 
 初始化 `.pipeline-states/{slug}.json`：从 `.inkflow.yaml` 的 stages 列表动态生成（不硬编码阶段名），为每个 stage 创建 `{ "status": "pending" }` 条目，标记 brief 阶段为 completed。使用 Write tool 直接写入 JSON。
 
-## 3. 阶段执行通用算法
+## 4. 阶段执行通用算法
 
 从 `.inkflow.yaml` 的 stages 列表读取阶段定义，对当前阶段执行：
 
@@ -223,7 +223,7 @@ FOR each stage from current_stage to end:
      - 所有依赖 completed 或 skipped → 继续
      - 否则 → 报错
 
-  2.5. ARTIFACT INTEGRITY CHECK（仅 resume 时执行）
+  3. ARTIFACT INTEGRITY CHECK（仅 resume 时执行）
      - 对每个 requires 中标记为 completed 的依赖阶段：
        确认其输出文件存在且非空（字符数 > 0）
      - 若依赖阶段同时满足 skip_if 条件 → 直接标记为 skipped（skip 优先于 artifact 重跑）
@@ -231,7 +231,7 @@ FOR each stage from current_stage to end:
        用 AskUserQuestion 通知用户:
        "{stage} 的产出文件缺失或为空，需要重新执行该阶段。"
 
-  2.6. STALE LOCK CHECK
+  4. STALE LOCK CHECK
      - 若当前阶段 status == "in_progress"：
        检查 started_at 时间戳，若距今 > 30 分钟 → 可能是上次崩溃的残留
        用 AskUserQuestion 询问用户:
@@ -239,11 +239,11 @@ FOR each stage from current_stage to end:
        options: ["重新执行该阶段", "跳过该阶段", "取消 pipeline"]
      - 若 < 30 分钟 → 报错（可能有另一个 pipeline 正在运行）
 
-  3. PARALLEL CHECK
+  5. PARALLEL CHECK
      - 若 stage.parallel_with 存在
      - 同时 dispatch 当前阶段和并行阶段的 Agent 调用
 
-  4. CONTEXT ASSEMBLY（约定式）
+  6. CONTEXT ASSEMBLY（约定式）
      - 按约定收集已完成前置阶段的输出文件：
        brief → articles/{slug}/brief.md
        research → articles/{slug}/research.md
@@ -255,28 +255,28 @@ FOR each stage from current_stage to end:
      - 始终包含 brief.md；被 skip 的阶段产物跳过
      - Skill 和 style 文件由各 agent 在 Context 段自行读取，编排器不拼装
 
-  5. MARK IN_PROGRESS + SPAWN AGENT
+  7. MARK IN_PROGRESS + SPAWN AGENT
      - 更新 .pipeline-states/{slug}.json:
        设置当前 stage status = "in_progress"，记录 started_at ISO 时间戳
      - 使用 Agent tool 调用 .claude/agents/{agent}.md
      - 传入组装好的上下文（rules 由 Claude Code 自动加载，无需手动注入）
      - 等待完成
 
-  6. VALIDATE（独立校验，与 agent 上下文隔离）
+  8. VALIDATE（独立校验，与 agent 上下文隔离）
      从 .inkflow.yaml 的 stages.{stage}.validation 字段读取规则，逐项检查输出文件。
      校验由编排器独立执行，agent 不感知评判标准，避免上下文污染。
      详见 references/validation-rules.md（7 种验证类型）。
      - 0 violations → 标记 completed
      - >0 violations → 进入错误处理（L2）
 
-  7. CHECKPOINT（若 stage.checkpoint == true）
+  9. CHECKPOINT（若 stage.checkpoint == true）
      - 展示产出物摘要
      - 读取 references/checkpoint-prompts.md 获取审核要点
      - 用 AskUserQuestion 请求用户审核
      - 用户确认 → 标记 checkpoint_approved: true
      - 用户要求修改 → 根据选择回退或暂停
 
-  8. STATE UPDATE（LLM 原生状态管理）
+  10. STATE UPDATE（LLM 原生状态管理）
      - 用 Read tool 读取 .pipeline-states/{slug}.json
      - 更新当前 stage 的 status、completed_at、artifacts
      - 记录结构化指标: duration_seconds、retries、validation_violations 数、word_count
@@ -284,7 +284,7 @@ FOR each stage from current_stage to end:
      - 用 Write/Edit tool 追加运行日志到 retro/runs/{run_id}.log.md
 ```
 
-## 4. Draft 分节循环
+## 5. Draft 分节循环
 
 Draft 阶段按 outline 的 section 逐一调用 writer agent，支持 section 级别的中断恢复：
 
@@ -312,7 +312,7 @@ FOR each section in outline:
   - 编排器执行合并（Read 各 section 文件 → Write full.md），不调用 agent
 ```
 
-## 5. Audit + Polish 子步骤
+## 6. Audit + Polish 子步骤
 
 ```
 调用 auditor agent
@@ -324,7 +324,7 @@ FOR each section in outline:
   - 标记 polish = completed
 ```
 
-## 6. Checkpoint 交互
+## 7. Checkpoint 交互
 
 3 个检查点使用 AskUserQuestion 结构化交互。具体文案和审核要点见 `references/checkpoint-prompts.md`。
 
@@ -361,7 +361,7 @@ AskUserQuestion:
     - "暂不发布" — 标记 completed 但不执行发布
 ```
 
-## 7. Publish 阶段
+## 8. Publish 阶段
 
 调用 publisher agent 执行格式转换和导出：
 
@@ -371,15 +371,15 @@ AskUserQuestion:
 4. 按 .inkflow.yaml 的 exports 配置导出多格式到 articles/{slug}/output/
 5. 进入 Checkpoint 3
 
-## 8. 四层错误处理
+## 9. 四层错误处理
 
 详见 `references/error-handling.md`。摘要：L1 自动重试（2次）→ L2 校验失败重试（附 violation 上下文）→ L3 模型降级（Opus→Sonnet）→ L4 人工介入（AskUserQuestion）。
 
-## 9. Rerun & Dry-Run
+## 10. Rerun & Dry-Run
 
 详见 `references/rerun-and-dryrun.md`。
 
-## 10. Pipeline 完成
+## 11. Pipeline 完成
 
 所有阶段 completed 或 skipped 后：
 
