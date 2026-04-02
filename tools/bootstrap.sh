@@ -5,7 +5,11 @@
 #
 # 用法:
 #   bash tools/bootstrap.sh [目标目录] [仓库URL]
+#   bash tools/bootstrap.sh [目标目录] --ssh       # 强制使用 SSH
+#   bash tools/bootstrap.sh [目标目录] --https     # 强制使用 HTTPS
 #   curl -fsSL https://raw.githubusercontent.com/{owner}/InkFlow/main/tools/bootstrap.sh | bash
+#
+# 未指定仓库 URL 时，自动检测 SSH 连通性：可用则走 SSH，否则走 HTTPS
 #
 # 空目录 → 拉取框架文件；已有 .inkflow.yaml → 升级框架文件
 
@@ -13,8 +17,34 @@ set -euo pipefail
 
 # ── 参数 ──────────────────────────────────────────────
 TARGET_DIR="${1:-.}"
-REPO_URL="${2:-https://github.com/hlin/InkFlow.git}"
+REPO_OWNER="hlin"
+REPO_NAME="InkFlow"
 TEMP_DIR=""
+
+# 解析选项（--ssh / --https）
+PROTO=""
+for arg in "$@"; do
+    case "$arg" in
+        --ssh)   PROTO="ssh" ;;
+        --https) PROTO="https" ;;
+    esac
+done
+
+# 确定仓库 URL：显式参数 > --ssh/--https > 自动检测
+if [ -n "${2:-}" ] && [[ ! "$2" =~ ^-- ]]; then
+    REPO_URL="$2"
+elif [ "$PROTO" = "ssh" ]; then
+    REPO_URL="git@github.com:${REPO_OWNER}/${REPO_NAME}.git"
+elif [ "$PROTO" = "https" ]; then
+    REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+else
+    # 自动检测：SSH 可用则优先
+    if ssh -T git@github.com 2>&1 | grep -qi "successfully authenticated"; then
+        REPO_URL="git@github.com:${REPO_OWNER}/${REPO_NAME}.git"
+    else
+        REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+    fi
+fi
 
 # ── 颜色 ──────────────────────────────────────────────
 RED='\033[0;31m'
@@ -32,7 +62,7 @@ trap cleanup EXIT
 # ── 前置检查 ──────────────────────────────────────────
 command -v git >/dev/null 2>&1 || error "需要 git，请先安装"
 
-TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || mkdir -p "$TARGET_DIR" && cd "$TARGET_DIR" && pwd)"
+TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || { mkdir -p "$TARGET_DIR" && cd "$TARGET_DIR" && pwd; })"
 
 # 检测模式
 if [ -f "$TARGET_DIR/.inkflow.yaml" ]; then
@@ -52,10 +82,11 @@ fi
 # ── 克隆框架 ──────────────────────────────────────────
 TEMP_DIR="$(mktemp -d)"
 info "从 $REPO_URL 获取框架..."
-git clone --depth 1 "$REPO_URL" "$TEMP_DIR/source" 2>/dev/null || error "克隆失败: $REPO_URL"
+git clone --depth 1 --tags "$REPO_URL" "$TEMP_DIR/source" 2>/dev/null || error "克隆失败: $REPO_URL"
 
 SOURCE_DIR="$TEMP_DIR/source"
-SOURCE_VERSION=$(grep 'version:' "$SOURCE_DIR/.inkflow.yaml" | head -1 | awk '{print $2}' | tr -d '"')
+# 版本号从 git tag 获取（单一事实来源），无 tag 时回退到 commit short hash
+SOURCE_VERSION=$(cd "$SOURCE_DIR" && git describe --tags --always 2>/dev/null || echo "unknown")
 info "框架版本: $SOURCE_VERSION"
 
 # ── 框架文件清单 ──────────────────────────────────────

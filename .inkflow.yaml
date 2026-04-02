@@ -1,6 +1,6 @@
 # InkFlow 项目配置
 # 用于标识该目录为 InkFlow 工作区
-version: "1.0.0"
+# 版本号由 git tag 管理（如 v1.0.0），不在此文件中硬编码
 
 # workspace_mode: framework — InkFlow 框架开发模式（articles/ 被 gitignore）
 # workspace_mode: content — 内容创作模式（articles/ 纳入版本管理）
