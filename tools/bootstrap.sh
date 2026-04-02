@@ -17,8 +17,8 @@ set -euo pipefail
 
 # ── 参数 ──────────────────────────────────────────────
 TARGET_DIR="${1:-.}"
-REPO_OWNER="hlin"
-REPO_NAME="InkFlow"
+REPO_OWNER="lync-cyber"
+REPO_NAME="Ink-Flow"
 TEMP_DIR=""
 
 # 解析选项（--ssh / --https）
