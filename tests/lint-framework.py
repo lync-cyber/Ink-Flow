@@ -198,7 +198,8 @@ def check_yaml_schema(repo: Path):
         error(".inkflow.yaml 不存在")
         return
 
-    for field in ("version", "domains", "model_allocation", "stages"):
+    # version 由 git tag 管理，不要求在 YAML 中硬编码
+    for field in ("domains", "model_allocation", "stages"):
         if file_contains(inkflow, rf"^{field}:"):
             ok(f".inkflow.yaml 包含 {field}")
         else:
@@ -258,11 +259,15 @@ def check_agent_frontmatter(repo: Path):
             continue
 
         fm = extract_frontmatter(agent_file)
-        for field in ("name", "description", "tools", "model"):
+        for field in ("name", "description", "allowed-tools", "model"):
             if field in fm:
                 ok(f"agent {aname}: frontmatter 包含 {field}")
             else:
-                error(f"agent {aname}: frontmatter 缺少 {field}")
+                # Check for legacy 'tools' field
+                if field == "allowed-tools" and "tools" in fm:
+                    error(f"agent {aname}: frontmatter 使用已废弃的 'tools' 字段，应改为 'allowed-tools'")
+                else:
+                    error(f"agent {aname}: frontmatter 缺少 {field}")
 
         # RCCF 结构
         for heading in ("## Role", "## Context", "## Constraints", "## Format", "## Exit Criteria"):
@@ -404,6 +409,146 @@ def check_domain_completeness(repo: Path):
 
 
 # ============================================================
+# Check 7: Typesetter WeChat CSS 兼容性
+# ============================================================
+
+def check_typesetter_wechat_compat(repo):
+    """检查 typesetter 渲染输出中不使用微信不兼容的 CSS 属性"""
+    section("Check 7: Typesetter WeChat CSS 兼容性")
+    index_path = repo / "tools" / "wechat-typesetter" / "index.html"
+    if not index_path.exists():
+        warn("typesetter index.html 未找到，跳过检查")
+        return
+
+    import re
+    content = index_path.read_text(encoding="utf-8")
+
+    # Check for gap: in parts.push() template strings (rendered output)
+    # Match parts.push(`...gap:Npx...`) patterns
+    matches = re.findall(r'parts\.push\(`[^`]*gap:\d+px[^`]*`\)', content)
+    if matches:
+        for m in matches:
+            error(f"typesetter 渲染输出使用了 CSS 'gap'（微信不兼容）: {m[:80]}...")
+    else:
+        ok("typesetter 渲染输出无 CSS 'gap' 属性")
+
+
+# ============================================================
+# Check 8: THEMES 同步校验
+# ============================================================
+
+def check_theme_sync(repo):
+    """检查 index.html THEMES 是否与 columns.yaml 同步"""
+    section("Check 8: THEMES 同步校验")
+
+    index_path = repo / "tools" / "wechat-typesetter" / "index.html"
+    columns_path = repo / "styles" / "default" / "columns.yaml"
+
+    if not index_path.exists() or not columns_path.exists():
+        warn("index.html 或 columns.yaml 缺失，跳过 THEMES 同步校验")
+        return
+
+    index_text = index_path.read_text(encoding="utf-8")
+    columns_text = columns_path.read_text(encoding="utf-8")
+
+    # Check THEME_START/END markers exist
+    if "// THEME_START" not in index_text:
+        error("index.html 缺少 // THEME_START 标记（运行 python tools/sync-themes.py 同步）")
+        return
+    if "// THEME_END" not in index_text:
+        error("index.html 缺少 // THEME_END 标记")
+        return
+    ok("index.html 包含 THEME_START/END 标记")
+
+    # Check column colors match between files
+    # Extract primary colors from columns.yaml
+    yaml_colors = {}
+    current_col = None
+    in_colors = False
+    for line in columns_text.splitlines():
+        m = re.match(r"  (\w+):\s*$", line)
+        if m and not in_colors:
+            current_col = m.group(1)
+            continue
+        if current_col and re.match(r"    colors:\s*$", line):
+            in_colors = True
+            continue
+        if in_colors:
+            cm = re.match(r'      primary:\s*"(#[0-9a-fA-F]+)"', line)
+            if cm:
+                yaml_colors[current_col] = cm.group(1)
+                in_colors = False
+                current_col = None
+
+    # Extract primary colors from index.html THEMES
+    html_colors = {}
+    for m in re.finditer(r'(\w+):\s*\{[^}]*id:\s*"(\w+)"[^}]*primary:\s*"(#[0-9a-fA-F]+)"', index_text):
+        html_colors[m.group(2)] = m.group(3)
+
+    for col_id, yaml_primary in yaml_colors.items():
+        html_primary = html_colors.get(col_id)
+        if html_primary and html_primary.lower() == yaml_primary.lower():
+            ok(f"栏目 {col_id} primary 色同步: {yaml_primary}")
+        elif html_primary:
+            error(f"栏目 {col_id} primary 色不同步: columns.yaml={yaml_primary}, index.html={html_primary}")
+        else:
+            error(f"栏目 {col_id} 在 index.html THEMES 中缺失")
+
+    # Check dark.primary for story (contrast fix)
+    yaml_dark_primary = None
+    in_story = False
+    in_dark = False
+    for line in columns_text.splitlines():
+        if re.match(r"  story:", line):
+            in_story = True
+            continue
+        if in_story and re.match(r"    dark:", line):
+            in_dark = True
+            continue
+        if in_dark:
+            dm = re.match(r'      primary:\s*"(#[0-9a-fA-F]+)"', line)
+            if dm:
+                yaml_dark_primary = dm.group(1)
+                in_dark = False
+                in_story = False
+
+    if yaml_dark_primary:
+        html_story_dark = re.search(
+            r'story:.*?dark:\s*\{[^}]*primary:\s*"(#[0-9a-fA-F]+)"',
+            index_text, re.DOTALL
+        )
+        if html_story_dark:
+            if html_story_dark.group(1).lower() == yaml_dark_primary.lower():
+                ok(f"story dark.primary 同步: {yaml_dark_primary}")
+            else:
+                error(f"story dark.primary 不同步: columns.yaml={yaml_dark_primary}, index.html={html_story_dark.group(1)}")
+
+
+# ============================================================
+# Check 9: 文件清理校验
+# ============================================================
+
+def check_file_cleanup(repo):
+    """检查已废弃文件是否已删除"""
+    section("Check 9: 文件清理校验")
+
+    # components.jsx should not exist (removed per refactoring plan)
+    components_path = repo / "tools" / "wechat-typesetter" / "components.jsx"
+    if components_path.exists():
+        warn("tools/wechat-typesetter/components.jsx 应已删除（与 index.html 功能重复）")
+    else:
+        ok("components.jsx 已移除")
+
+    # mermaid-render.sh should be replaced by mermaid-render.py
+    old_sh = repo / "tools" / "mermaid-render.sh"
+    new_py = repo / "tools" / "mermaid-render.py"
+    if old_sh.exists() and new_py.exists():
+        warn("tools/mermaid-render.sh 已被 mermaid-render.py 替代，可删除 .sh 文件")
+    elif new_py.exists():
+        ok("mermaid-render.py 存在")
+
+
+# ============================================================
 # 主入口
 # ============================================================
 
@@ -422,6 +567,9 @@ def main():
     check_skill_frontmatter(repo)
     check_cross_references(repo)
     check_domain_completeness(repo)
+    check_typesetter_wechat_compat(repo)
+    check_theme_sync(repo)
+    check_file_cleanup(repo)
 
     print()
     print("================================")

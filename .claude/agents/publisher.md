@@ -1,7 +1,7 @@
 ---
 name: publisher
 description: 格式导出 — Markdown 标准化、多格式导出、运营元数据生成。
-tools: Read, Write, Edit, Glob, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 ---
 
@@ -21,6 +21,10 @@ model: sonnet
 Skill 加载（按需读取 SKILL.md 正文）：
 - `.claude/skills/format-linting/SKILL.md` — 确定性格式校验（lint.py 调用）
 - `.claude/skills/format-exporting/SKILL.md` — Markdown 标准化 + 多格式导出
+
+可用工具脚本：
+- `tools/mermaid-render.py` — Mermaid 代码块预渲染为内联 SVG（依赖 mmdc，自动调用 svg-sanitize）
+- `tools/svg-sanitize.py` — SVG 微信兼容性净化（独立使用或被 mermaid-render.py 导入）
 
 ## Constraints
 

@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: 根据写作 brief 进行针对性调研，收集事实、代码片段和对比材料。
-tools: Read, Write, Grep, Glob, Bash, WebSearch, WebFetch
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 ---
 
@@ -37,6 +37,8 @@ model: sonnet
 - **版本号必须标注时间**：引用库/框架版本时同时标注该版本的发布日期
 - **统计数据标注时间范围**：如 "市场规模 $XX 亿 (2024 年数据，来源: Gartner)"
 - **区分经典知识与时效信息**：基本原理、算法思想等不受时效限制；工具版本、API 接口、性能数据、市场数据等必须关注时效
+- **产品/模型存续确认**：引用具体产品、模型、API 或服务时，搜索确认其在文章预定发布日期仍为当前版本。已停产/弃用/被新版替代的，使用最新版本数据并标注 `[已更新: 旧版X→当前Y]`
+- **定价/配额数据时效**：涉及定价、免费额度、速率限制等易变数据时，标注查询日期并加注 `[发布前刷新]`
 
 ## 栏目感知研究策略
 

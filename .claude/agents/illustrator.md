@@ -1,7 +1,7 @@
 ---
 name: illustrator
 description: 根据文章内容生成配图，包括架构图（SVG/Mermaid）、对比表格和概念示意图。
-tools: Read, Write, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
 

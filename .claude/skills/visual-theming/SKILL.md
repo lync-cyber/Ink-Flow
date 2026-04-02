@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 ## 品牌视觉系统
 
+> **职责分工**: 本 skill 负责"选什么组件"（决策层 — 限额、场景匹配、颜色）。组件"怎么写"的语法和格式定义见 `styles/default/markdown-extensions.md`（单一事实来源）。
+
 ### 加载顺序
 
 1. 读取 `brief.content_column` 确定当前栏目

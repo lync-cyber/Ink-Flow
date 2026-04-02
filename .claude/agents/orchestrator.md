@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: InkFlow 编排器 — 管理内容创作全生命周期，调度各阶段 agent。
-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 model: opus
 ---
 
