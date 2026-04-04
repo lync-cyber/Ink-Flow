@@ -49,6 +49,18 @@ styles/*/exemplar-*.md
 .claude/settings.local.json
 ```
 
+## 用户自定义框架文件（升级时保留）
+
+以下路径内的文件属于用户扩展，bootstrap.sh 增量升级时不会删除：
+
+```
+.claude/rules/local/       ← 用户自定义规则
+.claude/agents/local-*.md  ← 用户自定义 agent
+tools/local-*              ← 用户自定义工具脚本
+```
+
+此外，用户可在任意框架子目录下放置 `.inkflow-keep` 标记文件，该目录下的所有文件在升级时免于删除。
+
 ---
 
 ## 初始化流程
@@ -118,6 +130,11 @@ references/          ← articles/ + style-guides/ + templates/（各含 .gitkee
 .pipeline-states/
 !.pipeline-states/.gitkeep
 
+# InkFlow 升级元数据
+.inkflow-backups/
+.inkflow-upgrade.log
+.inkflow-manifest.sha256
+
 # 用户本地配置
 .claude/settings.local.json
 
@@ -172,7 +189,9 @@ cd {target_dir} && git init && git add -A && git commit -m "初始化 InkFlow �
 bash tools/bootstrap.sh . {inkflow_source}
 ```
 
-bootstrap.sh 自动检测到 `workspace_mode: content`，进入升级模式，同步框架文件并更新版本号。
+bootstrap.sh 自动检测到 `workspace_mode: content`，进入增量升级模式：仅更新有变更的文件，保留用户自定义文件，并自动创建备份。
+
+> 如升级后发现问题，可执行 `bash tools/bootstrap.sh --rollback` 回滚到上一版本。
 
 ### Step 3 — 提交变更
 

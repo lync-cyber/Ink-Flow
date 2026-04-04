@@ -72,11 +72,19 @@ curl -fsSL https://raw.githubusercontent.com/{owner}/InkFlow/main/tools/bootstra
 # 2. 在 Claude Code 中说"初始化工作区"完成项目配置
 ```
 
-升级已有工作区的框架：
+升级已有工作区的框架（增量更新，仅同步有变更的文件）：
 
 ```bash
 bash tools/bootstrap.sh . https://github.com/{owner}/InkFlow.git
 ```
+
+回滚到上一版本：
+
+```bash
+bash tools/bootstrap.sh --rollback
+```
+
+用户自定义文件（`.claude/rules/local/`、`.claude/agents/local-*.md`、`tools/local-*`）在升级时自动保留。
 
 或在 Claude Code 中说"更新 InkFlow"、"升级框架" → workspace-init skill 自动调用 bootstrap.sh。
 
