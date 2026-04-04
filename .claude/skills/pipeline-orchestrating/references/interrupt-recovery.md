@@ -2,6 +2,8 @@
 
 Pipeline 可能因以下原因中断：Claude Code 会话超时、网络断连、用户手动终止、上下文窗口溢出。本文档描述恢复机制。
 
+> 状态文件完整 schema 见 `pipeline-state-schema.md`。
+
 ## 状态语义
 
 | status | 含义 | 恢复动作 |
@@ -14,7 +16,7 @@ Pipeline 可能因以下原因中断：Claude Code 会话超时、网络断连�
 
 ## Stale Lock 检测
 
-当阶段 status 为 `in_progress` 时：
+当 `stages.{name}.status` 为 `in_progress` 时：
 
 1. 读取 `started_at` 时间戳
 2. 若距当前时间 > 30 分钟 → 判定为上次崩溃残留（stale lock）
@@ -48,23 +50,35 @@ Draft 阶段是最耗时的阶段（多次 writer 调用），支持 section 粒
 "draft": {
   "status": "in_progress",
   "started_at": "2026-04-01T10:30:00Z",
+  "completed_at": null,
+  "agent": "writer",
   "sections": [
-    { "index": 1, "status": "completed", "artifact": "drafts/section-1.md" },
-    { "index": 2, "status": "completed", "artifact": "drafts/section-2.md" },
-    { "index": 3, "status": "in_progress", "started_at": "2026-04-01T10:45:00Z" },
-    { "index": 4, "status": "pending" },
-    { "index": 5, "status": "pending" }
-  ]
+    { "index": 1, "title": "一句话结论", "status": "completed", "started_at": "...", "completed_at": "...", "artifact": "drafts/section-1.md", "word_count": 280 },
+    { "index": 2, "title": "问题定义", "status": "completed", "started_at": "...", "completed_at": "...", "artifact": "drafts/section-2.md", "word_count": 350 },
+    { "index": 3, "title": "方案详解", "status": "in_progress", "started_at": "2026-04-01T10:45:00Z", "completed_at": null, "artifact": "drafts/section-3.md", "word_count": null },
+    { "index": 4, "title": "性能验证", "status": "pending", "started_at": null, "completed_at": null, "artifact": "drafts/section-4.md", "word_count": null },
+    { "index": 5, "title": "避坑要点", "status": "pending", "started_at": null, "completed_at": null, "artifact": "drafts/section-5.md", "word_count": null }
+  ],
+  "merged_word_count": null,
+  "validation": null,
+  "retries": []
 }
 ```
 
 ### 恢复流程
 
-1. 读取 `draft.sections` 数组
+1. 读取 `stages.draft.sections` 数组
 2. 跳过所有 `completed` 的 section（验证文件存在）
 3. `in_progress` 的 section → 重新执行（部分写入的文件不可信）
 4. `pending` 的 section → 正常执行
-5. 全部完成后合并为 `full.md`
+5. 全部完成后合并为 `full.md`，写入 `merged_word_count`
+
+## 旧格式兼容
+
+Resume 时若检测到 state 文件缺少 `stages` 键（旧格式：阶段直接挂在顶层）：
+1. 将旧阶段数据迁移到 `stages` 下
+2. `meta` 从 `articles/{slug}/brief.md` frontmatter 重建
+3. 缺失的新字段（`completed_at`、`validation`、`retries` 等）填 null，不影响恢复流程
 
 ## 常见中断场景
 

@@ -50,3 +50,4 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 - `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略（L1-L4）
 - `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
 - `.claude/skills/pipeline-orchestrating/references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式
+- `.claude/skills/pipeline-orchestrating/references/pipeline-state-schema.md` — 状态文件完整 schema（日志字段定义）

@@ -39,5 +39,7 @@
 
 ## 校验结果处理
 
-- 0 violations → 标记 completed
-- >0 violations → 进入错误处理（见 error-handling.md）
+- 0 violations → 写入 `stages.{name}.validation = { "passed": true, "violations": [] }`，标记 completed
+- >0 violations → 写入 `stages.{name}.validation = { "passed": false, "violations": [...] }`，每条 violation 包含 `type`（a-g 类型标识）、`detail`（人类可读描述）、`source`（可选，规则来源文件）；进入错误处理（见 error-handling.md）
+
+> 完整 validation 对象结构见 `pipeline-state-schema.md`。

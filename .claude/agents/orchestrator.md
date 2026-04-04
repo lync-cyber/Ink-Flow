@@ -20,6 +20,7 @@ model: opus
 - `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略
 - `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
 - `.claude/skills/pipeline-orchestrating/references/interrupt-recovery.md` — 中断恢复策略
+- `.claude/skills/pipeline-orchestrating/references/pipeline-state-schema.md` — 状态文件完整 schema（日志字段定义）
 
 ## 1. 初始化
 
@@ -204,35 +205,42 @@ AskUserQuestion:
     - "手动编辑文件" — 打开 brief 文件让用户编辑
 ```
 
-初始化 `.pipeline-states/{slug}.json`：从 `.inkflow.yaml` 的 stages 列表动态生成（不硬编码阶段名），为每个 stage 创建 `{ "status": "pending" }` 条目，标记 brief 阶段为 completed。使用 Write tool 直接写入 JSON。
+初始化 `.pipeline-states/{slug}.json`（schema 见 `references/pipeline-state-schema.md`）：
+
+1. 写入顶层 `slug` 和 `created_at`（当前 ISO 8601 时间）
+2. 写入 `meta` 对象：从 brief frontmatter 提取 `topic`、`content_column`、`content_type`、`audience`、`target_length`、`opening_style`、`series_name`、`series_index`；将 Step 2c 选题评估结果写入 `meta.topic_assessment`（skip_research=true 时省略）
+3. 在 `stages` 下，从 `.inkflow.yaml` 的 stages 列表动态生成每个 stage 条目（不硬编码阶段名），初始为 `{ "status": "pending", "agent": "{对应 agent 名}" }`
+4. 标记 `stages.brief` 为 completed，写入 `started_at`、`completed_at`、`decisions`（`column_source`、`opening_source`、`outline_review`、`user_overrides`）
 
 ## 4. 阶段执行通用算法
 
 从 `.inkflow.yaml` 的 stages 列表顺序推进，对每个阶段执行：
 
-1. **Skip/依赖检查** — 评估 skip_if 条件和 requires 依赖状态
+1. **Skip/依赖检查** — 评估 skip_if 条件和 requires 依赖状态；命中 skip_if 时写入 `skipped_reason`
 2. **产出物完整性检查**（resume 时）— 确认依赖阶段的输出文件存在且非空；详见 `references/interrupt-recovery.md`
 3. **Stale Lock 检查** — 处理 in_progress 残留；详见 `references/interrupt-recovery.md`
 4. **并行调度** — 若 stage.parallel_with 存在，同时 dispatch 多个 Agent
 5. **上下文组装** — 按约定路径收集前置阶段产物（brief.md、research.md、outline.md 等），skill/style 由各 agent 自行读取
-6. **标记 in_progress + 调用 Agent** — 更新状态文件，spawn subagent
-7. **独立校验** — 从 `.inkflow.yaml` 的 validation 字段读取规则，编排器独立执行（agent 不感知评判标准）；详见 `references/validation-rules.md`
-8. **Checkpoint**（若配置）— 读取 `references/checkpoint-prompts.md` 展示审核要点，用 AskUserQuestion 请求用户确认
-9. **状态更新** — 写回 `.pipeline-states/{slug}.json`
+6. **标记 in_progress + 调用 Agent** — 写入 `started_at`（当前时间），spawn subagent
+7. **独立校验** — 从 `.inkflow.yaml` 的 validation 字段读取规则，编排器独立执行（agent 不感知评判标准）；校验结果写入 `validation` 对象（passed + violations 详情）；详见 `references/validation-rules.md`
+8. **Checkpoint**（若配置）— 读取 `references/checkpoint-prompts.md` 展示审核要点，用 AskUserQuestion 请求用户确认；用户决策写入 `checkpoint` 对象（decision + modifications）
+9. **状态更新** — 写入 `completed_at`（当前时间）和最终 status，写回 `.pipeline-states/{slug}.json`
+
+> 状态文件字段定义见 `references/pipeline-state-schema.md`。
 
 ## 5. Draft 分节循环
 
 按 outline 的 section 逐一调用 writer agent，支持 section 粒度的中断恢复（详见 `references/interrupt-recovery.md`）。
 
-- 初始化 `draft.sections` 状态数组，resume 时跳过已 completed 的 section
+- 初始化 `stages.draft.sections` 状态数组（含 index、title、status、started_at、completed_at、artifact、word_count），resume 时跳过已 completed 的 section
 - `depends_on_previous: false` 的 section 可并行，否则传入前序 section 最后两段保持衔接
-- 每个 section 输出到 `articles/{slug}/drafts/section-{N}.md`，校验字数和 forbidden_patterns
-- 全部完成后合并为 `articles/{slug}/drafts/full.md`（取 section-1 的 frontmatter，按序拼接正文，保留 `---` 分隔符）
+- 每个 section 完成后写入 `completed_at` 和 `word_count`；输出到 `articles/{slug}/drafts/section-{N}.md`，校验字数和 forbidden_patterns
+- 全部完成后合并为 `articles/{slug}/drafts/full.md`（取 section-1 的 frontmatter，按序拼接正文，保留 `---` 分隔符），写入 `merged_word_count`
 
 ## 6. Audit + Polish 子步骤
 
-1. 调用 auditor agent — 六维审校（只审不改），输出 `articles/{slug}/output/audit.md`
-2. 调用 polisher agent — 基于 audit.md 逐项修复，输出 `articles/{slug}/output/final.md`
+1. 调用 auditor agent — 六维审校（只审不改），输出 `articles/{slug}/output/audit.md`；从 audit.md 提取统计数字写入 `stages.audit.summary`（fact_issues、ai_tone_issues、style_deviations、structure_issues、severity_high/medium/low）
+2. 调用 polisher agent — 基于 audit.md 逐项修复，输出 `articles/{slug}/output/final.md`；从变更溯源表统计高严重性处理情况写入 `stages.polish.high_severity_resolved` 和 `high_severity_rejected`
 3. Polish 完成后执行 post-polish 复核（确认高严重性条目均有溯源记录），详见 `pipeline-orchestrating/SKILL.md`
 
 ## 7. Checkpoint 交互
