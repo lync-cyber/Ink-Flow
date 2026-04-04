@@ -459,9 +459,3 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 | Audit 完成 | `summary` 对象（从 audit.md 提取统计数字） |
 | Polish 完成 | `high_severity_resolved/rejected`（从变更溯源表统计） |
 
-## 向后兼容
-
-旧格式（阶段直接挂在顶层，无 meta 和 stages 包装）的 state 文件，编排器在 resume 时检测到缺少 `stages` 键，按以下方式处理：
-1. 将旧阶段数据迁移到 `stages` 下
-2. `meta` 从 `articles/{slug}/brief.md` frontmatter 重建
-3. 缺失的新字段填 null，不影响恢复流程

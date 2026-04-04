@@ -73,13 +73,6 @@ Draft 阶段是最耗时的阶段（多次 writer 调用），支持 section 粒
 4. `pending` 的 section → 正常执行
 5. 全部完成后合并为 `full.md`，写入 `merged_word_count`
 
-## 旧格式兼容
-
-Resume 时若检测到 state 文件缺少 `stages` 键（旧格式：阶段直接挂在顶层）：
-1. 将旧阶段数据迁移到 `stages` 下
-2. `meta` 从 `articles/{slug}/brief.md` frontmatter 重建
-3. 缺失的新字段（`completed_at`、`validation`、`retries` 等）填 null，不影响恢复流程
-
 ## 常见中断场景
 
 | 场景 | 表现 | 恢复方式 |

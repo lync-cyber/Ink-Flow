@@ -5,7 +5,7 @@
 #   opening-crafting, writing-guiding, content-planning, etc.
 # ============================================================
 
-version: "3.0"
+version: "3.1"
 
 # ---- 排版基础参数 ----
 typography:
