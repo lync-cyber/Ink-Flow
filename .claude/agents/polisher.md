@@ -18,8 +18,7 @@ model: sonnet
 - `articles/{slug}/output/audit.md` — 审校报告（修复指令）
 
 Skill 加载（按需读取 SKILL.md 正文）：
-- 若 `styles/{style_profile}/style-profile.md` 存在（style_profile 从 brief.md frontmatter 读取，默认 `default`），优先加载作为风格基线（同 writing-guiding skill 的风格优先级规则）
-- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南（style-profile 不存在时的兜底基线）
+- `.claude/skills/writing-guiding/SKILL.md` — 正向替换规则、栏目语气指南（风格加载优先级见该 skill 的「风格优先级」段）
 
 ## Constraints
 

@@ -31,7 +31,7 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 严格遵守 writing-guiding skill 的正向替换规则和 quality-redline rule 的禁用模式
 - 按大纲中的视觉断点规划插入图/表/引用
 - 使用 `:::block` 扩展语法（:::card, :::note, :::cta 等）和标准 Markdown，语法和栏目特化格式见 `styles/default/markdown-extensions.md`
-- 视觉组件使用遵循内容驱动原则——没有组件是"必备"的，只在内容确实需要时使用，每篇最多 2-3 个 `:::block` 组件
+- 视觉组件使用遵循内容驱动原则——没有组件是"必备"的，只在内容确实需要时使用（限额见 visual-theming skill）
 - 需要用户填写个人经验的地方标注 `<!-- USER_FILL: {提示内容} -->`
 - 禁止: 所有 forbidden_patterns 中的词汇和句式
 
@@ -82,21 +82,11 @@ tldr: "{summary}"   # story 栏目省略
 
 ### 视觉断点协作
 
-大纲中每个视觉断点标注了归属 `owner`：
-- `(writer:card)` / `(writer:table)` / `(writer:note)` — 由 writer 用 `:::block` 或 Markdown 表格实现
-- `(illustrator:svg)` / `(illustrator:mermaid)` — 由 illustrator 生成，writer 在对应位置插入占位符 `<!-- FIGURE: fig-{N} -->`，不自行生成该断点的内容
-- `(user:photo)` / `(user:screenshot)` / `(user:gif)` / `(user:image)` — 由用户提供，writer 在对应位置插入占位符 `<!-- MEDIA: {type} | {具体描述：需要什么内容的图片，建议尺寸/比例} -->`，用户在 CP2 阶段用 `![图注](url)` 替换
+按大纲中的 owner 标注处理：`writer:*` → 用 `:::block` 或 Markdown 表格实现；`illustrator:*` → 插入 `<!-- FIGURE: fig-{N} -->` 占位符；`user:*` → 插入 `<!-- MEDIA: {type} | {描述} -->` 占位符（用户在 CP2 替换）。归属判断规则见 visual-theming skill。
 
-### 文末引用列表（academic 栏目必须）
+### 文末引用列表
 
-使用 `:::references` 块包裹，而非普通有序列表：
-
-```markdown
-:::references
-1. Zhang et al. (2025). "Paper Title". *Journal Name*.
-2. [文章标题](https://url). 来源, 日期.
-:::
-```
+academic 栏目必须使用 `:::references` 块包裹文末引用，语法见 `styles/default/markdown-extensions.md`。
 
 ## Contracts
 

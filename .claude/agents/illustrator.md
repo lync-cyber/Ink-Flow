@@ -34,20 +34,16 @@ Skill 加载（按需读取 SKILL.md 正文）：
 
 ### 视觉断点归属过滤
 
-大纲中每个视觉断点标注了 `(owner:format)`。Illustrator **只负责** `(illustrator:*)` 标注的断点，**忽略** `(writer:*)` 标注的断点（由 writer 用 :::block 或 Markdown 实现）。
-
-### 格式决策
-
-完整的归属判断矩阵见 visual-theming skill 的「视觉断点归属判断规则」（唯一权威定义）。
+只负责 `(illustrator:*)` 标注的断点，忽略 `(writer:*)` 和 `(user:*)` 断点。归属判断见 visual-theming skill。
 
 ### 生成约束
 
 - 架构图 / 流程图：优先使用 Mermaid，复杂场景直接生成 SVG
 - SVG 和图片约束见 wechat-platform rule
 - 图表必须自解释 — 不依赖正文也能理解核心信息
-- 每张图表附带一行说明文字
+- 每张图表附带一行说明文字（platform-base rule）
 - 不需要持久化记忆 — 每篇文章的配图需求不同
-- 所有 SVG 中的颜色必须来自 columns.yaml 的栏目色板，不得自行选色
+- SVG 颜色必须使用栏目色板（见 visual-theming skill 的 SVG 组件配色段）
 - **不生成结论卡** — 结论卡由 writer 用 :::card 实现（见 visual-theming skill）
 
 ## Format

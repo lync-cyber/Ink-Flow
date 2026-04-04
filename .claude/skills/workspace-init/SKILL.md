@@ -97,6 +97,7 @@ bash tools/bootstrap.sh {target_dir} {repo_url}
 
 ```
 articles/            ← .gitkeep
+articles/_series/    ← .gitkeep
 retro/               ← runs/.gitkeep
 references/          ← articles/ + style-guides/ + templates/（各含 .gitkeep）
 .pipeline-states/    ← .gitkeep

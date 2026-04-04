@@ -58,7 +58,7 @@ disable-model-invocation: true
 |------|------|------|
 | 头条封面 | 900 × 383px（2.35:1）| 头条文章封面 |
 | 次条封面 | 383 × 383px（1:1）| 次条/分享缩略图 |
-| 内文配图 | 宽度 ≤ 640px | 正文插图 |
+| 内文配图 | 宽度限制见 platform-base rule | 正文插图 |
 
 封面背景色从 `columns.yaml → cover_backgrounds.{column}` 读取。
 

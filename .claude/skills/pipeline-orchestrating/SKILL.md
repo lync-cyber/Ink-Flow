@@ -22,8 +22,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 | 新建系列 | "写一个系列"、"系列文章" | 进入系列规划（orchestrator §2） |
 | 继续系列 | "继续系列"、"写下一篇" | 从 `_series/` 取下一篇 → Brief 创建 |
 | 继续 pipeline | 存在未完成的 `.pipeline-states/*.json` | 从上次暂停处继续（orchestrator §4） |
-| 重跑阶段 | "重跑 {stage}" | 详见 `references/rerun-and-dryrun.md` |
-| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `references/rerun-and-dryrun.md` |
+| 重跑阶段 | "重跑 {stage}" | 详见 orchestrator §10 |
+| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 orchestrator §10 |
 | 运营操作 | "排期"、"数据分析"、"发布清单" | 提示触发对应运营 skill（不进入 pipeline） |
 | 学习进修 | "学习"、"进修"、"对标" | 提示触发 style-studying skill |
 
@@ -45,8 +45,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 ## 辅助参考文件（由 orchestrator 按需读取）
 
-- `references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
-- `references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
-- `references/error-handling.md` — 四层错误处理策略（L1-L4）
-- `references/validation-rules.md` — 7 种验证类型参考
-- `references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式
+- `.claude/skills/pipeline-orchestrating/references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
+- `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
+- `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略（L1-L4）
+- `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
+- `.claude/skills/pipeline-orchestrating/references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式

@@ -38,7 +38,7 @@ AskUserQuestion:
 ### 通用项
 
 - [ ] **发布时间**: 推荐 {best_time}（来自 columns.yaml 或 orchestrator memory）
-- [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
+- [ ] **标题终审**: 确认标题字数符合 title-crafting skill 限制、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `.inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备（封面背景色从 columns.yaml 读取）
 - [ ] **排版流程**: 复制 article.md → 打开 typesetter → 选栏目主题 → 预览 → 复制 HTML → 粘贴到公众号编辑器

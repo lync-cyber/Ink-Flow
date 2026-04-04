@@ -16,62 +16,30 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    yaml = None
+    print("错误: 需要 PyYAML 依赖。请运行 pip install pyyaml", file=sys.stderr)
+    sys.exit(1)
 
 # ============================================================
 # 配置加载
 # ============================================================
 
-DEFAULT_CONFIG = {
-    "rules": {
-        "block_syntax": {
-            "enabled": True,
-            "severity": "error",
-            "valid_types": [
-                "card", "cta", "footer", "media", "miniapp",
-                "vote", "collection", "hashtag", "readmore", "label", "note",
-                "references", "timeline", "steps",
-            ],
-        },
-        "typography": {
-            "enabled": True,
-            "severity": "warning",
-            "max_paragraph_chars": 120,
-            "max_sentence_chars": 40,
-            "allowed_headings": [2, 3, 4],
-        },
-        "theme_constraints": {"enabled": True, "severity": "error"},
-        "block_content": {"enabled": True, "severity": "warning"},
-        "image_references": {"enabled": True, "severity": "warning"},
-        "css_safety": {
-            "enabled": True,
-            "severity": "error",
-            "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:", "gap:"],
-            "forbidden_tags": ["<style", "<script"],
-        },
-        "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
-            # 与 lint-config.yaml 的 forbidden_patterns.words 同步（PyYAML 不可用时的回退）
-            "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
-            "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
-            "毫无疑问", "不言而喻", "从某种意义上说", "在一定程度上",
-            "未来可期", "让我们拭目以待", "相信未来", "这表明", "由此可见",
-            "通过以上分析", "不难看出", "这说明", "接下来我们来看",
-            "可以看到", "需要注意的是", "希望本文对你有所帮助",
-        ]},
-    },
-    "column_overrides": {
-        "学术前沿": {"theme_constraints": {"require_references": True, "require_tldr": True}},
-        "人物故事": {"theme_constraints": {"forbid_tldr": True}},
-        "技术专题": {"theme_constraints": {"require_code_block": True}},
-    },
-}
-
 
 def load_config(config_path: str | None) -> dict:
-    if config_path and Path(config_path).exists() and yaml:
+    """从 lint-config.yaml 加载配置（单一事实来源）"""
+    if config_path and Path(config_path).exists():
         with open(config_path, encoding="utf-8") as f:
-            return yaml.safe_load(f) or DEFAULT_CONFIG
-    return DEFAULT_CONFIG
+            config = yaml.safe_load(f)
+            if config:
+                return config
+    # 尝试默认路径
+    default_path = Path(__file__).parent / "lint-config.yaml"
+    if default_path.exists():
+        with open(default_path, encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+            if config:
+                return config
+    print("错误: 找不到 lint-config.yaml 配置文件", file=sys.stderr)
+    sys.exit(1)
 
 
 def get_forbidden_words(config: dict) -> list[str]:

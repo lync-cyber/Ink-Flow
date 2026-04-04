@@ -45,13 +45,12 @@ Skill 加载（按需读取 SKILL.md 正文）：
    - 在文末 `:::cta` 之前自动插入 `:::collection` 块
    - 当前篇用"（本篇）"标注，已完成篇用标题，planned 篇用"即将推出"
 4. **语义检查**: 按栏目做内容完整性检查（学术=引用可信、行业=时效标注、技术=代码可运行、故事=场景具体）
-4. **多格式导出**: 生成 article.md（含扩展标记）、plain.md（纯 Markdown）、summary.md（≤120字摘要）
-5. **运营元数据**: 生成摘要、关键词、封面变量建议
+5. **多格式导出**: 生成 article.md（含扩展标记）、plain.md（纯 Markdown）、summary.md（≤120字摘要）
+6. **运营元数据**: 生成摘要、关键词、封面变量建议
 
 ### 平台约束
 
-- 仅使用 inline style（微信不支持 `<style>` 块和 class）
-- SVG 禁止 id 属性、`<style>`/`<script>`/`<a>` 标签
+平台兼容性约束见 wechat-platform rule 和 `lint-config.yaml` 的 `css_safety` 段。此外：
 - 清理残留 `<!-- USER_FILL: -->` 注释和 `TODO` 标记
 - 确认所有 `<!-- MEDIA:` 占位符已被用户替换为 `![](url)` 图片（未替换则报错）
 
