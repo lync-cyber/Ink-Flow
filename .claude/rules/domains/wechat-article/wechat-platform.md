@@ -3,7 +3,7 @@
 ## 排版约束（微信特有）
 
 - 仅使用 inline style（公众号不支持 `<style>` 块和 class）
-- 正文字号: 15px，行高: 1.75-2.0，字间距: 1px
+- 正文排版参数（字号、行高、字间距）见 `styles/default/columns.yaml` 的 typography 段
 - 段落间距: 15-20px margin
 
 ## SVG 约束（微信特有）
