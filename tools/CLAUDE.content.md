@@ -30,11 +30,15 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 
 ## 升级框架
 
+增量更新，仅同步有变更的文件：
+
 ```bash
 bash tools/bootstrap.sh . {仓库URL}
 ```
 
 或在 Claude Code 中说"更新 InkFlow"、"升级框架"。
+
+回滚到上一版本：`bash tools/bootstrap.sh --rollback`
 
 ## Pipeline 阶段
 
@@ -45,5 +49,5 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 ## 注意事项
 
 - `articles/` 目录纳入版本管理，是你的内容资产
-- `.claude/agents/`、`.claude/skills/`、`.claude/rules/`、`tools/` 为框架文件，通过升级命令更新，避免手动修改
+- `.claude/agents/`、`.claude/skills/`、`.claude/rules/`、`tools/` 为框架文件，通过升级命令更新，避免手动修改（如需自定义，使用 `.claude/rules/local/` 或 `.claude/agents/local-*.md`）
 - 个性化风格存储在 `styles/default/style-profile.md`，升级不会覆盖
