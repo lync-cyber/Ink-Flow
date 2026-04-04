@@ -37,9 +37,6 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - 总 section 数控制在 3-7 个（移动端注意力极限）
 - 每 3-5 个段落插入一个视觉断点（图片/表格/引用块/分割线）
 - 每个视觉断点必须标注 **owner**（归属），判断规则见 visual-theming skill 的「视觉断点归属判断规则」（唯一权威定义）
-  - `(writer:*)` — typesetter 原生可渲染的结构化内容
-  - `(illustrator:*)` — 需要精确视觉布局的图表
-  - `(user:*)` — 需要真实照片、截图、GIF 等 LLM 无法生成的内容（不为了"丰富版面"而强加，同样遵循内容驱动原则；story 栏目可适当多用 user:photo 增强叙事感）
 - 开头 section 必须在 3 秒内抓住注意力（标注 opening_style）
 - 结尾 section 必须包含 CTA 类型（从 brief.cta_type 读取）
 - 从 research.md 继承 `[时效注意]`、`[可能过时]`、`[发布前刷新]` 标记到对应 section 的关键细节中

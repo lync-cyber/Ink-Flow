@@ -208,158 +208,36 @@ AskUserQuestion:
 
 ## 4. 阶段执行通用算法
 
-从 `.inkflow.yaml` 的 stages 列表读取阶段定义，对当前阶段执行：
+从 `.inkflow.yaml` 的 stages 列表顺序推进，对每个阶段执行：
 
-```
-FOR each stage from current_stage to end:
-
-  1. SKIP CHECK
-     - 读取 stage.skip_if 条件
-     - 从 articles/{slug}/brief.md frontmatter 取值
-     - 条件成立 → 标记 skipped，记录 reason，NEXT
-
-  2. DEPENDENCY CHECK
-     - 读取 stage.requires
-     - 所有依赖 completed 或 skipped → 继续
-     - 否则 → 报错
-
-  3. ARTIFACT INTEGRITY CHECK（仅 resume 时执行）
-     - 对每个 requires 中标记为 completed 的依赖阶段：
-       确认其输出文件存在且非空（字符数 > 0）
-     - 若依赖阶段同时满足 skip_if 条件 → 直接标记为 skipped（skip 优先于 artifact 重跑）
-     - 否则文件缺失或为空 → 重置该依赖阶段为 pending，
-       用 AskUserQuestion 通知用户:
-       "{stage} 的产出文件缺失或为空，需要重新执行该阶段。"
-
-  4. STALE LOCK CHECK
-     - 若当前阶段 status == "in_progress"：
-       检查 started_at 时间戳，若距今 > 30 分钟 → 可能是上次崩溃的残留
-       用 AskUserQuestion 询问用户:
-       "阶段 {stage} 在 {started_at} 开始执行但未完成，可能是上次会话中断。"
-       options: ["重新执行该阶段", "跳过该阶段", "取消 pipeline"]
-     - 若 < 30 分钟 → 报错（可能有另一个 pipeline 正在运行）
-
-  5. PARALLEL CHECK
-     - 若 stage.parallel_with 存在
-     - 同时 dispatch 当前阶段和并行阶段的 Agent 调用
-
-  6. CONTEXT ASSEMBLY（约定式）
-     - 按约定收集已完成前置阶段的输出文件：
-       brief → articles/{slug}/brief.md
-       research → articles/{slug}/research.md
-       outline → articles/{slug}/outline.md
-       draft → articles/{slug}/drafts/full.md
-       figures → articles/{slug}/figures/summary.md
-       audit → articles/{slug}/output/audit.md
-       polish → articles/{slug}/output/final.md
-     - 始终包含 brief.md；被 skip 的阶段产物跳过
-     - Skill 和 style 文件由各 agent 在 Context 段自行读取，编排器不拼装
-
-  7. MARK IN_PROGRESS + SPAWN AGENT
-     - 更新 .pipeline-states/{slug}.json:
-       设置当前 stage status = "in_progress"，记录 started_at ISO 时间戳
-     - 使用 Agent tool 调用 .claude/agents/{agent}.md
-     - 传入组装好的上下文（rules 由 Claude Code 自动加载，无需手动注入）
-     - 等待完成
-
-  8. VALIDATE（独立校验，与 agent 上下文隔离）
-     从 .inkflow.yaml 的 stages.{stage}.validation 字段读取规则，逐项检查输出文件。
-     校验由编排器独立执行，agent 不感知评判标准，避免上下文污染。
-     详见 references/validation-rules.md（7 种验证类型）。
-     - 0 violations → 标记 completed
-     - >0 violations → 进入错误处理（L2）
-
-  9. CHECKPOINT（若 stage.checkpoint == true）
-     - 展示产出物摘要
-     - 读取 references/checkpoint-prompts.md 获取审核要点
-     - 用 AskUserQuestion 请求用户审核
-     - 用户确认 → 标记 checkpoint_approved: true
-     - 用户要求修改 → 根据选择回退或暂停
-
-  10. STATE UPDATE（LLM 原生状态管理）
-     - 用 Read tool 读取 .pipeline-states/{slug}.json
-     - 更新当前 stage 的 status、completed_at、artifacts
-     - 记录结构化指标: duration_seconds、retries、validation_violations 数、word_count
-     - 用 Write tool 写回 JSON
-     - 用 Write/Edit tool 追加运行日志到 retro/runs/{run_id}.log.md
-```
+1. **Skip/依赖检查** — 评估 skip_if 条件和 requires 依赖状态
+2. **产出物完整性检查**（resume 时）— 确认依赖阶段的输出文件存在且非空；详见 `references/interrupt-recovery.md`
+3. **Stale Lock 检查** — 处理 in_progress 残留；详见 `references/interrupt-recovery.md`
+4. **并行调度** — 若 stage.parallel_with 存在，同时 dispatch 多个 Agent
+5. **上下文组装** — 按约定路径收集前置阶段产物（brief.md、research.md、outline.md 等），skill/style 由各 agent 自行读取
+6. **标记 in_progress + 调用 Agent** — 更新状态文件，spawn subagent
+7. **独立校验** — 从 `.inkflow.yaml` 的 validation 字段读取规则，编排器独立执行（agent 不感知评判标准）；详见 `references/validation-rules.md`
+8. **Checkpoint**（若配置）— 读取 `references/checkpoint-prompts.md` 展示审核要点，用 AskUserQuestion 请求用户确认
+9. **状态更新** — 写回 `.pipeline-states/{slug}.json`
 
 ## 5. Draft 分节循环
 
-Draft 阶段按 outline 的 section 逐一调用 writer agent，支持 section 级别的中断恢复：
+按 outline 的 section 逐一调用 writer agent，支持 section 粒度的中断恢复（详见 `references/interrupt-recovery.md`）。
 
-```
-INIT:
-  - 读取 outline，计算 section 总数
-  - 在 .pipeline-states/{slug}.json 中初始化 draft.sections 数组（若不存在）:
-    [{ "index": 1, "status": "pending" }, { "index": 2, "status": "pending" }, ...]
-  - 若 resume（sections 数组已存在），从第一个非 completed 的 section 开始
-
-FOR each section in outline:
-  - 若 draft.sections[N].status == "completed" 且对应文件存在 → SKIP
-  - 读取 section 的 depends_on_previous 字段（默认 true）
-  - depends_on_previous == false → 可与前序 section 并行，不传入前序 section 上下文（writer 独立起笔）
-  - 否则 → 等待前序完成，读取其最后两段作为衔接传给 writer
-  - 更新 draft.sections[N].status = "in_progress"，记录 started_at
-  - 调用 writer agent（writer 自行读取所需 skill，首 section 自动加载 opening-crafting）
-  - 输出到 articles/{slug}/drafts/section-{N}.md
-  - 校验 section（字数 ±20%、无 forbidden_patterns）
-  - 更新 draft.sections[N].status = "completed"，记录 artifact 路径
-
-所有 section 完成后合并为 articles/{slug}/drafts/full.md:
-  - 取 section-1.md 的 YAML frontmatter 作为 full.md 的 frontmatter
-  - 按 section 序号依次拼接正文，section 之间保留 writer 输出的 `---` 分隔符
-  - 编排器执行合并（Read 各 section 文件 → Write full.md），不调用 agent
-```
+- 初始化 `draft.sections` 状态数组，resume 时跳过已 completed 的 section
+- `depends_on_previous: false` 的 section 可并行，否则传入前序 section 最后两段保持衔接
+- 每个 section 输出到 `articles/{slug}/drafts/section-{N}.md`，校验字数和 forbidden_patterns
+- 全部完成后合并为 `articles/{slug}/drafts/full.md`（取 section-1 的 frontmatter，按序拼接正文，保留 `---` 分隔符）
 
 ## 6. Audit + Polish 子步骤
 
-```
-调用 auditor agent
-  - auditor 执行六维审校（只审不改），输出 → articles/{slug}/output/audit.md
-  - 标记 audit = completed
-
-调用 polisher agent
-  - polisher 基于 audit.md 逐项修复，输出 → articles/{slug}/output/final.md
-  - 标记 polish = completed
-```
+1. 调用 auditor agent — 六维审校（只审不改），输出 `articles/{slug}/output/audit.md`
+2. 调用 polisher agent — 基于 audit.md 逐项修复，输出 `articles/{slug}/output/final.md`
+3. Polish 完成后执行 post-polish 复核（确认高严重性条目均有溯源记录），详见 `pipeline-orchestrating/SKILL.md`
 
 ## 7. Checkpoint 交互
 
-3 个检查点使用 AskUserQuestion 结构化交互。具体文案和审核要点见 `references/checkpoint-prompts.md`。
-
-**Checkpoint 1（大纲审核）**:
-```
-AskUserQuestion:
-  question: "大纲已生成，请审核"（附大纲摘要 + 审核要点）
-  options:
-    - "通过，继续写作"
-    - "修改特定 section" — 暂停等待用户编辑
-    - "重新组织结构" — 重跑 outline 阶段
-    - "返回调研阶段" — 重跑 research
-```
-
-**Checkpoint 2（终审）**:
-```
-AskUserQuestion:
-  question: "审校和润色已完成"（附审校报告摘要 + 审核要点）
-  options:
-    - "通过，准备发布"
-    - "处理审校问题后重新润色" — 重跑 polish
-    - "我需要手动编辑" — 暂停等待用户编辑 output/final.md
-    - "返回重写" — 重跑 draft
-```
-
-**Checkpoint 3（发布确认）**:
-```
-AskUserQuestion:
-  question: "导出文件已生成"（附文件列表 + 运营元数据摘要）
-  options:
-    - "确认发布"
-    - "调整运营元数据" — 让用户修改
-    - "更换导出格式" — 选择不同的 export format
-    - "暂不发布" — 标记 completed 但不执行发布
-```
+3 个检查点（CP1 大纲审核、CP2 终审、CP3 发布确认）使用 AskUserQuestion 结构化交互。具体文案、审核要点和选项见 `references/checkpoint-prompts.md`。
 
 ## 8. Publish 阶段
 
@@ -404,7 +282,7 @@ AskUserQuestion:
 
 **输入**: `.inkflow.yaml`（项目配置）、用户意图（自然语言）、`articles/{slug}/brief.md`（若已存在）、`.pipeline-states/{slug}.json`（若已存在）
 
-**输出**: `articles/{slug}/` 完整目录结构（各阶段产物）、`.pipeline-states/{slug}.json`（最终状态）、`retro/runs/{run_id}.log.md`（运行日志）
+**输出**: `articles/{slug}/` 完整目录结构（各阶段产物）、`.pipeline-states/{slug}.json`（最终状态）
 
 ## Constraints
 
@@ -418,7 +296,7 @@ AskUserQuestion:
 
 - 状态文件: `.pipeline-states/{slug}.json`（JSON）
 - 文章产物: `articles/{slug}/` 目录结构
-- 运行日志: `retro/runs/{run_id}.log.md`（Markdown）
+
 - 用户交互: 通过 AskUserQuestion 的结构化选项
 
 ## Exit Criteria
