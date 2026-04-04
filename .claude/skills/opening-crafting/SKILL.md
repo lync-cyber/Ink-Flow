@@ -90,6 +90,12 @@ disable-model-invocation: true
 
 ---
 
+## 执行原则
+
+开头要么锋利要么温暖，不要安全地"还行"。一个有争议的开头比一个正确但平淡的开头更好——读者划走的速度比你想的快。
+
+---
+
 ## 选择逻辑
 
 1. 读取 `articles/{slug}/brief.md` 的 `opening_style` 字段
