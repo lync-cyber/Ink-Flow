@@ -50,13 +50,10 @@ def get_forbidden_words(config: dict) -> list[str]:
 
 def get_column_overrides(config: dict, column: str) -> dict:
     overrides = config.get("column_overrides", {})
-    # 先直接查找，再通过别名反查（column_overrides 用中文 key，但 frontmatter 可能用英文 ID）
-    result = overrides.get(column)
-    if result is None:
-        alias_to_cn = {v: k for k, v in COLUMN_ALIASES.items() if k != v}
-        cn_name = alias_to_cn.get(column, "")
-        result = overrides.get(cn_name, {})
-    return result
+    # column_overrides 使用英文 ID（academic/industry/tech/story）
+    # 若传入中文名或别名，先解析为英文 ID
+    theme_id = COLUMN_ALIASES.get(column, column) if column else ""
+    return overrides.get(theme_id, {})
 
 
 # ============================================================
@@ -640,6 +637,76 @@ def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: 
                         "引用文献建议使用 :::references 块包裹（紧凑排版，提升移动端体验）")
 
 
+def rule_svg_validation(lines: list[str], config: dict, result: LintResult):
+    """规则 V: SVG 图表质量校验"""
+    in_svg = False
+    svg_start = 0
+    svg_has_viewbox = False
+    svg_lines: list[tuple[int, str]] = []
+
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+
+        # 检测 SVG 开始
+        if re.search(r"<svg[\s>]", ctx.text, re.IGNORECASE) and not in_svg:
+            in_svg = True
+            svg_start = ctx.line_num
+            svg_has_viewbox = bool(re.search(r"viewBox\s*=", ctx.text, re.IGNORECASE))
+            svg_lines = [(ctx.line_num, ctx.text)]
+
+            # V2: SVG width 检查（不应硬编码大于 680）
+            w_match = re.search(r'\bwidth\s*=\s*["\']?(\d+)', ctx.text)
+            if w_match:
+                w_val = int(w_match.group(1))
+                if w_val > 680:
+                    result.add("V2", "warning", ctx.line_num,
+                               f"SVG width={w_val} 超过 680px 上限（建议用 width=\"100%\" + viewBox）")
+            continue
+
+        if in_svg:
+            svg_lines.append((ctx.line_num, ctx.text))
+
+            # 补充检测 viewBox（可能不在第一行）
+            if re.search(r"viewBox\s*=", ctx.text, re.IGNORECASE):
+                svg_has_viewbox = True
+
+        # 检测 SVG 结束
+        if in_svg and re.search(r"</svg>", ctx.text, re.IGNORECASE):
+            # V1: viewBox 缺失
+            if not svg_has_viewbox:
+                result.add("V1", "warning", svg_start,
+                           "SVG 缺少 viewBox 属性（移动端缩放不可控）")
+
+            # 逐行检查 SVG 内容
+            for line_num, line_text in svg_lines:
+                # V3: CSS 变量
+                if "var(--" in line_text:
+                    result.add("V3", "warning", line_num,
+                               "SVG 中使用了 CSS 变量 var(--...)（微信不支持）")
+
+                # V4: 事件属性
+                if re.search(r'\bon(click|load|mouseover|mouseout|error)\s*=', line_text, re.IGNORECASE):
+                    result.add("V4", "warning", line_num,
+                               "SVG 中检测到事件属性（微信会剥除）")
+
+                # V5: <text> 缺少 font-size
+                if re.search(r"<text[\s>]", line_text, re.IGNORECASE):
+                    if not re.search(r"font-size", line_text, re.IGNORECASE):
+                        result.add("V5", "warning", line_num,
+                                   "SVG <text> 缺少 font-size（将继承默认值，显示不可控）")
+
+            # V6: <defs> 中的 id 引用（sanitizer 会剥除 id 导致引用失效）
+            svg_block = "\n".join(t for _, t in svg_lines)
+            if re.search(r"<defs[\s>]", svg_block, re.IGNORECASE):
+                if re.search(r'url\(#', svg_block):
+                    result.add("V6", "warning", svg_start,
+                               "SVG <defs> 使用 id 引用（url(#...)），微信剥除 id 后引用将失效")
+
+            in_svg = False
+            svg_lines = []
+
+
 def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
     """规则 G: 禁用词检查（从 lint-config.yaml 的 forbidden_patterns.words 读取）"""
     words = get_forbidden_words(config)
@@ -653,17 +720,44 @@ def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
                 result.add("G1", "warning", ctx.line_num, f"检测到禁用词: {word}")
 
 
-# 栏目名 → theme id 映射
-COLUMN_ALIASES = {
-    "学术前沿": "academic",
-    "行业趋势": "industry",
-    "技术专题": "tech",
-    "人物故事": "story",
-    "academic": "academic",
-    "industry": "industry",
-    "tech": "tech",
-    "story": "story",
-}
+# 栏目名 → theme id 映射（从 columns.yaml 动态构建，避免硬编码）
+def _build_column_aliases() -> dict[str, str]:
+    """从 columns.yaml 读取栏目定义，构建 中文名→ID 和 ID→ID 的双向映射"""
+    aliases: dict[str, str] = {}
+    # 查找 columns.yaml（相对于仓库根目录）
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    columns_path = repo_root / "styles" / "default" / "columns.yaml"
+    if columns_path.exists():
+        try:
+            with open(columns_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            columns = data.get("columns", {}) if data else {}
+            for col_id, col_def in columns.items():
+                aliases[col_id] = col_id  # ID → ID
+                name = col_def.get("name", "") if isinstance(col_def, dict) else ""
+                if name:
+                    aliases[name] = col_id  # 中文名 → ID
+            # column_aliases 段（如 personal → 人物故事）
+            for alias, cn_name in (data.get("column_aliases", {}) or {}).items():
+                if cn_name in aliases:
+                    aliases[alias] = aliases[cn_name]
+            # column_map 段（如 personal → story）
+            for alias, target_id in (data.get("column_map", {}) or {}).items():
+                if target_id in aliases:
+                    aliases[alias] = aliases[target_id]
+        except Exception:
+            pass
+    # 硬编码回退（columns.yaml 不可用时）
+    if not aliases:
+        aliases = {
+            "学术前沿": "academic", "行业趋势": "industry",
+            "技术专题": "tech", "人物故事": "story",
+            "academic": "academic", "industry": "industry",
+            "tech": "tech", "story": "story",
+        }
+    return aliases
+
+COLUMN_ALIASES = _build_column_aliases()
 
 
 # ============================================================
@@ -711,6 +805,9 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
 
     if rules_cfg.get("typesetter_compat", {}).get("enabled", True):
         rule_typesetter_compat(lines, column, config, result)
+
+    if rules_cfg.get("svg_validation", {}).get("enabled", True):
+        rule_svg_validation(lines, config, result)
 
     return result
 

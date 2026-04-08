@@ -119,7 +119,7 @@ Brief 阶段确定后一次写入，后续阶段只读。
 ```
 
 - `passed`: boolean — 是否通过全部校验
-- `violations`: array — 未通过的校验项，每项包含 `type`（7 种验证类型之一）、`detail`（人类可读描述）、`source`（可选，规则来源文件）
+- `violations`: array — 未通过的校验项，每项包含 `type`（验证类型之一）、`detail`（人类可读描述）、`source`（可选，规则来源文件）
 
 ### retries 数组
 
@@ -224,7 +224,7 @@ Draft 阶段支持 section 粒度跟踪。
     "fact_issues": 2,
     "ai_tone_issues": 5,
     "style_deviations": 1,
-    "structure_issues": 0,
+    "sentence_issues": 3,
     "severity_high": 1,
     "severity_medium": 3,
     "severity_low": 4
@@ -237,9 +237,9 @@ Draft 阶段支持 section 粒度跟踪。
 | 字段 | 说明 |
 |------|------|
 | `summary.fact_issues` | 事实准确性问题数 |
-| `summary.ai_tone_issues` | AI 味/句式问题数 |
+| `summary.ai_tone_issues` | AI 味问题数 |
 | `summary.style_deviations` | 风格偏离数 |
-| `summary.structure_issues` | 结构/排版问题数 |
+| `summary.sentence_issues` | 句式问题数 |
 | `summary.severity_high/medium/low` | 按严重性分级统计 |
 
 ### polish
@@ -402,7 +402,7 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
         "fact_issues": 1,
         "ai_tone_issues": 3,
         "style_deviations": 0,
-        "structure_issues": 0,
+        "sentence_issues": 1,
         "severity_high": 0,
         "severity_medium": 2,
         "severity_low": 2

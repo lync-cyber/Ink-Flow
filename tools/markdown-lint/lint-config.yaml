@@ -68,6 +68,11 @@ rules:
     severity: warning
     # typesetter 兼容性检查（本地路径、残留占位符、引用格式）
 
+  svg_validation:
+    enabled: true
+    severity: warning
+    # SVG 图表质量校验（viewBox、尺寸、CSS 变量、事件属性、defs 引用）
+
   forbidden_patterns:
     enabled: true
     severity: warning
@@ -106,15 +111,15 @@ rules:
       # 结尾套话
       - "希望本文对你有所帮助"
 
-# 栏目特有覆盖
+# 栏目特有覆盖（使用英文 ID，与 columns.yaml / brief.content_column 一致）
 column_overrides:
-  学术前沿:
+  academic:
     theme_constraints:
       require_references: true
       require_tldr: true
-  人物故事:
+  story:
     theme_constraints:
       forbid_tldr: true
-  技术专题:
+  tech:
     theme_constraints:
       require_code_block: true
