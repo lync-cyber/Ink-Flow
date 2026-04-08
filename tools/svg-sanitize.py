@@ -71,6 +71,22 @@ def sanitize_svg(svg_text):
         result = re.sub(r'url\("([^"]*?)"\)', r'url(\1)', result)
         result = re.sub(r"url\('([^']*?)'\)", r'url(\1)', result)
 
+    # 7. Warn about CSS variables (WeChat doesn't support them)
+    var_count = len(re.findall(r'var\(--', result))
+    if var_count:
+        issues.append(f"Warning: {var_count} CSS variable(s) detected (var(--...)), WeChat does not support them")
+
+    # 8. Warn about <defs> blocks with id references (id stripped → references break)
+    if re.search(r'<defs[\s>]', result, re.IGNORECASE) and re.search(r'url\(#', result):
+        issues.append("Warning: <defs> block with url(#...) references detected, id stripping will break them")
+
+    # 9. Remove event handler attributes (onclick, onload, onmouseover, etc.)
+    event_attrs = re.findall(r'\s+on\w+\s*=\s*["\'][^"\']*["\']', result, re.IGNORECASE)
+    if event_attrs:
+        issues.append(f"Removed {len(event_attrs)} event handler attribute(s)")
+        result = re.sub(r'\s+on\w+\s*=\s*"[^"]*"', '', result, flags=re.IGNORECASE)
+        result = re.sub(r"\s+on\w+\s*=\s*'[^']*'", '', result, flags=re.IGNORECASE)
+
     return result, issues
 
 

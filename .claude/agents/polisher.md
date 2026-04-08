@@ -24,9 +24,11 @@ Skill 加载（按需读取 SKILL.md 正文）：
 
 ### 基于审校报告修复
 
-逐项处理 audit.md 中的问题：
+> audit.md 的表格格式和严重性分级定义在 `styles/default/stage-contracts.yaml` 的 `audit` 合约中。按严重性从高到低优先处理。
+
+仅处理 audit.md 中报告的问题（假设 draft 已通过基础 quality-redline 检查，不重新扫描）：
 - **事实准确性问题** → 修正或标注"待用户确认"
-- **AI 味问题** → 按 quality-redline rule 替换为自然表达
+- **AI 味问题** → 替换为自然表达
 - **风格偏离** → 调整至栏目语气
 - **句式问题** → 按以下三条规则处理
 

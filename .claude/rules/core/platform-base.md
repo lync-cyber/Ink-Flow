@@ -1,7 +1,10 @@
 ## 排版约束
 
-- 段落不超过 3 行（移动端屏幕高度限制）
-- 禁止首行缩进（移动端显示错位）
+> 确定性阈值定义在 `tools/markdown-lint/lint-config.yaml` 的 `typography` 段（单一事实来源），此处为 LLM 可读的语义描述。
+> 排版数值参数（字号、行高、字间距）定义在 `styles/default/columns.yaml` 的 `typography` 段。
+
+- 段落不超过 3 行（移动端屏幕高度限制，lint 规则 C1）
+- 禁止首行缩进（移动端显示错位，lint 规则 C3）
 
 ## 标题层级
 

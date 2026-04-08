@@ -10,18 +10,6 @@ workspace_mode: framework
 domains:
   - wechat-article
 
-# 模型分配（只读参考）— 实际模型由 .claude/agents/*.md frontmatter 的 model 字段决定
-# 修改模型需直接编辑对应 agent 的 frontmatter；此处仅供一览，不会被 pipeline 读取
-model_allocation:
-  orchestrator: opus
-  researcher: sonnet
-  outliner: opus
-  writer: opus
-  illustrator: sonnet
-  auditor: opus
-  polisher: sonnet
-  publisher: sonnet
-
 # 多格式导出配置（跨 pipeline 复用）
 exports:
   - format: wechat_md
@@ -54,98 +42,54 @@ defaults:
   opening_style: auto
 
 # 工作流阶段定义
-# validation 由编排器在 agent 完成后独立执行，与 agent 上下文隔离
+# validation 规则统一定义在 stage-contracts.yaml（单一事实来源）
+# 编排器在 agent 完成后读取合约独立执行校验，与 agent 上下文隔离
+contracts_source: styles/default/stage-contracts.yaml
+
 stages:
   - name: brief
     type: user_input
+    contract_ref: brief
 
   - name: research
     agent: researcher
     skip_if: "brief.skip_research == true"
-    validation:
-      required_sections:
-        - "关键事实"
-        - "代码片段"
-        - "对比表格"
-        - "不确定项"
-      optional_sections:
-        - name: "SEO 关键词"
-          skip_if: "brief.skip_seo == true"
-        - name: "竞品分析"
-          skip_if: "brief.content_type == opinion || brief.content_column == story"
-      word_count: { min: 500, max: 5000 }
-      required_patterns:
-        - "\\[来源\\]\\(http"
-      forbidden_patterns: ["TODO", "待补充"]
+    contract_ref: research
 
   - name: outline
     agent: outliner
     checkpoint: true
     requires: [brief]
-    validation:
-      required_sections: ["总览"]
-      required_patterns:
-        - "- 论点:"
-        - "- 关键细节:"
-        - "- 预估字数:"
-        - "- 视觉断点:"
-      word_count: { min: 300, max: 2000 }
-      forbidden_patterns: ["TODO"]
+    contract_ref: outline
 
   - name: draft
     agent: writer
     requires: [outline]
-    validation:
-      section_tolerance: 0.20  # 每个 section 字数与大纲预估偏差 ≤ 20%
-      merged_word_count: { min: 800, max: 5000 }  # 合并后 full.md 总字符数
-      forbidden_patterns: ["TODO"]
-      forbidden_patterns_from_rules:
-        - .claude/rules/domains/wechat-article/quality-redline.md
+    contract_ref: draft
 
   - name: figures
     agent: illustrator
     skip_if: "brief.no_figures == true"
     requires: [outline]
     parallel_with: [draft]
-    validation:
-      required_patterns:
-        - "```mermaid|<svg"
+    contract_ref: figures
 
   - name: audit
     agent: auditor
     requires: [draft]
-    validation:
-      required_sections: ["审校报告", "传播性评估", "审校统计"]
+    contract_ref: audit
 
   - name: polish
     agent: polisher
     checkpoint: true
     requires: [audit]
-    validation:
-      required_sections: ["润色结果", "变更溯源表"]
-      forbidden_patterns: ["TODO", "待确认"]
-      forbidden_patterns_from_rules:
-        - .claude/rules/domains/wechat-article/quality-redline.md
-      platform_checks:
-        - type: css_safety
-          source: tools/markdown-lint/lint-config.yaml  # 单一事实来源，不重复定义 forbidden_css
-        - type: heading_level
-          allowed: ["##", "###", "####"]
-        - type: image_width
-          max_width: 640
+    contract_ref: polish
 
   - name: publish
     agent: publisher
     checkpoint: true
     requires: [polish]
-    validation:
-      required_patterns:
-        - "^# "              # H1 标题（typesetter 栏目标识区依赖）
-      forbidden_patterns:
-        - "<!-- FIGURE:"     # 未替换的图表占位符
-        - "<!-- MEDIA:"      # 未替换的媒体占位符（用户应在 CP2 提供实际图片）
-        - '<img src="\.\./'  # 本地路径引用（需已内联）
-        - '<svg[^>]* id='    # SVG 中残留 id 属性（微信会剥离导致内部引用断裂）
+    contract_ref: publish
 
 # Skill 注册表
 registry:

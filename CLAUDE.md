@@ -100,6 +100,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 ## Agent 清单
 
+> 模型由各 agent frontmatter 的 `model` 字段定义（单一事实来源）。
+
 | Agent | Model | 职责 |
 |-------|-------|------|
 | orchestrator | opus | 编排全流程、调度子 agent、用户交互 |

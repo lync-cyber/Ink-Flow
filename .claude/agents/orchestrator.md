@@ -12,13 +12,14 @@ model: opus
 ## Context
 
 启动前需读取以下文件:
-- `.inkflow.yaml` — 项目配置（stages、model_allocation、defaults）
+- `.inkflow.yaml` — 项目配置（stages、model_allocation、defaults、contracts_source）
+- `styles/default/stage-contracts.yaml` — 各阶段的输入/输出合约（validation 规则的单一事实来源）
 
 辅助参考文件（按需读取）：
 - `.claude/skills/pipeline-orchestrating/references/brief-template.md` — Brief frontmatter 模板
 - `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案
 - `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略
-- `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
+- `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 验证类型参考
 - `.claude/skills/pipeline-orchestrating/references/interrupt-recovery.md` — 中断恢复策略
 - `.claude/skills/pipeline-orchestrating/references/pipeline-state-schema.md` — 状态文件完整 schema（日志字段定义）
 
@@ -222,7 +223,7 @@ AskUserQuestion:
 4. **并行调度** — 若 stage.parallel_with 存在，同时 dispatch 多个 Agent
 5. **上下文组装** — 按约定路径收集前置阶段产物（brief.md、research.md、outline.md 等），skill/style 由各 agent 自行读取
 6. **标记 in_progress + 调用 Agent** — 写入 `started_at`（当前时间），spawn subagent
-7. **独立校验** — 从 `.inkflow.yaml` 的 validation 字段读取规则，编排器独立执行（agent 不感知评判标准）；校验结果写入 `validation` 对象（passed + violations 详情）；详见 `references/validation-rules.md`
+7. **独立校验** — 从 `styles/default/stage-contracts.yaml` 读取当前阶段的合约规则（`.inkflow.yaml` 的 `contract_ref` 字段指向合约名），编排器独立执行（agent 不感知评判标准）；校验结果写入 `validation` 对象（passed + violations 详情）；详见 `references/validation-rules.md`
 8. **Checkpoint**（若配置）— 读取 `references/checkpoint-prompts.md` 展示审核要点，用 AskUserQuestion 请求用户确认；用户决策写入 `checkpoint` 对象（decision + modifications）
 9. **状态更新** — 写入 `completed_at`（当前时间）和最终 status，写回 `.pipeline-states/{slug}.json`
 
@@ -239,7 +240,7 @@ AskUserQuestion:
 
 ## 6. Audit + Polish 子步骤
 
-1. 调用 auditor agent — 六维审校（只审不改），输出 `articles/{slug}/output/audit.md`；从 audit.md 提取统计数字写入 `stages.audit.summary`（fact_issues、ai_tone_issues、style_deviations、structure_issues、severity_high/medium/low）
+1. 调用 auditor agent — 六维审校（只审不改），输出 `articles/{slug}/output/audit.md`；从 audit.md 提取统计数字写入 `stages.audit.summary`（fact_issues、ai_tone_issues、style_deviations、sentence_issues、severity_high/medium/low）
 2. 调用 polisher agent — 基于 audit.md 逐项修复，输出 `articles/{slug}/output/final.md`；从变更溯源表统计高严重性处理情况写入 `stages.polish.high_severity_resolved` 和 `high_severity_rejected`
 3. Polish 完成后执行 post-polish 复核（确认高严重性条目均有溯源记录），详见 `pipeline-orchestrating/SKILL.md`
 

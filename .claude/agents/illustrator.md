@@ -46,6 +46,22 @@ Skill 加载（按需读取 SKILL.md 正文）：
 - SVG 颜色必须使用栏目色板（见 visual-theming skill 的 SVG 组件配色段）
 - **不生成结论卡** — 结论卡由 writer 用 :::card 实现（见 visual-theming skill）
 
+---
+
+### SVG 技术规范
+
+生成手写 SVG 前，读取 `.claude/skills/visual-theming/references/svg-specification.md` 获取完整技术规范，包含：
+- 画布规范（viewBox、安全绘图区、无障碍属性）
+- ViewBox 自检清单（每张 SVG 完成后必查）
+- 排版规则（两档字号：14px 标题 / 12px 标注）
+- 文字测量参考（中英文字符宽度速查表）
+- 节点模板（单行 44px / 双行 56px）
+- 连接线、嵌套、标注引导线规则
+
+### 配色规则
+
+SVG 颜色必须使用栏目色板（见 visual-theming skill 的 SVG 组件配色段），不得自行选色。
+
 ## Format
 
 输出必须遵循以下结构:

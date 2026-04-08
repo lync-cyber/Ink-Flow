@@ -12,6 +12,10 @@
   4. Skill Frontmatter 完整性 — 必填字段
   5. 交叉引用 — .inkflow.yaml stages 中引用的 agent 文件存在
   6. 领域包完整性 — domain YAML 中列出的 skill/rule 均存在
+  7. Typesetter WeChat CSS 兼容性
+  8. THEMES 同步校验
+  9. 文件清理校验
+  10. 栏目必填字段完整性 — columns.yaml 每栏目的四分区字段齐全
 """
 
 import io
@@ -199,7 +203,8 @@ def check_yaml_schema(repo: Path):
         return
 
     # version 由 git tag 管理，不要求在 YAML 中硬编码
-    for field in ("domains", "model_allocation", "stages"):
+    # model_allocation 已移除（模型由 agent frontmatter 的 model 字段决定）
+    for field in ("domains", "stages"):
         if file_contains(inkflow, rf"^{field}:"):
             ok(f".inkflow.yaml 包含 {field}")
         else:
@@ -216,28 +221,7 @@ def check_yaml_schema(repo: Path):
     else:
         error(".inkflow.yaml stages 段为空")
 
-    # 校验 model_allocation 中的 agent 与 agent 文件一致
-    agents_dir = repo / ".claude" / "agents"
-    if agents_dir.exists():
-        agent_files = {f.stem for f in agents_dir.glob("*.md") if f.stem != "_template"}
-        model_lines = []
-        in_model = False
-        for line in text.splitlines():
-            if re.match(r"^model_allocation:", line):
-                in_model = True
-                continue
-            if in_model:
-                if line and not line[0].isspace() and not line.startswith("#"):
-                    break
-                m = re.match(r"\s+(\w[\w-]*):", line)
-                if m:
-                    model_lines.append(m.group(1))
-
-        for agent_name in model_lines:
-            if agent_name in agent_files:
-                ok(f"model_allocation '{agent_name}' 有对应 agent 文件")
-            else:
-                error(f"model_allocation '{agent_name}' 无对应 agent 文件 (.claude/agents/{agent_name}.md)")
+    # 模型分配由各 agent frontmatter 的 model 字段直接管理，无需在 .inkflow.yaml 中重复
 
 
 def check_agent_frontmatter(repo: Path):
@@ -329,7 +313,35 @@ def check_cross_references(repo: Path):
         else:
             error(f"stage '{stage['name']}': agent '{agent_name}' 不存在 (.claude/agents/{agent_name}.md)")
 
-    # 检查 stages 中引用的 rules 文件存在
+    # 检查 contracts_source 引用的合约文件存在
+    contracts_match = re.search(r"^contracts_source:\s*(.+)", text, re.MULTILINE)
+    if contracts_match:
+        contracts_path = repo / contracts_match.group(1).strip()
+        if contracts_path.exists():
+            ok(f"contracts_source '{contracts_match.group(1).strip()}' 存在")
+
+            # 在合约文件中检查 rules 和 source 引用
+            contracts_text = contracts_path.read_text(encoding="utf-8")
+            for line in contracts_text.splitlines():
+                rm = re.match(r"\s+-\s+\.claude/rules/(.+\.md)", line)
+                if rm:
+                    rule_path = repo / ".claude" / "rules" / rm.group(1)
+                    if rule_path.exists():
+                        ok(f"合约 rules 引用 '{rm.group(1)}' 存在")
+                    else:
+                        error(f"合约 rules 引用 '{rm.group(1)}' 不存在")
+
+                sm = re.match(r"\s+source:\s*(tools/.+\.yaml)", line)
+                if sm:
+                    source_path = repo / sm.group(1)
+                    if source_path.exists():
+                        ok(f"合约 validation source '{sm.group(1)}' 存在")
+                    else:
+                        error(f"合约 validation source '{sm.group(1)}' 不存在")
+        else:
+            error(f"contracts_source '{contracts_match.group(1).strip()}' 不存在")
+
+    # 兼容：检查 .inkflow.yaml 中直接定义的 rules/source 引用（旧格式）
     for line in text.splitlines():
         m = re.match(r"\s+-\s+\.claude/rules/(.+\.md)", line)
         if m:
@@ -339,7 +351,6 @@ def check_cross_references(repo: Path):
             else:
                 error(f"rules 引用 '{m.group(1)}' 不存在")
 
-    # 检查 stages 中引用的 validation source 文件存在
     for line in text.splitlines():
         m = re.match(r"\s+source:\s*(tools/.+\.yaml)", line)
         if m:
@@ -549,6 +560,125 @@ def check_file_cleanup(repo):
 
 
 # ============================================================
+# Check 10: 栏目必填字段完整性
+# ============================================================
+
+# 分区 → 必填字段映射（与 columns.yaml 头部契约保持一致）
+REQUIRED_COLUMN_FIELDS = {
+    "品牌标识": ["name", "icon", "tagline", "personality"],
+    "视觉主题": ["colors"],
+    "写作指导": ["skeleton", "tone", "default_opening", "default_cta"],
+    "运营指标": ["frequency", "kpi_targets"],
+}
+
+# colors 子对象中所有栏目必须包含的 key
+REQUIRED_COLOR_KEYS = {"primary", "accent", "text", "textSecondary", "background", "border"}
+
+
+def check_column_completeness(repo):
+    """校验 columns.yaml 中每个栏目包含所有必填字段，且 colors 结构一致"""
+    section("Check 10: 栏目必填字段完整性")
+
+    columns_path = repo / "styles" / "default" / "columns.yaml"
+    if not columns_path.exists():
+        error("columns.yaml 不存在")
+        return
+
+    text = columns_path.read_text(encoding="utf-8")
+
+    # 简易解析：提取 columns: 下各栏目的顶层字段
+    lines = text.splitlines()
+    in_columns = False
+    columns_data: dict[str, dict[str, bool]] = {}  # {col_id: {field: True}}
+    colors_keys: dict[str, set[str]] = {}  # {col_id: {key1, key2, ...}}
+    current_col = None
+    in_colors = False
+    in_dark = False
+    indent_stack = 0
+
+    for line in lines:
+        # 进入 columns: 顶层段
+        if re.match(r"^columns:\s*$", line):
+            in_columns = True
+            continue
+
+        if not in_columns:
+            continue
+
+        # 退出 columns 段（回到顶层）
+        if line and not line[0].isspace() and not line.startswith("#"):
+            break
+
+        # 栏目 ID（2 空格缩进）
+        m = re.match(r"  (\w+):\s*$", line)
+        if m:
+            current_col = m.group(1)
+            columns_data[current_col] = {}
+            colors_keys[current_col] = set()
+            in_colors = False
+            in_dark = False
+            continue
+
+        if not current_col:
+            continue
+
+        # 栏目下的字段（4 空格缩进）
+        fm = re.match(r"    (\w[\w-]*):", line)
+        if fm and not in_colors and not in_dark:
+            field = fm.group(1)
+            columns_data[current_col][field] = True
+
+            if field == "colors":
+                in_colors = True
+                continue
+            if field == "dark":
+                in_dark = True
+                continue
+
+        # colors 子字段（6 空格缩进）
+        if in_colors:
+            cm = re.match(r"      (\w+):", line)
+            if cm:
+                colors_keys[current_col].add(cm.group(1))
+            # 退出 colors（回到 4 空格层级）
+            if line.strip() and re.match(r"    \w", line) and not re.match(r"      ", line):
+                in_colors = False
+
+        # dark 段结束检测
+        if in_dark:
+            if line.strip() and re.match(r"    \w", line) and not re.match(r"      ", line):
+                in_dark = False
+
+    if not columns_data:
+        error("columns.yaml 未找到栏目定义")
+        return
+
+    ok(f"找到 {len(columns_data)} 个栏目: {', '.join(columns_data.keys())}")
+
+    # 校验每个栏目的必填字段
+    all_required = []
+    for fields in REQUIRED_COLUMN_FIELDS.values():
+        all_required.extend(fields)
+
+    for col_id, fields in columns_data.items():
+        for req_field in all_required:
+            if req_field in fields:
+                ok(f"栏目 {col_id}: 包含 {req_field}")
+            else:
+                error(f"栏目 {col_id}: 缺少必填字段 '{req_field}'")
+
+    # 校验 colors 子对象的 key 集合一致性
+    col_ids = list(colors_keys.keys())
+    if len(col_ids) >= 2:
+        for col_id in col_ids:
+            missing = REQUIRED_COLOR_KEYS - colors_keys[col_id]
+            if missing:
+                error(f"栏目 {col_id}: colors 缺少 key: {', '.join(sorted(missing))}")
+            else:
+                ok(f"栏目 {col_id}: colors 包含所有必需 key")
+
+
+# ============================================================
 # 主入口
 # ============================================================
 
@@ -570,6 +700,7 @@ def main():
     check_typesetter_wechat_compat(repo)
     check_theme_sync(repo)
     check_file_cleanup(repo)
+    check_column_completeness(repo)
 
     print()
     print("================================")
