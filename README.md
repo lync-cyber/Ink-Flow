@@ -22,50 +22,46 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
   │   ├── pipeline-orchestrating/  # 编排器（含 references/）
   │   ├── style-profiling/         # 风格提取
   │   ├── style-studying/          # 外部材料学习
+  │   ├── pipeline-orchestrating/  # 写作流程总入口
   │   ├── workspace-init/          # 工作区初始化与升级
-  │   ├── writing-guiding/         # 写作指导
-  │   ├── opening-crafting/        # 开篇策略
-  │   ├── article-structuring/     # 栏目结构
+  │   ├── style-learning/          # 风格学习（profile / study）
+  │   ├── quality-linting/         # 格式 lint
   │   ├── title-crafting/          # 标题打磨
-  │   ├── visual-theming/          # 视觉主题
-  │   ├── format-linting/          # 格式校验
-  │   ├── format-exporting/        # 格式导出
   │   ├── publish-preparing/       # 发布准备
   │   ├── content-planning/        # 内容排期
   │   ├── creation-reviewing/      # 创作复盘
   │   ├── metrics-tracking/        # 数据追踪
-  │   ├── performance-benchmarking/ # 效果分析
-  │   └── domain-wechat-article.yaml  # 领域包定义
-  └── rules/                # 声明式约束规则（自动加载到所有会话）
+  │   └── performance-benchmarking/ # 效果分析
+  └── rules/                # 声明式约束规则
       ├── core/             # 跨领域通用规则
-      └── domains/          # 领域特有规则
+      ├── domains/          # 领域特有规则
+      └── data/             # YAML 数据（单一事实来源）
 
-styles/                     # 风格 & 品牌资源
-  └── default/
-      ├── columns.yaml       # 栏目统一配置（视觉+业务）
-      ├── style-profile.md   # 风格 DNA（由 style-profiling 生成）
-      └── markdown-extensions.md
+config/                     # 项目配置（纳入版本管理）
+  ├── inkflow.yaml           # 项目配置 + stage 契约
+  ├── columns.yaml           # 栏目统一配置（视觉+业务）
+  ├── artifact-layout.yaml   # 产物路径约定
+  └── markdown-extensions.md # :::block 语法说明
+
+styles/                     # 个人化风格档案（用户生成，升级不覆盖）
+  └── {profile}/style-profile.md
 
 tools/                      # 工具链
   ├── wechat-typesetter/    # 排版工具（HTML 渲染）
-  ├── markdown-lint/        # 格式校验脚本 + 配置
-  ├── bootstrap.sh          # 框架部署/升级脚本
-  └── CLAUDE.content.md     # 内容工作区 CLAUDE.md 模板
+  ├── lint/                 # 格式校验脚本 + 配置
+  ├── render/               # mermaid / svg-sanitize / theme-sync
+  └── bootstrap.sh          # 框架部署/升级脚本
 
 tests/                      # 框架质量门禁
   └── lint-framework.py     # L0 静态校验
 
 articles/                   # 内容产物（按文章分组）
   └── {slug}/
-      ├── brief.md
-      ├── research.md
-      ├── outline.md
-      ├── drafts/
-      ├── figures/
-      └── output/
+      ├── intermediate/     # brief / research / outline / draft / figure
+      ├── review/           # audit / polish-trace
+      └── export/           # _final / wechat / plain / teaser
 
-.pipeline-states/           # Pipeline 执行状态
-.inkflow.yaml               # 项目配置
+workspace/pipeline-states/  # Pipeline 执行状态（.gitignore）
 ```
 
 ## 快速开始
@@ -148,7 +144,7 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 
 ### 品牌视觉系统
 
-栏目配置（视觉+业务）统一定义在 `styles/default/columns.yaml`。Writer 使用 Markdown + `:::block` 扩展标记（`:::card`, `:::note`, `:::cta` 等），publish 阶段标准化 Markdown 后由 typesetter 渲染为品牌 HTML。
+栏目配置（视觉+业务）统一定义在 `config/columns.yaml`。Writer 使用 Markdown + `:::block` 扩展标记（`:::card`, `:::note`, `:::cta` 等），publish 阶段标准化 Markdown 后由 typesetter 渲染为品牌 HTML。
 
 ### 错误处理
 
@@ -161,8 +157,8 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 
 ## 领域包机制
 
-框架通过 `.claude/skills/domain-{name}.yaml` 注册 skill 和 rule，切换领域只需修改 `.inkflow.yaml` 的 `domains` 字段。当前领域包：
-- `wechat-article` — 微信公众号文章写作（定义在 `.claude/skills/domain-wechat-article.yaml`）
+领域特有规则放在 `.claude/rules/domains/{name}/`，通过 CLAUDE.md 的 `@`-imports 加载。当前领域：
+- `wechat-article` — 微信公众号文章写作（规则位于 `.claude/rules/domains/wechat-article/`）
 
 ### 质量门禁
 

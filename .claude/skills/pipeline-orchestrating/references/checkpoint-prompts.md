@@ -35,11 +35,7 @@
    - 查找 <!-- USER_FILL --> 标记位置
    - LLM 做不到的部分，是你的核心价值
 
-3. 替换媒体占位符
-   - 查找 `<!-- MEDIA: -->` 标记，用 `![图注](url)` 替换为实际图片
-   - 未替换的占位符会在发布阶段被拦截
-
-4. 确认标题
+3. 确认标题
    - 好标题是精确的问题，不是宏大的概念
 ```
 
@@ -53,7 +49,7 @@
 {其他格式文件列表}
 
 下一步：
-1. 复制 article.md 内容到 typesetter（tools/wechat-typesetter/index.html）
+1. 复制 article.md 内容到 typesetter（tools/typesetter/index.html）
 2. 选择栏目主题 → 预览 → 复制 HTML → 粘贴到公众号编辑器
 3. 发布后触发 creation-reviewing 完成学习闭环
 ```

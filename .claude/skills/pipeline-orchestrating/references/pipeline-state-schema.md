@@ -1,6 +1,6 @@
 # Pipeline State Schema
 
-`.pipeline-states/{slug}.json` 的完整结构定义。编排器在各阶段写入状态时遵循此 schema。
+`workspace/pipeline-states/{slug}.json` 的完整结构定义。编排器在各阶段写入状态时遵循此 schema。
 
 ## 设计原则
 
@@ -112,7 +112,7 @@ Brief 阶段确定后一次写入，后续阶段只读。
     {
       "type": "forbidden_patterns",
       "detail": "发现禁用句式「随着 X 的发展」（第 12 行）",
-      "source": ".claude/rules/domains/wechat-article/quality-redline.md"
+      "source": ".claude/rules/domains/wechat-article/redline.md"
     }
   ]
 }

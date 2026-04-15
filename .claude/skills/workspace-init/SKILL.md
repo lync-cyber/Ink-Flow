@@ -13,7 +13,7 @@ allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 
 > **职责分工**:
 > - `tools/bootstrap.sh` — 从远程 GitHub 仓库拉取/同步框架文件（agents、skills、rules、tools）
-> - 本 skill — 初始化项目目录结构（articles/、retro/、references/）、生成配置文件（.inkflow.yaml、.gitignore）、git init
+> - 本 skill — 初始化项目目录结构（articles/、retro/、references/）、生成配置文件（config/inkflow.yaml、.gitignore）、git init
 
 支持两种操作模式：**初始化**（创建新工作区）和**升级**（更新已有工作区的框架文件）。
 
@@ -25,7 +25,7 @@ allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 
 ## 模式判断
 
-读取当前目录的 `.inkflow.yaml`：
+读取当前目录的 `config/inkflow.yaml`：
 
 | workspace_mode | 用户意图信号 | 动作 |
 |----------------|-------------|------|
@@ -45,21 +45,9 @@ references/
 retro/
 styles/*/style-profile.md
 styles/*/exemplar-*.md
-.pipeline-states/
+workspace/pipeline-states/
 .claude/settings.local.json
 ```
-
-## 用户自定义框架文件（升级时保留）
-
-以下路径内的文件属于用户扩展，bootstrap.sh 增量升级时不会删除：
-
-```
-.claude/rules/local/       ← 用户自定义规则
-.claude/agents/local-*.md  ← 用户自定义 agent
-tools/local-*              ← 用户自定义工具脚本
-```
-
-此外，用户可在任意框架子目录下放置 `.inkflow-keep` 标记文件，该目录下的所有文件在升级时免于删除。
 
 ---
 
@@ -92,10 +80,11 @@ AskUserQuestion:
 **本地来源**（当前在 framework 目录）：
 ```bash
 # 从本地框架目录复制
+mkdir -p {target_dir}/config
 cp -r .claude/agents .claude/skills .claude/rules tools {target_dir}/
 cp .claude/settings.json {target_dir}/.claude/settings.json
-cp styles/default/columns.yaml styles/default/markdown-extensions.md {target_dir}/styles/default/
-cp tools/CLAUDE.content.md {target_dir}/CLAUDE.md
+cp config/inkflow.yaml config/columns.yaml config/artifact-layout.yaml config/markdown-extensions.md {target_dir}/config/
+cp CLAUDE.md {target_dir}/CLAUDE.md
 ```
 
 **远程来源**：
@@ -109,15 +98,14 @@ bash tools/bootstrap.sh {target_dir} {repo_url}
 
 ```
 articles/            ← .gitkeep
-articles/_series/    ← .gitkeep
 retro/               ← runs/.gitkeep
 references/          ← articles/ + style-guides/ + templates/（各含 .gitkeep）
-.pipeline-states/    ← .gitkeep
+workspace/pipeline-states/    ← .gitkeep
 ```
 
-### Step 4 — 生成内容模式 .inkflow.yaml
+### Step 4 — 生成内容模式 config/inkflow.yaml
 
-修改 Step 2 拉取的 `.inkflow.yaml`：
+修改 Step 2 拉取的 `config/inkflow.yaml`：
 - `workspace_mode: content`
 - 追加 `inkflow_source`: GitHub 仓库 URL 或本地路径
 - 追加 `inkflow_version`: 从 `git describe --tags --always` 获取的版本号（由 bootstrap.sh 写入）
@@ -127,13 +115,8 @@ references/          ← articles/ + style-guides/ + templates/（各含 .gitkee
 
 ```gitignore
 # 运行时状态（可重建）
-.pipeline-states/
-!.pipeline-states/.gitkeep
-
-# InkFlow 升级元数据
-.inkflow-backups/
-.inkflow-upgrade.log
-.inkflow-manifest.sha256
+workspace/pipeline-states/
+!workspace/pipeline-states/.gitkeep
 
 # 用户本地配置
 .claude/settings.local.json
@@ -180,7 +163,7 @@ cd {target_dir} && git init && git add -A && git commit -m "初始化 InkFlow �
 
 ### Step 1 — 读取升级源
 
-从当前 `.inkflow.yaml` 读取 `inkflow_source` 和 `inkflow_version`。
+从当前 `config/inkflow.yaml` 读取 `inkflow_source` 和 `inkflow_version`。
 若 `inkflow_source` 不存在，用 AskUserQuestion 询问仓库 URL。
 
 ### Step 2 — 调用 bootstrap.sh 同步框架文件
@@ -189,9 +172,7 @@ cd {target_dir} && git init && git add -A && git commit -m "初始化 InkFlow �
 bash tools/bootstrap.sh . {inkflow_source}
 ```
 
-bootstrap.sh 自动检测到 `workspace_mode: content`，进入增量升级模式：仅更新有变更的文件，保留用户自定义文件，并自动创建备份。
-
-> 如升级后发现问题，可执行 `bash tools/bootstrap.sh --rollback` 回滚到上一版本。
+bootstrap.sh 自动检测到 `workspace_mode: content`，进入升级模式，同步框架文件并更新版本号。
 
 ### Step 3 — 提交变更
 
@@ -211,7 +192,7 @@ AskUserQuestion:
 
 ## 引导部署流程
 
-当 `.inkflow.yaml` 不存在时（空目录），用户提供了仓库 URL 或表达了部署意图：
+当 `config/inkflow.yaml` 不存在时（空目录），用户提供了仓库 URL 或表达了部署意图：
 
 ### Step 1 — 确认仓库 URL
 

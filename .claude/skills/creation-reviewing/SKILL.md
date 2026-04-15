@@ -62,26 +62,13 @@ AskUserQuestion:
 
 ## Step 3 — 生成复盘评分卡
 
-从 `.pipeline-states/{slug}.json` 读取流程日志（schema 见 `pipeline-orchestrating/references/pipeline-state-schema.md`），结合 diff 数据生成评分卡。
-
-### 核心指标
+基于 diff 数据计算 3 个核心指标：
 
 | 指标 | 计算方式 | 目标趋势 |
 |------|---------|---------|
 | 编辑率 | 用户修改占 AI 草稿比例 | 逐篇下降 |
-| 阶段失败次数 | 统计 `stages.*.retries` 数组非空的阶段数 | 逐篇下降 |
+| 阶段失败次数 | 需重试/人工介入的阶段数（从 state JSON 读取） | 逐篇下降 |
 | 用户新增量 | 用户新增内容占比 | 保持 10-20% |
-
-### 流程效率指标（从 state JSON 提取）
-
-| 指标 | 数据来源 | 说明 |
-|------|---------|------|
-| 各阶段耗时 | `stages.*.started_at` 与 `completed_at` 差值 | 识别瓶颈阶段 |
-| 总重试次数 | 所有 `stages.*.retries` 的总条目数 | 流程顺畅度 |
-| 校验失败分布 | `stages.*.validation.violations[].type` 统计 | 高频问题类型 |
-| 审校问题分布 | `stages.audit.summary` 各维度数字 | AI 写作薄弱环节 |
-| Checkpoint 修改量 | `stages.*.checkpoint.modifications` 的条目数 | 用户干预程度 |
-| 选题评估 vs 实际 | `meta.topic_assessment.verdict` 对照发布数据 | 选题判断准确度 |
 
 ## Step 4 — 写入记忆 + 输出报告
 

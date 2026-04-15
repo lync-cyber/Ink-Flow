@@ -1,0 +1,41 @@
+# ============================================================
+# 排版与可读性阈值（单一事实来源）
+# 消费者：tools/lint/lint.py、writer agent、illustrator agent
+# ============================================================
+
+version: "1.0"
+
+# 段落与句子
+paragraph:
+  max_chars: 120          # ≈3 行 × 40 字/行 @15px/640px
+  no_first_line_indent: true
+
+sentence:
+  max_chars: 40
+  split_at: ["但是", "因此", "所以", "，"]
+
+# 标题层级
+headings:
+  allowed: [2, 3, 4]      # H2-H4；H1 仅用于文章标题
+
+# 图片
+image:
+  max_width: 640
+
+# SVG 可读性（640→375 缩放系数 ≈0.586）
+svg:
+  min_font_size: 14        # 正文/数据标签（硬下限）
+  caption_font_size: 12    # 图注/脚注（warning 可人工放行）
+  title_font_size: 18      # 主标题
+  section_font_size: 16    # 节标题
+  min_font_weight: 400
+  max_font_variants: 4
+  font_stack: '"Microsoft YaHei","PingFang SC",sans-serif'
+
+# SVG 微信特有
+svg_wechat:
+  forbid_id_attribute: true
+  forbid_style_tag: true
+  forbid_script_tag: true
+  forbid_anchor_tag: true
+  background_url_no_quotes: true

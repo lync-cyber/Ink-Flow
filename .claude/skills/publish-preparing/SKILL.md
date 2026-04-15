@@ -20,7 +20,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion
 AskUserQuestion:
   question: "为哪篇文章生成发布清单？"
   options:
-    - 自动检测最近完成的文章（扫描 .pipeline-states/ 找 publish=completed）
+    - 自动检测最近完成的文章（扫描 workspace/pipeline-states/ 找 publish=completed）
     - 手动指定 slug
 ```
 
@@ -28,7 +28,7 @@ AskUserQuestion:
 
 1. `articles/{slug}/brief.md` — 栏目、内容类型、CTA 类型
 2. `articles/{slug}/output/article.md` — 文章成品
-3. `styles/default/columns.yaml` — 栏目 best_time、kpi_targets
+3. `config/columns.yaml` — 栏目 best_time、kpi_targets
 4. Claude Code memory — 历史习得的最佳发布时间（若有）
 
 ## 发布前清单
@@ -38,8 +38,8 @@ AskUserQuestion:
 ### 通用项
 
 - [ ] **发布时间**: 推荐 {best_time}（来自 columns.yaml 或 orchestrator memory）
-- [ ] **标题终审**: 确认标题字数符合 title-crafting skill 限制、有观点/信息增量
-- [ ] **摘要检查**: 确认摘要不超过 `.inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
+- [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
+- [ ] **摘要检查**: 确认摘要不超过 `config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备（封面背景色从 columns.yaml 读取）
 - [ ] **排版流程**: 复制 article.md → 打开 typesetter → 选栏目主题 → 预览 → 复制 HTML → 粘贴到公众号编辑器
 - [ ] **话题标签**: 添加 2-3 个精准话题标签（从 output/summary.md 提取）

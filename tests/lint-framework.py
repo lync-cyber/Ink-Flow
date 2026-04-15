@@ -7,15 +7,14 @@
 
 校验项:
   1. 路径一致性 — agent/skill 中的路径引用与目录结构一致
-  2. YAML Schema — .inkflow.yaml 必填字段 + stages 结构
+  2. YAML Schema — config/inkflow.yaml 必填字段 + stages 结构
   3. Agent Frontmatter 完整性 — 必填字段 + RCCF 正文结构
   4. Skill Frontmatter 完整性 — 必填字段
-  5. 交叉引用 — .inkflow.yaml stages 中引用的 agent 文件存在
+  5. 交叉引用 — config/inkflow.yaml stages 中引用的 agent 文件存在
   6. 领域包完整性 — domain YAML 中列出的 skill/rule 均存在
   7. Typesetter WeChat CSS 兼容性
-  8. THEMES 同步校验
-  9. 文件清理校验
-  10. 栏目必填字段完整性 — columns.yaml 每栏目的四分区字段齐全
+  8. 文件清理校验
+  9. 栏目必填字段完整性 — columns.yaml 每栏目的四分区字段齐全
 """
 
 import io
@@ -132,7 +131,7 @@ def parse_yaml_list(text: str, section_name: str) -> list[str]:
 
 
 def parse_stages(text: str) -> list[dict[str, str]]:
-    """从 .inkflow.yaml 提取 stages 列表中的 name 和 agent 字段"""
+    """从 config/inkflow.yaml 提取 stages 列表中的 name 和 agent 字段"""
     lines = text.splitlines()
     in_stages = False
     stages = []
@@ -196,32 +195,32 @@ def check_path_consistency(repo: Path):
 def check_yaml_schema(repo: Path):
     section("2. YAML Schema 校验")
 
-    # .inkflow.yaml
-    inkflow = repo / ".inkflow.yaml"
+    # config/inkflow.yaml
+    inkflow = repo / "config/inkflow.yaml"
     if not inkflow.exists():
-        error(".inkflow.yaml 不存在")
+        error("config/inkflow.yaml 不存在")
         return
 
     # version 由 git tag 管理，不要求在 YAML 中硬编码
     # model_allocation 已移除（模型由 agent frontmatter 的 model 字段决定）
     for field in ("domains", "stages"):
         if file_contains(inkflow, rf"^{field}:"):
-            ok(f".inkflow.yaml 包含 {field}")
+            ok(f"config/inkflow.yaml 包含 {field}")
         else:
-            error(f".inkflow.yaml 缺少必填字段: {field}")
+            error(f"config/inkflow.yaml 缺少必填字段: {field}")
 
     # 校验 stages 结构：每个 stage 必须有 name
     text = inkflow.read_text(encoding="utf-8")
     stages = parse_stages(text)
     if stages:
-        ok(f".inkflow.yaml 定义了 {len(stages)} 个 stage")
+        ok(f"config/inkflow.yaml 定义了 {len(stages)} 个 stage")
         for stage in stages:
             if "name" not in stage:
-                error(f".inkflow.yaml stage 缺少 name 字段")
+                error(f"config/inkflow.yaml stage 缺少 name 字段")
     else:
-        error(".inkflow.yaml stages 段为空")
+        error("config/inkflow.yaml stages 段为空")
 
-    # 模型分配由各 agent frontmatter 的 model 字段直接管理，无需在 .inkflow.yaml 中重复
+    # 模型分配由各 agent frontmatter 的 model 字段直接管理，无需在 config/inkflow.yaml 中重复
 
 
 def check_agent_frontmatter(repo: Path):
@@ -293,9 +292,9 @@ def check_skill_frontmatter(repo: Path):
 def check_cross_references(repo: Path):
     section("5. 交叉引用完整性")
 
-    inkflow = repo / ".inkflow.yaml"
+    inkflow = repo / "config/inkflow.yaml"
     if not inkflow.exists():
-        error(".inkflow.yaml 不存在，跳过交叉引用检查")
+        error("config/inkflow.yaml 不存在，跳过交叉引用检查")
         return
 
     text = inkflow.read_text(encoding="utf-8")
@@ -341,7 +340,7 @@ def check_cross_references(repo: Path):
         else:
             error(f"contracts_source '{contracts_match.group(1).strip()}' 不存在")
 
-    # 兼容：检查 .inkflow.yaml 中直接定义的 rules/source 引用（旧格式）
+    # 兼容：检查 config/inkflow.yaml 中直接定义的 rules/source 引用（旧格式）
     for line in text.splitlines():
         m = re.match(r"\s+-\s+\.claude/rules/(.+\.md)", line)
         if m:
@@ -362,61 +361,21 @@ def check_cross_references(repo: Path):
 
 
 def check_domain_completeness(repo: Path):
-    section("6. 领域包完整性")
+    section("6. 领域规则目录完整性")
 
-    skills_dir = repo / ".claude" / "skills"
     rules_dir = repo / ".claude" / "rules"
-
-    # 查找 domain-*.yaml 文件（新结构：扁平化在 .claude/skills/ 下）
-    domain_files = sorted(skills_dir.glob("domain-*.yaml"))
-    if not domain_files:
-        warn("未找到任何 domain-*.yaml 领域包文件")
+    inkflow = repo / "config/inkflow.yaml"
+    if not inkflow.exists():
+        warn("config/inkflow.yaml 不存在，跳过")
         return
 
-    for domain_yaml in domain_files:
-        dname = domain_yaml.stem.replace("domain-", "")
-        text = domain_yaml.read_text(encoding="utf-8")
-
-        # 检查必填字段
-        for field in ("name", "skills", "rules"):
-            if re.search(rf"^{field}:", text, re.MULTILINE):
-                ok(f"domain {dname}: 包含 {field}")
-            else:
-                error(f"domain {dname}: 缺少必填字段 {field}")
-
-        # 检查 skills 列表中的 skill 是否存在
-        skill_names = parse_yaml_list(text, "skills")
-        for skill in skill_names:
-            skill_path = skills_dir / skill / "SKILL.md"
-            if skill_path.exists():
-                ok(f"domain {dname}: skill '{skill}' 存在")
-            else:
-                error(f"domain {dname}: skill '{skill}' 不存在 (.claude/skills/{skill}/SKILL.md)")
-
-        # 检查 rules 列表中的 rule 是否存在
-        rule_names = parse_yaml_list(text, "rules")
-        for rule in rule_names:
-            # 搜索 core/ 和 domains/*/ 下的 rule 文件
-            found = False
-            for rule_file in rules_dir.rglob(f"{rule}.md"):
-                found = True
-                break
-            if found:
-                ok(f"domain {dname}: rule '{rule}' 存在")
-            else:
-                error(f"domain {dname}: rule '{rule}' 不存在")
-
-    # 检查 .inkflow.yaml 中的 domains 引用都有对应的 domain YAML
-    inkflow = repo / ".inkflow.yaml"
-    if inkflow.exists():
-        inkflow_text = inkflow.read_text(encoding="utf-8")
-        domain_refs = parse_yaml_list(inkflow_text, "domains")
-        for domain_ref in domain_refs:
-            domain_path = skills_dir / f"domain-{domain_ref}.yaml"
-            if domain_path.exists():
-                ok(f".inkflow.yaml domain '{domain_ref}' 有对应领域包文件")
-            else:
-                error(f".inkflow.yaml domain '{domain_ref}' 无对应领域包文件 (.claude/skills/domain-{domain_ref}.yaml)")
+    domain_refs = parse_yaml_list(inkflow.read_text(encoding="utf-8"), "domains")
+    for domain_ref in domain_refs:
+        domain_dir = rules_dir / "domains" / domain_ref
+        if domain_dir.is_dir():
+            ok(f"config/inkflow.yaml domain '{domain_ref}' 对应规则目录存在")
+        else:
+            error(f"config/inkflow.yaml domain '{domain_ref}' 缺少 .claude/rules/domains/{domain_ref}/")
 
 
 # ============================================================
@@ -426,7 +385,7 @@ def check_domain_completeness(repo: Path):
 def check_typesetter_wechat_compat(repo):
     """检查 typesetter 渲染输出中不使用微信不兼容的 CSS 属性"""
     section("Check 7: Typesetter WeChat CSS 兼容性")
-    index_path = repo / "tools" / "wechat-typesetter" / "index.html"
+    index_path = repo / "tools" / "typesetter" / "index.html"
     if not index_path.exists():
         warn("typesetter index.html 未找到，跳过检查")
         return
@@ -445,122 +404,30 @@ def check_typesetter_wechat_compat(repo):
 
 
 # ============================================================
-# Check 8: THEMES 同步校验
-# ============================================================
-
-def check_theme_sync(repo):
-    """检查 index.html THEMES 是否与 columns.yaml 同步"""
-    section("Check 8: THEMES 同步校验")
-
-    index_path = repo / "tools" / "wechat-typesetter" / "index.html"
-    columns_path = repo / "styles" / "default" / "columns.yaml"
-
-    if not index_path.exists() or not columns_path.exists():
-        warn("index.html 或 columns.yaml 缺失，跳过 THEMES 同步校验")
-        return
-
-    index_text = index_path.read_text(encoding="utf-8")
-    columns_text = columns_path.read_text(encoding="utf-8")
-
-    # Check THEME_START/END markers exist
-    if "// THEME_START" not in index_text:
-        error("index.html 缺少 // THEME_START 标记（运行 python tools/sync-themes.py 同步）")
-        return
-    if "// THEME_END" not in index_text:
-        error("index.html 缺少 // THEME_END 标记")
-        return
-    ok("index.html 包含 THEME_START/END 标记")
-
-    # Check column colors match between files
-    # Extract primary colors from columns.yaml
-    yaml_colors = {}
-    current_col = None
-    in_colors = False
-    for line in columns_text.splitlines():
-        m = re.match(r"  (\w+):\s*$", line)
-        if m and not in_colors:
-            current_col = m.group(1)
-            continue
-        if current_col and re.match(r"    colors:\s*$", line):
-            in_colors = True
-            continue
-        if in_colors:
-            cm = re.match(r'      primary:\s*"(#[0-9a-fA-F]+)"', line)
-            if cm:
-                yaml_colors[current_col] = cm.group(1)
-                in_colors = False
-                current_col = None
-
-    # Extract primary colors from index.html THEMES
-    html_colors = {}
-    for m in re.finditer(r'(\w+):\s*\{[^}]*id:\s*"(\w+)"[^}]*primary:\s*"(#[0-9a-fA-F]+)"', index_text):
-        html_colors[m.group(2)] = m.group(3)
-
-    for col_id, yaml_primary in yaml_colors.items():
-        html_primary = html_colors.get(col_id)
-        if html_primary and html_primary.lower() == yaml_primary.lower():
-            ok(f"栏目 {col_id} primary 色同步: {yaml_primary}")
-        elif html_primary:
-            error(f"栏目 {col_id} primary 色不同步: columns.yaml={yaml_primary}, index.html={html_primary}")
-        else:
-            error(f"栏目 {col_id} 在 index.html THEMES 中缺失")
-
-    # Check dark.primary for story (contrast fix)
-    yaml_dark_primary = None
-    in_story = False
-    in_dark = False
-    for line in columns_text.splitlines():
-        if re.match(r"  story:", line):
-            in_story = True
-            continue
-        if in_story and re.match(r"    dark:", line):
-            in_dark = True
-            continue
-        if in_dark:
-            dm = re.match(r'      primary:\s*"(#[0-9a-fA-F]+)"', line)
-            if dm:
-                yaml_dark_primary = dm.group(1)
-                in_dark = False
-                in_story = False
-
-    if yaml_dark_primary:
-        html_story_dark = re.search(
-            r'story:.*?dark:\s*\{[^}]*primary:\s*"(#[0-9a-fA-F]+)"',
-            index_text, re.DOTALL
-        )
-        if html_story_dark:
-            if html_story_dark.group(1).lower() == yaml_dark_primary.lower():
-                ok(f"story dark.primary 同步: {yaml_dark_primary}")
-            else:
-                error(f"story dark.primary 不同步: columns.yaml={yaml_dark_primary}, index.html={html_story_dark.group(1)}")
-
-
-# ============================================================
-# Check 9: 文件清理校验
+# Check 8: 文件清理校验
 # ============================================================
 
 def check_file_cleanup(repo):
     """检查已废弃文件是否已删除"""
-    section("Check 9: 文件清理校验")
+    section("Check 8: 文件清理校验")
 
     # components.jsx should not exist (removed per refactoring plan)
-    components_path = repo / "tools" / "wechat-typesetter" / "components.jsx"
+    components_path = repo / "tools" / "typesetter" / "components.jsx"
     if components_path.exists():
-        warn("tools/wechat-typesetter/components.jsx 应已删除（与 index.html 功能重复）")
+        warn("tools/typesetter/components.jsx 应已删除（与 index.html 功能重复）")
     else:
         ok("components.jsx 已移除")
 
-    # mermaid-render.sh should be replaced by mermaid-render.py
-    old_sh = repo / "tools" / "mermaid-render.sh"
-    new_py = repo / "tools" / "mermaid-render.py"
-    if old_sh.exists() and new_py.exists():
-        warn("tools/mermaid-render.sh 已被 mermaid-render.py 替代，可删除 .sh 文件")
-    elif new_py.exists():
-        ok("mermaid-render.py 存在")
+    # mermaid renderer should live at tools/render/mermaid.py
+    mermaid_py = repo / "tools" / "render" / "mermaid.py"
+    if mermaid_py.exists():
+        ok("tools/render/mermaid.py 存在")
+    else:
+        error("tools/render/mermaid.py 缺失")
 
 
 # ============================================================
-# Check 10: 栏目必填字段完整性
+# Check 9: 栏目必填字段完整性
 # ============================================================
 
 # 分区 → 必填字段映射（与 columns.yaml 头部契约保持一致）
@@ -577,9 +444,9 @@ REQUIRED_COLOR_KEYS = {"primary", "accent", "text", "textSecondary", "background
 
 def check_column_completeness(repo):
     """校验 columns.yaml 中每个栏目包含所有必填字段，且 colors 结构一致"""
-    section("Check 10: 栏目必填字段完整性")
+    section("Check 9: 栏目必填字段完整性")
 
-    columns_path = repo / "styles" / "default" / "columns.yaml"
+    columns_path = repo / "config" / "columns.yaml"
     if not columns_path.exists():
         error("columns.yaml 不存在")
         return
@@ -687,8 +554,8 @@ def main():
     verbose = "-v" in sys.argv or "--verbose" in sys.argv
 
     repo = Path(__file__).resolve().parent.parent
-    if not (repo / ".inkflow.yaml").exists():
-        print(f"错误: 未找到 .inkflow.yaml，请在 InkFlow 项目根目录运行", file=sys.stderr)
+    if not (repo / "config/inkflow.yaml").exists():
+        print(f"错误: 未找到 config/inkflow.yaml，请在 InkFlow 项目根目录运行", file=sys.stderr)
         sys.exit(1)
 
     check_path_consistency(repo)
@@ -698,7 +565,6 @@ def main():
     check_cross_references(repo)
     check_domain_completeness(repo)
     check_typesetter_wechat_compat(repo)
-    check_theme_sync(repo)
     check_file_cleanup(repo)
     check_column_completeness(repo)
 

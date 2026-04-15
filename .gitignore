@@ -1,37 +1,16 @@
-## 运行时状态
-.pipeline-states/
-!.pipeline-states/.gitkeep
+# 运行时状态（可重建）
+workspace/pipeline-states/
+!workspace/pipeline-states/.gitkeep
 
-# 用户本地配置（不提交）
+# 用户本地配置
 .claude/settings.local.json
 
-# ============================================================
-# 创作内容（用户项目私有，不进框架仓库）
-# ============================================================
-articles/*/
-!articles/.gitkeep
-styles/*/style-profile.md
-styles/*/exemplar-*.md
-
-# Agent 工作记忆（用户私有）
-.claude/agent-memory/*/MEMORY.md
-
-# 文章索引（用户私有）
-articles-index.yaml
-
-# 运营数据（用户私有）
-retro/ops-metrics.csv
-
-# ============================================================
 # Python
-# ============================================================
 .venv/
 __pycache__/
 *.pyc
 
-# ============================================================
 # 系统文件
-# ============================================================
 .DS_Store
 Thumbs.db
 

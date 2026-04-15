@@ -1,0 +1,46 @@
+# ============================================================
+# 文章产物布局（单一事实来源）
+# 所有 agent 通过此文件获取产物路径，不硬编码
+# ============================================================
+#
+# 目录语义：
+#   intermediate/  — 中间产物，可从 pipeline 重生成
+#   review/        — 审校产物（与 draft 配对，不可丢）
+#   export/        — 最终产物，可直接发布使用
+# ============================================================
+
+version: "1.0"
+
+root: "articles/{slug}"
+
+paths:
+  # ---- 元数据 ----
+  meta:           "articles/{slug}/_meta.yaml"
+
+  # ---- 中间产物 ----
+  brief:          "articles/{slug}/intermediate/brief.md"
+  research:       "articles/{slug}/intermediate/research.md"
+  outline:        "articles/{slug}/intermediate/outline.md"
+  draft_section:  "articles/{slug}/intermediate/draft/section-{N}.md"
+  draft_merged:   "articles/{slug}/intermediate/draft/merged.md"
+  figure_item:    "articles/{slug}/intermediate/figure/fig-{N}.{ext}"
+  figure_index:   "articles/{slug}/intermediate/figure/_index.md"
+
+  # ---- 审校产物 ----
+  audit:          "articles/{slug}/review/audit.md"
+  polish_trace:   "articles/{slug}/review/polish-trace.md"
+
+  # ---- 最终产物 ----
+  final:          "articles/{slug}/export/_final.md"
+  wechat:         "articles/{slug}/export/wechat.md"
+  plain:          "articles/{slug}/export/plain.md"
+  teaser:         "articles/{slug}/export/teaser.md"
+
+# ---- 运行状态 ----
+state_file:       "workspace/pipeline-states/{slug}.json"
+
+# ---- 命名规范 ----
+naming:
+  section_number_padding: 2      # section-01, section-02
+  figure_number_padding: 2
+  slug_style: kebab_or_pinyin

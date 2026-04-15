@@ -3,6 +3,11 @@ name: style-analyzer
 description: 风格分析 — 分析参考文章，提取七维度结构化风格 DNA。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
+dependencies:
+  invoked_by:
+    - .claude/skills/style-learning/SKILL.md
+  artifacts_written:
+    - styles/default/style-profile.md   # 由调用方决定实际路径
 ---
 
 ## Role

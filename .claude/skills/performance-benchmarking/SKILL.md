@@ -20,7 +20,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ## 数据读取
 
 1. `retro/ops-metrics.csv` — 逐行读取运营指标（slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments 等）
-2. `styles/default/columns.yaml` — 各栏目的 kpi_targets 作为基准线
+2. `config/columns.yaml` — 各栏目的 kpi_targets 作为基准线
 3. `articles/*/brief.md` — 补充元数据（如 cta_type、target_length）
 
 ## 分析维度

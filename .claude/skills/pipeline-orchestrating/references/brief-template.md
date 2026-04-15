@@ -1,6 +1,6 @@
 # Brief Frontmatter 模板
 
-最简用法只需填 topic。默认值从 `.inkflow.yaml` 的 `defaults` 读取。
+最简用法只需填 topic。默认值从 `config/inkflow.yaml` 的 `defaults` 读取。
 
 ```yaml
 ---
@@ -17,15 +17,13 @@ skip_research: false
 no_figures: false
 skip_seo: false
 
-# === 系列参数（独立文章留空即可） ===
-series_name: ""                      # 系列名称（空=独立文章，对应 articles/_series/{name}.yaml）
-series_index: 0                      # 系列中的位置（0=非系列，1=首篇，2+=后续篇）
-
 # === 高级参数（通常使用默认值，按需覆盖） ===
 # opening_style: auto               # pain_point | story | contrast | question | blunt | auto
 # style_profile: default            # 对应 styles/{style_profile}/ 目录
 # tone_override: ""                 # 空=使用 style-profile 默认值
 # publish_timing: evening           # morning | noon | evening | custom
+# series_name: ""                   # 系列名称（空=独立文章）
+# series_index: 0
 # cta_type: follow                  # follow | comment | share | mini_program | none
 # cover_style: auto                 # auto | custom
 ---
@@ -55,10 +53,4 @@ series_index: 0                      # 系列中的位置（0=非系列，1=首�
 
 ## 补充说明
 {任何额外的写作要求或限制}
-
-## 用户大纲（可选，由选题审查融入）
-{若用户提供了初步大纲且经过 Step 2d 审查，审查建议融入此处。
-  outliner 应以此为起点，而非从零构思。格式：}
-- Section 1: {论点}（审查建议: {调整方向，或"保持"}）
-- Section 2: {论点}（审查建议: ...）
 ```

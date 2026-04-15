@@ -1,19 +1,31 @@
-## 排版约束
+## 排版与视觉约束
 
-> 确定性阈值定义在 `tools/markdown-lint/lint-config.yaml` 的 `typography` 段（单一事实来源），此处为 LLM 可读的语义描述。
-> 排版数值参数（字号、行高、字间距）定义在 `styles/default/columns.yaml` 的 `typography` 段。
+数值阈值由 `.claude/rules/data/typography-limits.yaml` 定义（单一事实来源）。
+本文说明"为什么"，具体阈值读 YAML。
 
-- 段落不超过 3 行（移动端屏幕高度限制，lint 规则 C1）
-- 禁止首行缩进（移动端显示错位，lint 规则 C3）
+### 段落
 
-## 标题层级
+- 段落字符数不超过 `paragraph.max_chars`（移动端屏幕高度限制）
+- 禁止首行缩进（移动端显示错位）
 
-- H2 作为主分节标题
-- H3 作为子分节标题
-- H4 偶尔使用
-- 正文写作阶段禁止 H1（publish 阶段由 publisher 统一插入文章标题 H1）和 H5+
+### 标题
 
-## 图片
+- 仅允许 `headings.allowed` = [2, 3, 4]；H1 由文章标题占用
 
-- 图片宽度限制 640px（移动端最大适配宽度）
+### 图片
+
+- 宽度限制 `image.max_width`（移动端最大适配宽度）
 - 每张图表附带一行说明文字
+
+### SVG 可读性（移动端优先）
+
+SVG 在微信里会被光栅化为 PNG，以 `max-width:100%` 缩放至 ≈375px。
+640→375 缩放系数 ≈0.586，字号会等比缩小。具体下限见 `svg:` 段：
+
+- 正文/数据标签 ≥ `svg.min_font_size`（硬下限，lint 报 error）
+- 图注/脚注 ≥ `svg.caption_font_size`（warning 可人工放行）
+- 主标题 ≥ `svg.title_font_size`；节标题 ≥ `svg.section_font_size`
+- 禁止 `font-weight < svg.min_font_weight`（细笔画缩放后糊）
+- 单张 SVG 字号种类 ≤ `svg.max_font_variants`
+- 统一 `svg.font_stack`，消除不同机器光栅化的字体漂移
+- 图表必须"自解释"：去掉正文也能看懂核心信息
