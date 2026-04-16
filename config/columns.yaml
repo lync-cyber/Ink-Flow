@@ -4,10 +4,11 @@
 # 新增栏目只需在 columns: 下增加一个块
 # ============================================================
 
-version: "4.0"
+version: "5.0"
 
 # ---- 排版基础参数 ----
 # 精细阈值参考 .claude/rules/data/typography-limits.yaml
+# typesetter 渲染通过 tools/typesetter/presets/*.json 承接，主色与字族由预设决定
 typography:
   fontSize: 15
   lineHeight: 1.75
@@ -44,6 +45,12 @@ columns:
     tagline: "深度 · 前瞻 · 严谨"
     personality: "学术期刊般的克制与精确，大量留白，强调数据与逻辑层级"
     lineHeightOverride: null
+    typesetter:
+      # typesetter 预设 — 权威来源 tools/typesetter/presets/academic.json
+      theme: default       # doocs/md 经典主题
+      primaryColor: "#1a5276"
+      fontFamily: sans
+      fontSize: "15px"
     colors:
       primary: "#1a5276"
       accent: "#c0782b"
@@ -78,7 +85,7 @@ columns:
         - "核心方法 — 方法论要点，用类比代替公式"
         - "关键结果 — 用数据说话，对比 baseline"
         - "对工业界的启示 — 落地可能性分析：谁能用、何时用、有什么限制"
-        - "收尾 — :::card 要点 / :::cta 引导 / 或正文段落"
+        - "收尾 — 要点表格 / 引导段落 / 或 H3 '阅读原文'"
       title_guidance: "提炼核心发现，避免照搬论文标题。范例：'{发现} 意味着 {影响}'"
     tone:
       id: objective_with_judgment
@@ -97,6 +104,11 @@ columns:
     tagline: "洞察 · 趋势 · 时效"
     personality: "简报式紧凑排布，信息密度高，卡片化，节奏明快"
     lineHeightOverride: null
+    typesetter:
+      theme: simple        # doocs/md 简洁主题
+      primaryColor: "#0e6655"
+      fontFamily: sans
+      fontSize: "15px"
     colors:
       primary: "#0e6655"
       accent: "#b9770e"
@@ -149,6 +161,11 @@ columns:
     tagline: "实践 · 原理 · 工具"
     personality: "工具化，装饰最少，功能性最强，代码友好，Markdown 兼容"
     lineHeightOverride: null
+    typesetter:
+      theme: default       # doocs/md 经典主题（代码块友好）
+      primaryColor: "#4a235a"
+      fontFamily: sans
+      fontSize: "15px"
     colors:
       primary: "#4a235a"
       accent: "#1a5276"
@@ -201,6 +218,11 @@ columns:
     tagline: "温度 · 叙事 · 人文"
     personality: "温暖有机，大图呼吸，引言突出，段落宽松"
     lineHeightOverride: 2.0
+    typesetter:
+      theme: grace         # doocs/md 优雅主题（阴影+衬线）
+      primaryColor: "#784212"
+      fontFamily: serif
+      fontSize: "16px"
     colors:
       primary: "#784212"
       accent: "#1a5276"

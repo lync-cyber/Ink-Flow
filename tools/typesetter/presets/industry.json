@@ -1,0 +1,10 @@
+{
+  "column": "industry",
+  "name": "行业趋势",
+  "theme": "simple",
+  "primaryColor": "#0e6655",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+  "fontSize": "15px",
+  "lineHeight": "1.7",
+  "description": "简洁主题 + 翡翠绿品牌色，信息密度高、节奏明快的简报风格"
+}

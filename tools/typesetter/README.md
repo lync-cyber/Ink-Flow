@@ -1,112 +1,77 @@
-﻿# WeChat Typesetter
+# InkFlow 微信公众号排版器
 
-微信公众号排版工具，支持 Markdown/HTML/纯文本输入、实时预览、主题切换、富文本复制。
+> **零构建、无后端、单文件可用。** 基于 [doocs/md](https://github.com/doocs/md) 的渲染理念重写，
+> 依赖标准 Markdown + GFM Alerts，粘贴到公众号后台样式保真度优先。
 
-## 快速使用（双击即用）
+## 设计原则
 
-- Windows 用户直接双击 `open.bat`
-- 工具会自动启动本地静态服务并打开 `index.html`
-- 页面打开后粘贴内容并点击“复制富文本”即可粘贴到公众号后台
-- 如需手工改默认元素配置，双击 `edit-config.bat` 直接编辑同目录 `element-config.json`
+1. **标准即正义**：输入只支持标准 Markdown + GFM Alerts（`> [!NOTE]` 等 5 类），不发明新语法
+2. **主题即栏目**：每个内容栏目对应一个预设（主题 + 品牌色 + 字族 + 字号）
+3. **内联即兼容**：复制时把计算样式烘焙为 `style=""`，去除 class，公众号后台能完整保留
 
-> 说明：页面依赖 CDN 加载 Mermaid，首次使用需要联网。
-
-## 目录说明
-
-- `index.html`：发布入口（双击可用版）
-- `open.bat`：Windows 一键启动入口（推荐）
-- `edit-config.bat`：Windows 一键打开配置文件
-- `element-config.json`：同目录默认元素配置（可直接手改）
-- `assets/`：发布后的 JS/CSS 资源
-- `dev-assets/`：开发工程（Vite + React + TS + 测试）
-
-## 统一元素配置
-
-页面顶部有“元素配置 / Elements”按钮，可统一配置以下内容：
-
-- 分割线样式与文案
-- 公众号名称、二维码标签、二维码图片路径
-- 文末联系文案、版权模板
-- CTA 默认按钮文案
-- Readmore 默认文案
-- Note 标签文案
-- 扩展块兜底提示文案
-
-这些配置会自动保存在浏览器本地，下次打开自动恢复。
-
-此外，工具会自动尝试加载同目录 `element-config.json`。你可以：
-
-- 双击 `edit-config.bat` 修改该文件
-- 刷新页面后生效（或在“元素配置”面板点“加载同目录配置”）
-- 将二维码图片（如 `qrcode.png`）与 `element-config.json` 放在同目录，并配置 `qrImageUrl: "./qrcode.png"`
-
-## 配置导入/导出 JSON
-
-在“元素配置”面板里：
-
-- 点击“加载同目录配置”可重新读取 `element-config.json`
-- 点击“导出配置JSON”可导出当前配置
-- 点击“导入配置JSON”可导入团队共享配置
-
-示例（部分字段）：
-
-```json
-{
-  "brandName": "AI+工控",
-  "qrLabel": "扫码关注",
-  "qrImageUrl": "./qrcode.png",
-  "ctaDefaultText": "阅读原文",
-  "divider": {
-    "style": "dot",
-    "text": "· · ·"
-  }
-}
-```
-
-说明：
-
-- `qrImageUrl` 支持相对路径（推荐同目录：`./qrcode.png`）或 HTTP URL
-- 文末会自动渲染二维码 `<img>`
-- 图片加载失败时会自动回退为 `qrLabel` 文本占位
-
-## Frontmatter 文章级覆盖
-
-支持在 Markdown 顶部 frontmatter 中对元素配置做**单篇覆盖**（优先级高于全局配置）。
-
-优先级：
-
-- 默认配置
-- 本地全局配置（元素配置面板）
-- frontmatter 单篇覆盖（最高）
-
-### 覆盖写法一：`element.*` 点路径
-
-```yaml
----
-element.brandName: 本文专属公众号
-element.qrLabel: 本文二维码
-element.qrImageUrl: ./qrcode.png
-element.divider.style: text
-element.divider.text: —— 本文分割线 ——
----
-```
-
-### 覆盖写法二：`element_config_json`
-
-```yaml
----
-element_config_json: {"brandName":"前言专栏","ctaDefaultText":"查看原文"}
----
-```
-
-> 注意：`element_config_json` 需为合法 JSON 字符串。
-
-## 开发工程（仅二次开发）
-
-进入 `dev-assets/` 后：
+## 快速使用
 
 ```bash
-npm install
-npm run test
-npm run build
+# 任一方式启动本地静态服务（避免浏览器 file:// 限制）
+python3 -m http.server 8000    # 然后访问 http://localhost:8000/tools/typesetter/
+
+# 或直接双击 index.html（仅 Chrome / Edge 能绕开 CORS 加载 preset JSON）
 ```
+
+1. 把 `articles/{slug}/export/wechat.md` 内容粘贴到左侧编辑区
+2. 右上角栏目下拉会自动从 frontmatter 的 `column:` 字段同步
+3. 点击"复制富文本" → 打开公众号后台 → 粘贴
+
+## 目录
+
+```
+tools/typesetter/
+  index.html          入口页面
+  app.js              渲染与复制逻辑
+  themes/
+    base.css          共享排版（段落、列表、表格、GFM Alert）
+    default.css       经典主题（doocs/md default）
+    grace.css         优雅主题（doocs/md grace）
+    simple.css        简洁主题（doocs/md simple）
+  presets/
+    academic.json     学术前沿 → default + 深蓝 + 15px
+    industry.json     行业趋势 → simple  + 翡翠绿 + 15px
+    tech.json         技术专题 → default + 紫罗兰 + 15px
+    story.json        人物故事 → grace   + 暖棕衬线 + 16px
+```
+
+## 支持的 Markdown 语法
+
+| 语法 | 效果 |
+|------|------|
+| `# / ## / ### / ####` | 标题（各主题差异化渲染） |
+| `**bold**` `*italic*` `~~del~~` | 行内格式 |
+| `` `code` `` | 行内代码 |
+| ` ```lang ` | 代码块 |
+| `> text` | 引用 |
+| `> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]` | GFM Alert（5 种） |
+| `- / 1.` | 列表 |
+| `[text](url)` | 链接 |
+| `![alt](url)` | 图片 |
+| `\| col \| col \|` | 表格 |
+| `---` | 分割线 |
+
+**不支持**（故意丢弃）：`:::block` 扩展、自定义 HTML 容器、`<style>` 块、内联 `<script>`。
+历史上的 `:::card / :::cta / :::footer / :::note / :::references` 等扩展已全部退役，
+因为微信编辑器会剥离非标准容器样式。
+
+## 栏目预设
+
+| 栏目 | 主题 | 主色 | 字号 | 字族 |
+|------|------|------|------|------|
+| academic | default | #1a5276 | 15px | 无衬线 |
+| industry | simple | #0e6655 | 15px | 无衬线 |
+| tech | default | #4a235a | 15px | 无衬线 |
+| story | grace | #784212 | 16px | 衬线（Optima） |
+
+可在顶栏手动覆盖任意字段；选"自定义"跳过预设同步。
+
+## 致谢
+
+CSS 主题源自 [doocs/md](https://github.com/doocs/md) 项目（WTFPL 许可），
+经微调适配 InkFlow 栏目体系。GFM Alert 实现参考 [marked-alert](https://github.com/bent10/marked-extensions)。

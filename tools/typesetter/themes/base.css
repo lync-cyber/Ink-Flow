@@ -1,0 +1,128 @@
+/* ============================================================
+ * 基础排版 — 所有主题共享
+ * 字号/字族/行距由 JS 注入到 .article 容器上的 CSS 变量
+ * 规则源: doocs/md 的 theme-css/base.css（WTFPL）+ InkFlow 微信硬约束
+ * ============================================================ */
+
+.article {
+  font-family: var(--md-font-family);
+  font-size: var(--md-font-size);
+  line-height: var(--md-line-height);
+  color: #3f3f3f;
+  letter-spacing: 0.05em;
+  text-align: justify;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.article > :first-child { margin-top: 0 !important; }
+
+.article p {
+  margin: 1.1em 0;
+  color: #3f3f3f;
+}
+
+.article strong { color: var(--md-primary-color); font-weight: 600; }
+.article em     { font-style: italic; }
+.article del    { color: #999; text-decoration: line-through; }
+
+.article a {
+  color: var(--md-primary-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--md-primary-color);
+  padding-bottom: 1px;
+}
+
+.article code {
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.05);
+  color: var(--md-primary-color);
+}
+
+.article pre {
+  margin: 1.2em 0;
+  padding: 1em 1.2em;
+  background: #272822;
+  color: #f8f8f2;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.article pre code {
+  padding: 0; background: transparent; color: inherit; font-size: inherit;
+}
+
+.article ul, .article ol { padding-left: 1.6em; margin: 1em 0; }
+.article li { margin: 0.4em 0; }
+
+.article hr {
+  border: none;
+  border-top: 1px dashed #ccc;
+  margin: 2.2em 0;
+}
+
+.article img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.2em auto;
+  border-radius: 4px;
+}
+.article figure { margin: 1.2em 0; text-align: center; }
+.article figcaption {
+  font-size: 0.85em;
+  color: #888;
+  margin-top: 0.4em;
+  text-align: center;
+}
+
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+}
+.article th, .article td {
+  padding: 0.5em 0.8em;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+.article th {
+  background: var(--md-primary-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* GFM Alerts — 5 种 */
+.article .alert {
+  margin: 1.3em 0;
+  padding: 0.9em 1em;
+  border-left: 4px solid;
+  border-radius: 4px;
+  background: #f6f8fa;
+}
+.article .alert-title {
+  font-weight: 600;
+  margin: 0 0 0.4em;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.article .alert-note     { border-color: #1f6feb; background: #ddf4ff; }
+.article .alert-note     .alert-title { color: #1f6feb; }
+.article .alert-tip      { border-color: #1a7f37; background: #dafbe1; }
+.article .alert-tip      .alert-title { color: #1a7f37; }
+.article .alert-important{ border-color: #8250df; background: #fbefff; }
+.article .alert-important.alert-title,
+.article .alert-important .alert-title { color: #8250df; }
+.article .alert-warning  { border-color: #9a6700; background: #fff8c5; }
+.article .alert-warning  .alert-title { color: #9a6700; }
+.article .alert-caution  { border-color: #cf222e; background: #ffebe9; }
+.article .alert-caution  .alert-title { color: #cf222e; }
+.article .alert > p:first-of-type { margin-top: 0; }
+.article .alert > p:last-child    { margin-bottom: 0; }

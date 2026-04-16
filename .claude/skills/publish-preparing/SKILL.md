@@ -41,7 +41,7 @@ AskUserQuestion:
 - [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备（封面背景色从 columns.yaml 读取）
-- [ ] **排版流程**: 复制 article.md → 打开 typesetter → 选栏目主题 → 预览 → 复制 HTML → 粘贴到公众号编辑器
+- [ ] **排版流程**: 打开 `tools/typesetter/index.html` → 粘贴 `export/wechat.md`（栏目预设自动匹配）→ 点击"复制富文本" → 粘贴到公众号后台
 - [ ] **话题标签**: 添加 2-3 个精准话题标签（从 output/summary.md 提取）
 
 ### 栏目特化项
