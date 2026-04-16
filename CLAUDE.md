@@ -24,9 +24,9 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 articles/{slug}/
   intermediate/   brief.md  research.md  outline.md
                   draft/section-NN.md  draft/merged.md
-                  figure/fig-NN.svg    figure/_index.md
+                  figure/fig-NN.svg    figure/index.md
   review/         audit.md  polish-trace.md
-  export/         _final.md  wechat.md  plain.md  teaser.md
+  export/         final.md  wechat.md  plain.md  teaser.md
 ```
 
 ## 规则体系（单一事实来源）
@@ -74,6 +74,39 @@ bash tools/bootstrap.sh . {仓库URL}
 ```
 brief → research → outline [CP1] → draft ∥ figures → audit → polish [CP2] → publish [CP3]
 ```
+
+## 文件地图
+
+> 按"你可能想改什么"分层。常改 → 偶改 → 只读。
+
+### 常改（你的内容资产，纳入版本管理）
+
+| 场景 | 文件 |
+|------|------|
+| 新增/调整栏目（色板、骨架、tone） | `config/columns.yaml` |
+| 调整默认 brief 字段 / 导出格式 | `config/inkflow.yaml` |
+| 微调风格档案 | `styles/default/style-profile.md` |
+| 新增外部参考文章 | `references/articles/` |
+| 写作中的单篇文章 | `articles/{slug}/` |
+
+### 偶改（规则演进时）
+
+| 场景 | 文件 |
+|------|------|
+| 新增/删除禁用词 | `.claude/rules/data/forbidden-phrases.yaml` |
+| 调整 CSS 白名单 | `.claude/rules/data/css-safety.yaml` |
+| 调整字号/段长阈值 | `.claude/rules/data/typography-limits.yaml` |
+| 修订写作/审核规范 | `.claude/rules/core/*.md` |
+| 新增产物路径占位 | `config/artifact-layout.yaml` |
+
+### 只读（框架代码，升级命令覆盖）
+
+| 范围 | 路径 |
+|------|------|
+| Subagent 定义 | `.claude/agents/` |
+| Skill 定义 | `.claude/skills/` |
+| 工具 | `tools/` |
+| 启动脚本 | `tools/bootstrap.sh` |
 
 ## 注意事项
 

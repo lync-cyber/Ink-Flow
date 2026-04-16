@@ -670,7 +670,7 @@ def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: 
             continue
         if "<!-- FIGURE:" in ctx.text:
             result.add("T5", "warning", ctx.line_num,
-                        "检测到未替换的图表占位符（format-exporting 应已替换为内联内容）")
+                        "检测到未替换的图表占位符（publisher 阶段应已替换为内联内容）")
 
     # T6: 有 [N] 引用标记时应有 H3 "参考文献" 区（标准 Markdown，取代旧 :::references）
     has_citation = bool(re.search(r"\[\d+\]", full_text))

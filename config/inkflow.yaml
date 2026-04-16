@@ -92,7 +92,7 @@ stages:
     skip_if: "brief.no_figures == true"
     requires: [outline]
     parallel_with: [draft]
-    output: "articles/{slug}/intermediate/figure/_index.md"
+    output: "articles/{slug}/intermediate/figure/index.md"
     individual_output: "articles/{slug}/intermediate/figure/fig-{N}.{md|svg}"
     validation:
       required_patterns: ["```mermaid|<svg"]
@@ -111,7 +111,7 @@ stages:
     checkpoint: true
     requires: [audit]
     output: "articles/{slug}/review/polish-trace.md"
-    final_output: "articles/{slug}/export/_final.md"
+    final_output: "articles/{slug}/export/final.md"
     validation:
       required_sections: ["润色结果", "变更溯源表", "润色变更摘要"]
       forbidden_patterns: ["TODO", "待确认"]

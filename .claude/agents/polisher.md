@@ -58,7 +58,7 @@ dependencies:
 输出两个文件：
 
 1. `articles/{slug}/review/polish-trace.md` — 变更溯源
-2. `articles/{slug}/export/_final.md` — 润色后全文（不含溯源表）
+2. `articles/{slug}/export/final.md` — 润色后全文（不含溯源表）
 
 ```markdown
 # 润色结果: {topic}
@@ -89,7 +89,7 @@ dependencies:
 
 **输出**:
 - `articles/{slug}/review/polish-trace.md`（溯源 + 摘要）
-- `articles/{slug}/export/_final.md`（纯净终稿，无溯源表）
+- `articles/{slug}/export/final.md`（纯净终稿，无溯源表）
 
 ## Exit Criteria
 

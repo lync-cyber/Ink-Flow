@@ -97,10 +97,28 @@ bash tools/bootstrap.sh {target_dir} {repo_url}
 本 skill 的核心职责 — 创建项目结构：
 
 ```
-articles/            ← .gitkeep
-retro/               ← runs/.gitkeep
-references/          ← articles/ + style-guides/ + templates/（各含 .gitkeep）
+articles/                     ← .gitkeep
+retro/                        ← runs/.gitkeep + study-reports/.gitkeep
+references/                   ← articles/（抓取的外部文章落地处）
+styles/default/               ← style-profile.md 模板（首次 style-learning profile 模式覆盖）
 workspace/pipeline-states/    ← .gitkeep
+```
+
+`styles/default/style-profile.md` 的初始模板内容（便于用户知道结构）：
+
+```markdown
+# 风格 DNA: default
+
+> 这是占位档案。运行"分析风格"或 style-learning profile 模式后会被填充。
+
+## 句式模式
+（待生成）
+
+## 段落结构
+（待生成）
+
+## 视觉节奏
+（待生成）
 ```
 
 ### Step 4 — 生成内容模式 config/inkflow.yaml

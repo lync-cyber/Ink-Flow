@@ -27,7 +27,7 @@ AskUserQuestion:
   options:
     - "通过，准备发布"
     - "处理审校问题后重新润色" — 重跑 polish
-    - "手动编辑" — 暂停等待用户编辑 export/_final.md
+    - "手动编辑" — 暂停等待用户编辑 export/final.md
     - "返回重写" — 重跑 draft
 ```
 
