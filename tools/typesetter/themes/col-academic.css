@@ -1,0 +1,183 @@
+/* ============================================================
+ * 学术前沿 — 午夜靛蓝 · 赭石强调 · 严谨期刊质感
+ *
+ * 设计决策：
+ *   - 色彩：深蓝（#1B3A5C）传达权威与严肃，赭石（#9C5127）代替荧光红做强调，
+ *     避免「科技蓝」的俗气。底纹用极淡冷蓝灰（#EDF1F5），接近学术期刊白纸。
+ *   - H2：全宽 block + 底部 2px 实线，呈现期刊 section 分隔感。
+ *   - H3：左 3px 赭石竖条，与 H2 主色形成双色层次。
+ *   - 引用块：蓝灰底 + 主色左竖条，文摘/旁注语气。
+ *   - 列表子弹：■ 字符 via .li-bullet span（实心方块，主色）。
+ *   - 分割线：细实线 + § 字符 via .hr-deco div（学术节符号）。
+ *   - 尾部签名：右对齐，期刊编号感。
+ * ============================================================ */
+
+.article.col-academic {
+  --md-primary:   #1B3A5C;
+  --md-accent:    #9C5127;
+  --md-text:      #212121;
+  --md-text-sec:  #545454;
+  --md-text-ter:  #919191;
+  --md-bg:        #EDF1F5;
+  --md-bg-deep:   #D7E0EA;
+  --md-border:    #C2CAD4;
+}
+
+/* ---- 栏目头部 ---- */
+.article.col-academic .col-header {
+  padding-bottom: 1.1em;
+  border-bottom: 1px solid var(--md-border);
+  margin-bottom: 2em;
+}
+.article.col-academic .col-badge {
+  display: block;
+  margin-bottom: 1em;
+  font-size: 0;   /* 让内部 inline-block 紧贴 */
+}
+.article.col-academic .col-badge::before {
+  content: "";
+  display: inline-block;
+  width: 4px; height: 18px;
+  background: var(--md-primary);
+  border-radius: 1px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.article.col-academic .col-label {
+  font-size: 11px;
+  color: var(--md-primary);
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  vertical-align: middle;
+  display: inline-block;
+}
+.article.col-academic .col-meta {
+  font-size: 11px;
+  color: var(--md-text-ter);
+  font-family: 'SF Mono', Consolas, monospace;
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.article.col-academic .col-header h1 {
+  font-size: calc(var(--md-font-size) * 1.55);
+  font-weight: 700;
+  line-height: 1.45;
+  color: #111111;
+  text-align: left;
+  margin: 0 0 0.75em;
+  letter-spacing: -0.01em;
+}
+.article.col-academic .col-abstract {
+  border-left: 2px solid var(--md-accent);
+  padding: 0.4em 0 0.4em 1em;
+  color: var(--md-text-sec);
+  font-size: 0.91em;
+  line-height: 1.9;
+  background: transparent;
+  margin: 0;
+}
+.article.col-academic .col-abstract p { margin: 0; color: inherit; }
+
+/* ---- H2：全宽 block + 底线 ---- */
+.article.col-academic h2 {
+  display: block;
+  margin: 2.2em 0 0.9em;
+  padding-bottom: 0.4em;
+  color: #111111;
+  font-size: calc(var(--md-font-size) * 1.2);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid var(--md-primary);
+}
+
+/* ---- H3：赭石左竖条 ---- */
+.article.col-academic h3 {
+  padding-left: 10px;
+  margin: 1.8em 0 0.7em;
+  border-left: 3px solid var(--md-accent);
+  color: var(--md-primary);
+  font-size: calc(var(--md-font-size) * 1.05);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.article.col-academic h4 {
+  margin: 1.4em 0 0.5em;
+  color: var(--md-primary);
+  font-size: var(--md-font-size);
+  font-weight: 600;
+}
+
+/* ---- 引用块：学术摘要/旁注感 ---- */
+.article.col-academic blockquote {
+  margin: 1.3em 0;
+  padding: 0.75em 1em;
+  border-left: 3px solid var(--md-primary);
+  background: var(--md-bg);
+  color: var(--md-text-sec);
+  font-size: 0.91em;
+  border-radius: 0 2px 2px 0;
+}
+.article.col-academic blockquote p { margin: 0.3em 0; color: inherit; }
+.article.col-academic blockquote p:first-child { margin-top: 0; }
+.article.col-academic blockquote p:last-child { margin-bottom: 0; }
+
+/* ---- 列表：.li-bullet = ■（JS 注入文本）----*/
+.article.col-academic .li-bullet {
+  color: var(--md-primary);
+  font-size: 0.65em;
+  padding-top: 0.55em;
+}
+.article.col-academic .li-num {
+  color: var(--md-primary);
+  font-weight: 700;
+  font-family: 'SF Mono', Consolas, monospace;
+}
+
+/* ---- 分割线 + § 装饰（HR 提供细线，hr-deco 提供文字）---- */
+.article.col-academic hr {
+  border-top: 1px solid var(--md-border);
+  margin: 2.2em 0 0;
+}
+.article.col-academic .hr-deco {
+  color: var(--md-text-ter);
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 1em;
+  letter-spacing: 0.6em;
+  margin-bottom: 2em;
+}
+
+/* ---- 代码：浅蓝灰底，融入期刊风格；避免高对比度深色块的突兀感 ---- */
+.article.col-academic pre {
+  background: #EEF2F7;
+  color: #1B3A5C;
+  border: 1px solid var(--md-bg-deep);
+}
+.article.col-academic pre code { color: inherit; background: transparent; }
+.article.col-academic code {
+  background: var(--md-bg);
+  color: #7A3E10;
+}
+
+/* ---- 表格：期刊紧凑感 ---- */
+.article.col-academic table { border: 1px solid var(--md-border); }
+.article.col-academic th { letter-spacing: 0.05em; font-size: 0.9em; }
+.article.col-academic td { font-size: 0.92em; }
+
+/* ---- 图片 ---- */
+.article.col-academic img {
+  border: 1px solid var(--md-bg-deep);
+}
+
+/* ---- 文章尾部签名 ---- */
+.article.col-academic .col-sig-rule {
+  border-top: 1px solid var(--md-border);
+}
+.article.col-academic .col-sig-text {
+  text-align: right;
+  font-size: 0.8em;
+  letter-spacing: 0.12em;
+  color: var(--md-text-ter);
+  font-family: 'SF Mono', Consolas, monospace;
+}
