@@ -93,10 +93,11 @@
   }
 
   // ----------------------------------------------------------------
-  // PASS A · 全树元素遍历：合并 6 类元素级补丁
+  // PASS A · 全树元素遍历：合并 7 类元素级补丁
   //   - top → translateY
   //   - var() 兜底剥除
   //   - tspan 强制 fill
+  //   - mermaid nodeLabel/edgeLabel 内嵌 <p> 剥成纯文本（doocs 实践）
   //   - img width/height → style
   //   - 无用属性清理
   //   - data-* 清理
@@ -108,7 +109,7 @@
       const tag = el.tagName;
 
       // ---- img: width/height 属性 → style ----
-      if (tag === 'IMG') {
+      if (tag === 'IMG' || tag === 'img') {
         const w = el.getAttribute('width');
         const h = el.getAttribute('height');
         if ((w && /^\d+$/.test(w)) || (h && /^\d+$/.test(h))) {
@@ -119,12 +120,29 @@
         }
       }
 
-      // ---- tspan: 强制 fill !important ----
-      if (tag === 'TSPAN') {
+      // ---- tspan: 强制 fill + color + stroke none（doocs 实践） ----
+      // 微信富文本编辑器在某些场景会把 tspan 的 fill 改成黑或丢色；
+      // 同时部分主题靠 stroke 描线，复制后会盖掉文字 → 一律重置。
+      // 注意：SVG 命名空间元素的 tagName 是小写（'tspan'）；HTML 元素才大写。
+      if (tag === 'TSPAN' || tag === 'tspan') {
         const fill = el.getAttribute('fill') || el.style.fill || '#333333';
         const existing = el.getAttribute('style') || '';
-        const cleaned = existing.replace(/fill\s*:[^;]+;?/i, '');
-        el.setAttribute('style', `${cleaned};fill:${fill} !important`);
+        const cleaned = existing
+          .replace(/fill\s*:[^;]+;?/i, '')
+          .replace(/color\s*:[^;]+;?/i, '')
+          .replace(/stroke\s*:[^;]+;?/i, '');
+        el.setAttribute('style',
+          `${cleaned};fill:${fill} !important;color:${fill} !important;stroke:none !important`);
+      }
+
+      // ---- mermaid: .nodeLabel / .edgeLabel 内嵌 <p> 剥成纯文本 ----
+      // mermaid 渲染产物常含 <span class="nodeLabel"><p>文字</p></span>，
+      // 复制到微信后 <p> 被外层环境吞掉，文字位置错位。doocs/md 用相同补丁。
+      if (el.classList && (el.classList.contains('nodeLabel') || el.classList.contains('edgeLabel'))) {
+        const inner = el.querySelector(':scope > p');
+        if (inner) {
+          el.innerHTML = inner.innerHTML;
+        }
       }
 
       // ---- 通用 style 修补：top / var() / 无用属性 ----
@@ -151,18 +169,28 @@
   // PASS B · 结构变更：SVG 包裹 + 嵌套列表提升
   // 这两个会改 DOM 树，必须独立于 PASS A
   // ----------------------------------------------------------------
+  function makeSvgSpacer() {
+    // 用 <p>&nbsp;</p> 而非空 <section>：
+    // doocs/md 多年实践证明含真实文本节点的 <p> 在微信编辑器更稳定，
+    // 空容器在某些版本会被合并/丢弃，导致 SVG 紧贴上下段落。
+    const p = document.createElement('p');
+    p.style.cssText = 'margin:0;padding:0;font-size:0;line-height:0;';
+    p.innerHTML = '&nbsp;';
+    return p;
+  }
+
+  function isSvgSpacer(el) {
+    return el && el.tagName === 'P' &&
+           el.style && el.style.lineHeight === '0' &&
+           el.innerHTML === '&nbsp;';
+  }
+
   function passStructure(root) {
-    // SVG 前后插占位 section（避免微信换行错乱）
+    // SVG 前后插占位（避免微信换行错乱）
     root.querySelectorAll('svg').forEach(svg => {
-      const prev = svg.previousElementSibling;
-      if (prev && prev.tagName === 'SECTION' &&
-          prev.style && prev.style.lineHeight === '0') return;
-      const before = document.createElement('section');
-      before.style.cssText = 'margin:0;padding:0;line-height:0;';
-      const after  = document.createElement('section');
-      after.style.cssText  = 'margin:0;padding:0;line-height:0;';
-      svg.parentNode.insertBefore(before, svg);
-      svg.parentNode.insertBefore(after,  svg.nextSibling);
+      if (isSvgSpacer(svg.previousElementSibling)) return;
+      svg.parentNode.insertBefore(makeSvgSpacer(), svg);
+      svg.parentNode.insertBefore(makeSvgSpacer(), svg.nextSibling);
     });
 
     // 嵌套 ul/ol 从 li 内部移出（微信会展平）

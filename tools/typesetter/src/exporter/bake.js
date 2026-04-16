@@ -23,7 +23,7 @@
     'color', 'background', 'background-color',
     'font-size', 'font-weight', 'font-style', 'font-family',
     'line-height', 'letter-spacing', 'text-align', 'text-decoration', 'text-indent',
-    'text-transform',
+    'text-transform', 'text-shadow',
     // ---- 盒模型 ----
     'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'margin',  'margin-top',  'margin-right',  'margin-bottom',  'margin-left',
@@ -35,6 +35,8 @@
     'display', 'vertical-align',
     'word-break', 'overflow-wrap', 'white-space',
     'list-style-type',
+    // ---- figure / figcaption ----
+    'caption-side',
     // ---- SVG ----
     'fill', 'stroke',
   ];

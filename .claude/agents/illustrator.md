@@ -58,6 +58,24 @@ dependencies:
 - 线性流程/简单树 → Mermaid；循环/闭环/精确视觉 → 直接 SVG
 - 所有输出符合 `config/markdown-extensions.md` 定义的白名单（标准 Markdown + GFM Alerts + Mermaid/SVG 代码块）
 
+### Mermaid 输出策略（重要）
+
+typesetter 自带浏览器内 mermaid 渲染（`tools/typesetter/src/parsers/mermaid-ext.js` +
+`src/decorators/mermaid.js`，懒加载 mermaid lib，hash 缓存重渲染）。因此：
+
+- **直接输出 ` ```mermaid ` 代码块即可，无需预渲染为 SVG**
+- 不要为了"提前看效果"自己跑 mmdc / svg-sanitize.py —— 浪费 token，且作者
+  在 typesetter 里所见即所得
+- publisher 阶段会按需调用 `tools/render/mermaid.py` 把 mermaid 块替换为
+  内联 SVG（用于无浏览器环境的 wechat.md 兜底导出）
+- 复杂到 mermaid 表达不清时再退回手写 SVG
+
+### 图片输出策略
+
+- 图片用标准 Markdown `![alt](url)`；alt 文本会被 typesetter 的
+  `figureCaption` decorator 自动渲染为 `<figcaption>` 图注
+- 因此 alt 应写成"完整一句话图注"，而不是简短文件名
+
 ### 生成约束
 
 - **禁止 emoji**——节点用文字或编号，emoji 有强烈 AI 感

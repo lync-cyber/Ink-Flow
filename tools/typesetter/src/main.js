@@ -103,6 +103,16 @@
       return;
     }
     ink.installAlertExtension();
+    if (typeof ink.installMermaidExtension === 'function') {
+      ink.installMermaidExtension();
+    }
+
+    // mermaid 异步渲染完成后：若源码视图正开着，刷新一次
+    document.addEventListener('inkflow:mermaid-rendered', () => {
+      if (ink.state.showSource) {
+        EL('source-view').textContent = ink.buildExportHtml(EL('preview'));
+      }
+    });
 
     const state = ink.state;
 
