@@ -5,6 +5,8 @@ description = "LLM 辅助内容创作工作流框架，基于 Claude Code 原生
 requires-python = ">=3.11"
 dependencies = [
     "pyyaml>=6.0",
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
 ]
 
 [project.optional-dependencies]

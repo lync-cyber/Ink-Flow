@@ -91,7 +91,7 @@ dependencies:
 **输入**: `articles/{slug}/intermediate/outline.md`
 
 **输出**:
-- `articles/{slug}/intermediate/figure/_index.md`（汇总）
+- `articles/{slug}/intermediate/figure/index.md`（汇总）
 - `articles/{slug}/intermediate/figure/fig-{NN}.{svg|md}`（单独）
 
 ## Exit Criteria

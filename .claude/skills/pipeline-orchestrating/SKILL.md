@@ -23,7 +23,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 | 重跑阶段 | "重跑 {stage}" | 详见 `references/rerun-and-dryrun.md` |
 | 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `references/rerun-and-dryrun.md` |
 | 运营操作 | "排期"、"数据分析"、"发布清单" | 提示触发对应运营 skill（不进入 pipeline） |
-| 学习进修 | "学习"、"进修"、"对标" | 提示触发 style-studying skill |
+| 学习进修 | "学习"、"进修"、"对标" | 提示触发 style-learning skill（study 模式） |
 
 ## Pipeline 阶段
 

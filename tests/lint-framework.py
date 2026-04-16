@@ -15,6 +15,8 @@
   7. Typesetter WeChat CSS 兼容性
   8. 文件清理校验
   9. 栏目必填字段完整性 — columns.yaml 每栏目的四分区字段齐全
+ 10. Skill 名称交叉引用 — README/CLAUDE/agent/skill/lint 中出现的 skill 名必须真实存在
+ 11. Agent 依赖真实性 — agent frontmatter 的 dependencies.config/rules/tools 指向的文件存在
 """
 
 import io
@@ -546,6 +548,184 @@ def check_column_completeness(repo):
 
 
 # ============================================================
+# Check 10: Skill 名称交叉引用
+# ============================================================
+
+# 已废弃的 skill 名 → 新名（用于报错时给出迁移提示）
+DEPRECATED_SKILLS = {
+    "style-profiling":   "style-learning (profile 模式)",
+    "style-studying":    "style-learning (study 模式)",
+    "article-structuring": "已合并进 config/columns.yaml 的 skeleton 段",
+    "writing-guiding":     "已合并进 config/columns.yaml 的 phrase_replacements / human_voice_techniques",
+    "opening-crafting":    "已合并进 config/columns.yaml 的 opening_strategies",
+    "visual-theming":      "已合并进 config/columns.yaml 的 colors / typesetter 预设",
+    "format-linting":      "quality-linting",
+    "format-exporting":    "publisher agent（publish 阶段）",
+}
+
+# 允许在文件中作为"已废弃提示"出现的上下文 — 不报错
+DEPRECATED_ALLOWED_CONTEXT = ("已废弃", "deprecated", "迁移至", "合并进", "旧名")
+
+
+def check_skill_name_references(repo: Path):
+    section("Check 10: Skill 名称交叉引用")
+
+    skills_dir = repo / ".claude" / "skills"
+    if not skills_dir.exists():
+        error(".claude/skills/ 不存在，跳过")
+        return
+
+    existing_skills = {p.name for p in skills_dir.iterdir() if p.is_dir()}
+
+    # 要扫描的文件集合：所有顶层文档 + agents + skills + tools/lint/lint.py + CLAUDE.md/README.md
+    scan_files: list[Path] = []
+    scan_files.append(repo / "README.md")
+    scan_files.append(repo / "CLAUDE.md")
+    scan_files.append(repo / "tools" / "lint" / "lint.py")
+    scan_files.extend((repo / ".claude" / "agents").rglob("*.md"))
+    scan_files.extend((repo / ".claude" / "skills").rglob("*.md"))
+
+    found_issues = 0
+    for f in scan_files:
+        if not f.exists():
+            continue
+        try:
+            text = f.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for dep, migration in DEPRECATED_SKILLS.items():
+                # 匹配独立 token（反引号、空格、行首/尾）
+                if re.search(rf"(?<![\w-]){re.escape(dep)}(?![\w-])", line):
+                    # 允许在"迁移说明"上下文中提及
+                    if any(ctx in line for ctx in DEPRECATED_ALLOWED_CONTEXT):
+                        continue
+                    # 允许在 README 的说明表中标注（已在 README 中整体重写，此处不应再命中）
+                    error(f"{f.relative_to(repo)}:{lineno} 引用已废弃的 skill '{dep}' → 请改为 {migration}")
+                    found_issues += 1
+
+    if found_issues == 0:
+        ok("无已废弃 skill 名残留")
+
+    # 检查 pipeline-orchestrating SKILL.md 中显式提到的 skill 名是否都真实存在
+    po_skill = skills_dir / "pipeline-orchestrating" / "SKILL.md"
+    if po_skill.exists():
+        text = po_skill.read_text(encoding="utf-8")
+        # 匹配形如 "触发 foo-bar skill" 或 "`foo-bar`" 的 skill 名引用
+        cited = set(re.findall(r"([a-z][a-z0-9-]+)\s+skill", text))
+        for name in cited:
+            if name in DEPRECATED_SKILLS:
+                continue  # 已在上面检查
+            if name in existing_skills:
+                ok(f"pipeline-orchestrating 引用的 skill '{name}' 存在")
+            elif "-" in name and len(name) > 4:
+                warn(f"pipeline-orchestrating 引用的 skill '{name}' 不存在于 .claude/skills/")
+
+
+# ============================================================
+# Check 11: Agent 依赖真实性
+# ============================================================
+
+# agent frontmatter 中 dependencies 下允许的子段
+DEP_SECTIONS = ("artifacts", "config", "rules", "tools")
+
+# 占位符 — 出现则跳过存在性检查
+PATH_PLACEHOLDERS = ("{slug}", "{N}", "{N-1}", "{NN}", "{col}", "{column}", "{profile}")
+
+
+def parse_dependencies(path: Path) -> dict[str, list[str]]:
+    """从 agent frontmatter 中解析 dependencies 块。
+    返回 {section_name: [path1, path2, ...]}。路径末尾的 `# 注释` 会被剥离。
+    """
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+
+    # 定位 dependencies 段
+    result: dict[str, list[str]] = {}
+    in_fm = False
+    in_deps = False
+    current_section = None
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "---":
+            if not in_fm:
+                in_fm = True
+                continue
+            else:
+                break  # frontmatter 结束
+
+        if not in_fm:
+            continue
+
+        if re.match(r"^dependencies:\s*$", line):
+            in_deps = True
+            continue
+
+        if in_deps:
+            # 回到顶层字段（无缩进）→ 退出 deps
+            if line and not line[0].isspace():
+                in_deps = False
+                current_section = None
+                continue
+
+            # 2 空格缩进的子段名（任何新段开始 → 重置 current_section）
+            m = re.match(r"  (\w+):\s*$", line)
+            if m:
+                if m.group(1) in DEP_SECTIONS:
+                    current_section = m.group(1)
+                    result[current_section] = []
+                else:
+                    current_section = None  # 未知子段（modules/agents_dispatched 等）
+                continue
+
+            # 4 空格缩进的 list item
+            if current_section:
+                m = re.match(r"    -\s+(.+?)(?:\s+#.*)?$", line)
+                if m:
+                    result[current_section].append(m.group(1).strip())
+
+    return result
+
+
+def check_agent_dependencies(repo: Path):
+    section("Check 11: Agent 依赖真实性")
+
+    agents_dir = repo / ".claude" / "agents"
+    if not agents_dir.exists():
+        error(".claude/agents/ 目录不存在，跳过")
+        return
+
+    checked_count = 0
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        if agent_file.stem == "_template":
+            continue
+        deps = parse_dependencies(agent_file)
+        if not deps:
+            continue
+
+        for section_name in ("config", "rules", "tools"):
+            for raw_path in deps.get(section_name, []):
+                # 剥去 trailing 斜杠
+                p = raw_path.rstrip("/")
+                # 包含占位符 → 跳过（运行时才填充）
+                if any(ph in p for ph in PATH_PLACEHOLDERS):
+                    continue
+                # 文件或目录必须存在
+                target = repo / p
+                if target.exists():
+                    ok(f"agent {agent_file.stem}: {section_name}/{p} 存在")
+                    checked_count += 1
+                else:
+                    error(f"agent {agent_file.stem}: {section_name} 引用不存在的路径 '{p}'")
+
+    if checked_count == 0:
+        warn("未发现任何 agent 依赖声明（可能是解析失败）")
+
+
+# ============================================================
 # 主入口
 # ============================================================
 
@@ -567,6 +747,8 @@ def main():
     check_typesetter_wechat_compat(repo)
     check_file_cleanup(repo)
     check_column_completeness(repo)
+    check_skill_name_references(repo)
+    check_agent_dependencies(repo)
 
     print()
     print("================================")

@@ -73,7 +73,7 @@ FOR each section:
 
 ```
 auditor → review/audit.md（只审不改）
-polisher → review/polish-trace.md + export/_final.md（按 audit 修复）
+polisher → review/polish-trace.md + export/final.md（按 audit 修复）
 ```
 
 ## Publish 子步骤

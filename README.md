@@ -17,51 +17,50 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
 
 ```
 .claude/
-  ├── agents/               # Subagent 定义（RCCF 结构）
-  ├── skills/               # Skill 定义（扁平结构，每个 skill 一个目录）
-  │   ├── pipeline-orchestrating/  # 编排器（含 references/）
-  │   ├── style-profiling/         # 风格提取
-  │   ├── style-studying/          # 外部材料学习
-  │   ├── pipeline-orchestrating/  # 写作流程总入口
+  ├── agents/                      # Subagent 定义（RCCF 结构）
+  ├── skills/                      # Skill 定义（扁平结构，每个 skill 一个目录）
+  │   ├── pipeline-orchestrating/  # 写作流程总入口（含 references/）
+  │   ├── style-learning/          # 风格学习（profile / study 两种模式）
   │   ├── workspace-init/          # 工作区初始化与升级
-  │   ├── style-learning/          # 风格学习（profile / study）
-  │   ├── quality-linting/         # 格式 lint
   │   ├── title-crafting/          # 标题打磨
+  │   ├── quality-linting/         # 格式 lint
   │   ├── publish-preparing/       # 发布准备
   │   ├── content-planning/        # 内容排期
   │   ├── creation-reviewing/      # 创作复盘
   │   ├── metrics-tracking/        # 数据追踪
   │   └── performance-benchmarking/ # 效果分析
-  └── rules/                # 声明式约束规则
-      ├── core/             # 跨领域通用规则
-      ├── domains/          # 领域特有规则
-      └── data/             # YAML 数据（单一事实来源）
+  └── rules/                       # 声明式约束规则
+      ├── core/                    # 跨领域通用规则
+      ├── domains/                 # 领域特有规则
+      └── data/                    # YAML 数据（单一事实来源）
 
-config/                     # 项目配置（纳入版本管理）
-  ├── inkflow.yaml           # 项目配置 + stage 契约
-  ├── columns.yaml           # 栏目统一配置（视觉+业务+typesetter 预设）
-  ├── artifact-layout.yaml   # 产物路径约定
-  └── markdown-extensions.md # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
+config/                            # 项目配置（纳入版本管理）
+  ├── inkflow.yaml                 # 项目配置 + stage 契约
+  ├── columns.yaml                 # 栏目统一配置（视觉+业务+typesetter 预设）
+  ├── artifact-layout.yaml         # 产物路径约定
+  └── markdown-extensions.md       # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
 
-styles/                     # 个人化风格档案（用户生成，升级不覆盖）
+styles/                            # 个人化风格档案（用户生成，升级不覆盖）
   └── {profile}/style-profile.md
 
-tools/                      # 工具链
-  ├── typesetter/           # 轻量级排版器（marked.js + 3 主题 + 栏目预设）
-  ├── lint/                 # 格式校验脚本 + 配置
-  ├── render/               # mermaid / svg-sanitize / theme-sync
-  └── bootstrap.sh          # 框架部署/升级脚本
+tools/                             # 工具链
+  ├── typesetter/                  # 轻量级排版器（marked.js + 3 主题 + 栏目预设）
+  ├── lint/                        # 格式校验脚本 + 配置
+  ├── render/                      # mermaid / svg-sanitize
+  ├── fetch/                       # 外部文章抓取（微信等）+ 正文清洗
+  └── bootstrap.sh                 # 框架部署/升级脚本
 
-tests/                      # 框架质量门禁
-  └── lint-framework.py     # L0 静态校验
+tests/                             # 框架质量门禁
+  └── lint-framework.py            # L0 静态校验（schema + 交叉引用）
 
-articles/                   # 内容产物（按文章分组）
+articles/                          # 内容产物（按文章分组）
   └── {slug}/
-      ├── intermediate/     # brief / research / outline / draft / figure
-      ├── review/           # audit / polish-trace
-      └── export/           # _final / wechat / plain / teaser
+      ├── intermediate/            # brief / research / outline / draft / figure
+      ├── review/                  # audit / polish-trace
+      └── export/                  # final / wechat / plain / teaser
 
-workspace/pipeline-states/  # Pipeline 执行状态（.gitignore）
+references/                        # 外部参考材料（风格学习输入）
+workspace/pipeline-states/         # Pipeline 执行状态（.gitignore）
 ```
 
 ## 快速开始
@@ -99,7 +98,7 @@ brief → research → outline → draft ∥ figures → audit → polish → pu
 - `outline`: 大纲 + 视觉断点规划 → **Checkpoint 1**
 - `draft`: 逐 section 写作（标准 Markdown + GFM Alerts）
 - `figures`: 品牌色驱动生成 SVG/Mermaid（与 draft 并行）
-- `audit`: 六维审校（只审不改）
+- `audit`: 审校（只审不改）
 - `polish`: 基于审校报告去 AI 味润色 → **Checkpoint 2**
 - `publish`: 格式校验 + Markdown 标准化 + 多格式导出 → **Checkpoint 3**
 
@@ -112,10 +111,10 @@ brief → research → outline → draft ∥ figures → audit → polish → pu
 | outliner | opus | outline | 结构设计、视觉断点规划 |
 | writer | opus | draft | 逐 section 写作（标准 Markdown + GFM Alerts） |
 | illustrator | sonnet | figures | 品牌色驱动生成 SVG/Mermaid 配图 |
-| auditor | opus | audit | 六维审校（只审不改） |
+| auditor | opus | audit | 审校（只审不改） |
 | polisher | sonnet | polish | 基于审校报告去 AI 味润色 |
 | publisher | sonnet | publish | 格式校验 + 标准化 + 多格式导出 |
-| style-analyzer | sonnet | — | 七维度风格 DNA 提取（style-profiling 调用） |
+| style-analyzer | sonnet | — | 风格 DNA 提取（由 style-learning skill 调用） |
 
 所有 agent 使用 RCCF 结构（Role + Context + Constraints + Format + Exit Criteria）。
 
@@ -125,22 +124,19 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 
 | Skill | 工作流阶段 | 说明 |
 |-------|-----------|------|
-| `pipeline-orchestrating` | 编排 | 编排器入口（orchestrator agent 专用） |
-| `style-profiling` | 准备 | 七维度风格 DNA 提取 |
-| `style-studying` | 准备 | 外部参考材料学习 |
-| `article-structuring` | 构思 | 栏目结构骨架（academic/industry/tech/story） |
-| `title-crafting` | 构思 | 标题打磨 + 质量门禁 |
-| `writing-guiding` | 创作 | 栏目语气 + 正向替换 + 人味技巧 + 互动设计 |
-| `opening-crafting` | 创作 | 5 种开篇策略 |
-| `visual-theming` | 创作 | 品牌色板 + SVG 组件规范 |
-| `format-linting` | 发布 | 确定性 Markdown 格式校验 |
-| `format-exporting` | 发布 | Markdown 标准化 + 多格式导出 |
+| `pipeline-orchestrating` | 编排 | 写作 pipeline 总入口（orchestrator agent 驱动） |
+| `workspace-init` | 准备 | 工作区初始化与框架升级 |
+| `style-learning` | 准备 | 风格学习（profile：自己文章；study：外部材料/URL） |
+| `title-crafting` | 构思 | 标题打磨 + 质量门禁（由 pipeline 在 CP1 前调用） |
+| `quality-linting` | 发布 | 确定性格式校验（`tools/lint/lint.py`） |
 | `publish-preparing` | 发布 | 发布前后运营清单 |
 | `content-planning` | 策划 | 内容排期规划 |
 | `creation-reviewing` | 复盘 | 创作复盘（diff 分析 + 规则提炼） |
 | `metrics-tracking` | 复盘 | 运营数据追踪 |
 | `performance-benchmarking` | 复盘 | 跨文章效果分析 |
-| `workspace-init` | 准备 | 工作区初始化与框架升级 |
+
+> 其他写作期能力（栏目骨架、开头策略、正向替换、视觉主题）不再作为独立 skill，
+> 已整合进 `config/columns.yaml` 作为声明式配置，由 writer / illustrator agent 直接读取。
 
 ### 品牌视觉系统
 

@@ -24,14 +24,14 @@ paths:
   draft_section:  "articles/{slug}/intermediate/draft/section-{N}.md"
   draft_merged:   "articles/{slug}/intermediate/draft/merged.md"
   figure_item:    "articles/{slug}/intermediate/figure/fig-{N}.{ext}"
-  figure_index:   "articles/{slug}/intermediate/figure/_index.md"
+  figure_index:   "articles/{slug}/intermediate/figure/index.md"
 
   # ---- 审校产物 ----
   audit:          "articles/{slug}/review/audit.md"
   polish_trace:   "articles/{slug}/review/polish-trace.md"
 
   # ---- 最终产物 ----
-  final:          "articles/{slug}/export/_final.md"
+  final:          "articles/{slug}/export/final.md"
   wechat:         "articles/{slug}/export/wechat.md"
   plain:          "articles/{slug}/export/plain.md"
   teaser:         "articles/{slug}/export/teaser.md"

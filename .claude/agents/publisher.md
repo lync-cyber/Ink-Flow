@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 dependencies:
   artifacts:
-    - articles/{slug}/export/_final.md
+    - articles/{slug}/export/final.md
     - articles/{slug}/intermediate/brief.md
     - articles/{slug}/intermediate/figure/
   config:
@@ -32,7 +32,7 @@ dependencies:
 在 **publish** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/export/_final.md` — 润色终稿
+- `articles/{slug}/export/final.md` — 润色终稿
 - `articles/{slug}/intermediate/brief.md` — 栏目/标签元数据
 - `config/markdown-extensions.md` — 允许的 Markdown 语法白名单（标准 + GFM Alerts）
 - `config/columns.yaml` — 栏目 `typesetter` 预设
@@ -47,7 +47,7 @@ dependencies:
 
 ## 流程
 
-1. **预校验**：`python tools/lint/lint.py articles/{slug}/export/_final.md`
+1. **预校验**：`python tools/lint/lint.py articles/{slug}/export/final.md`
    - error → 停止，返回 violations 给编排器
    - warning → 记录，继续
 2. **语法标准化**：
@@ -91,7 +91,7 @@ export/wechat.md
 
 ## Contracts
 
-**输入**: `articles/{slug}/export/_final.md`
+**输入**: `articles/{slug}/export/final.md`
 
 **输出**（`articles/{slug}/export/`）:
 - `wechat.md` — 标准 Markdown + GFM Alerts，可直接粘贴到 `tools/typesetter/`
