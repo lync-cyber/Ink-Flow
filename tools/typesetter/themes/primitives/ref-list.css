@@ -1,0 +1,85 @@
+/* ============================================================
+ * 参考文献列表原语
+ *
+ * JS decorator (decorateRefList) 自动识别 H2 文本为
+ * "参考文献" / "参考资料" / "References" 的标题，把后续
+ * <ol> 包裹为 <section class="ref-list" data-count="N">
+ *
+ * 视觉策略：
+ *   - 字号 0.78em（≈ 12px）显著小于正文
+ *   - 行高 1.55，紧凑
+ *   - 浅灰底 + 左侧细边，弱化层级避免抢正文焦点
+ *   - 数字与文献条目同色，去除强调
+ *
+ * 浏览器预览：
+ *   - data-count >= 8 时启用 max-height + overflow-y 滚动
+ *
+ * 微信发布（wechat-fixes.dropScrollContainer）：
+ *   - 自动剥 max-height / overflow，保留紧凑字号
+ *   - 微信端展示完整列表，仅样式比正文小一档
+ * ============================================================ */
+
+.article .ref-list {
+  margin: 1.2em 0;
+  padding: 12px 14px 12px 28px;
+  background: var(--md-bg);
+  border-left: 2px solid var(--md-border);
+  border-radius: 0 3px 3px 0;
+  font-size: 0.78em;
+  line-height: 1.55;
+  color: var(--md-text-sec);
+}
+
+.article .ref-list > ol {
+  margin: 0;
+  padding: 0;
+  list-style: decimal outside;
+  counter-reset: none;
+}
+
+.article .ref-list > ol > li {
+  margin: 0.3em 0;
+  padding-left: 0.3em;
+  color: var(--md-text-sec);
+  list-style: decimal outside;
+}
+
+/* 文献条目内的强调元素弱化处理 */
+.article .ref-list strong {
+  color: var(--md-text);
+  font-weight: 500;
+}
+.article .ref-list em {
+  color: var(--md-text-sec);
+  font-style: italic;
+}
+.article .ref-list a {
+  color: var(--md-link);
+  border-bottom-width: 1px;
+  font-size: inherit;
+}
+
+/* 隐藏 decorateListBullets 注入的 li-num（用原生 list-style 即可） */
+.article .ref-list .li-num,
+.article .ref-list .li-num-badge {
+  display: none;
+}
+
+/* 浏览器预览：超过 8 条启用滚动（微信导出会被 dropScrollContainer 剥除） */
+.article .ref-list[data-count-overflow="true"] {
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-border) transparent;
+}
+
+.article .ref-list[data-count-overflow="true"]::-webkit-scrollbar {
+  width: 6px;
+}
+.article .ref-list[data-count-overflow="true"]::-webkit-scrollbar-thumb {
+  background: var(--md-border);
+  border-radius: 3px;
+}
+.article .ref-list[data-count-overflow="true"]::-webkit-scrollbar-track {
+  background: transparent;
+}

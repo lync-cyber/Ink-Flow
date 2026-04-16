@@ -4,246 +4,32 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>InkFlow · 微信公众号排版</title>
+
+<!-- ============================================================ -->
+<!-- 文章本体样式（base + primitives + columns）                    -->
+<!-- 顺序：base → primitives → columns（栏目可覆盖原语）            -->
+<!-- ============================================================ -->
 <link rel="stylesheet" href="./themes/base.css" />
-<link rel="stylesheet" href="./themes/col-academic.css" />
-<link rel="stylesheet" href="./themes/col-industry.css" />
-<link rel="stylesheet" href="./themes/col-tech.css" />
-<link rel="stylesheet" href="./themes/col-story.css" />
-<style>
-  :root {
-    --ui-bg: #f5f5f7;
-    --ui-panel: #ffffff;
-    --ui-border: #e0e0e4;
-    --ui-text: #1d1d1f;
-    --ui-muted: #6e6e73;
-    --ui-primary: #1f6feb;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; overflow: hidden; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    color: var(--ui-text);
-    background: var(--ui-bg);
-    display: flex; flex-direction: column;
-  }
 
-  /* ---- 顶部 bar ---- */
-  header.topbar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 14px;
-    background: var(--ui-panel);
-    border-bottom: 1px solid var(--ui-border);
-    flex-wrap: wrap;
-    flex-shrink: 0;
-  }
-  header.topbar h1 {
-    margin: 0; font-size: 13px; font-weight: 600;
-  }
-  header.topbar .badge {
-    padding: 2px 8px;
-    background: var(--ui-primary);
-    color: #fff;
-    border-radius: 10px;
-    font-size: 10px;
-    margin-right: 4px;
-  }
-  #sel-column-group {
-    display: flex; gap: 4px; margin-left: 8px;
-  }
-  #sel-column-group button {
-    padding: 4px 10px;
-    border: 1px solid var(--ui-border);
-    background: transparent;
-    color: var(--ui-muted);
-    font-size: 12px;
-    border-radius: 2px;
-    cursor: pointer;
-  }
-  #sel-column-group button.active {
-    border-color: var(--ui-primary);
-    background: #f0f7ff;
-    color: var(--ui-primary);
-    font-weight: 600;
-  }
-  header.topbar label {
-    font-size: 11px; color: var(--ui-muted);
-    display: inline-flex; align-items: center; gap: 4px;
-  }
-  header.topbar input[type="color"] {
-    width: 28px; height: 22px;
-    padding: 0;
-    border: 1px solid var(--ui-border);
-    background: #fff;
-    border-radius: 2px;
-    cursor: pointer;
-  }
-  header.topbar .spacer { flex: 1; }
-  header.topbar button.ghost {
-    padding: 4px 10px;
-    border: 1px solid var(--ui-border);
-    background: transparent;
-    color: var(--ui-muted);
-    font-size: 11px;
-    border-radius: 2px;
-    cursor: pointer;
-  }
-  header.topbar button.ghost.active {
-    border-color: var(--ui-primary);
-    color: var(--ui-primary);
-    background: #f0f7ff;
-  }
-  header.topbar button.ghost:hover { background: #f5f5f7; }
-  header.topbar button.primary {
-    padding: 5px 14px;
-    border: none;
-    background: var(--ui-primary);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 2px;
-    cursor: pointer;
-  }
-  header.topbar button.primary:hover { opacity: 0.9; }
-  #status { font-size: 11px; color: var(--ui-muted); padding: 0 6px; }
+<!-- 视觉原语：4 种 callout 形态 + tag pill + ref-list + code 主题 + hljs -->
+<link rel="stylesheet" href="./themes/primitives/callout-banner.css" />
+<link rel="stylesheet" href="./themes/primitives/callout-card.css" />
+<link rel="stylesheet" href="./themes/primitives/callout-window.css" />
+<link rel="stylesheet" href="./themes/primitives/callout-bare.css" />
+<link rel="stylesheet" href="./themes/primitives/tag-pill.css" />
+<link rel="stylesheet" href="./themes/primitives/ref-list.css" />
+<link rel="stylesheet" href="./themes/primitives/code-light.css" />
+<link rel="stylesheet" href="./themes/primitives/code-dark.css" />
+<link rel="stylesheet" href="./themes/primitives/hljs.css" />
 
-  /* ---- spec bar（滑块）---- */
-  .specbar {
-    display: flex; align-items: center; gap: 16px;
-    padding: 6px 14px;
-    background: #fafafa;
-    border-bottom: 1px solid var(--ui-border);
-    flex-wrap: wrap;
-    flex-shrink: 0;
-    font-size: 11px;
-    color: var(--ui-muted);
-  }
-  .specbar .spec {
-    display: flex; align-items: center; gap: 6px;
-  }
-  .specbar input[type="range"] {
-    width: 70px;
-    accent-color: var(--ui-primary);
-  }
-  .specbar .spec-val {
-    font-family: 'SF Mono', Consolas, monospace;
-    font-size: 11px;
-    color: var(--ui-text);
-    min-width: 34px;
-  }
-  .specbar button {
-    padding: 2px 8px;
-    border: 1px solid var(--ui-border);
-    background: transparent;
-    color: var(--ui-muted);
-    font-size: 10px;
-    border-radius: 2px;
-    cursor: pointer;
-  }
-  .specbar button:hover { background: #fff; }
-  .specbar #preset-info {
-    margin-left: auto;
-    font-size: 10px;
-    color: var(--ui-muted);
-  }
+<!-- 4 个栏目（仅声明差异化） -->
+<link rel="stylesheet" href="./themes/columns/academic.css" />
+<link rel="stylesheet" href="./themes/columns/industry.css" />
+<link rel="stylesheet" href="./themes/columns/tech.css" />
+<link rel="stylesheet" href="./themes/columns/story.css" />
 
-  /* ---- 主区 ---- */
-  main {
-    flex: 1; display: grid;
-    grid-template-columns: 1fr 1fr;
-    overflow: hidden;
-    min-height: 0;
-  }
-  .pane { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-  .pane-header {
-    padding: 6px 12px;
-    background: #fafafa;
-    border-bottom: 1px solid var(--ui-border);
-    font-size: 11px; color: var(--ui-muted);
-    display: flex; justify-content: space-between; align-items: center;
-    flex-shrink: 0;
-  }
-  .pane.editor { border-right: 1px solid var(--ui-border); }
-  #editor {
-    flex: 1; width: 100%;
-    padding: 14px;
-    border: none; outline: none; resize: none;
-    font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-    font-size: 13px; line-height: 1.7;
-    background: #fff;
-    color: #333;
-    overflow-y: auto;
-  }
-
-  /* ---- 预览区：手机边框 ---- */
-  #preview-wrap {
-    flex: 1; overflow-y: auto; background: var(--ui-bg);
-    padding: 16px 8px;
-  }
-  #phone-frame {
-    width: 375px; max-width: 100%;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    overflow: hidden;
-  }
-  #phone-frame.is-dark {
-    background: #1a1a1a;
-  }
-  #phone-frame.is-dark .article {
-    color: #c3c3c3;
-  }
-  #phone-frame .phone-statusbar {
-    height: 24px;
-    background: #f8f8f8;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; color: #999;
-  }
-  #phone-frame.is-dark .phone-statusbar {
-    background: #000; color: #666;
-  }
-  #phone-frame .article {
-    padding: 20px 18px 32px;
-  }
-
-  /* ---- 源码查看 ---- */
-  #source-view {
-    display: none;
-    width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 14px;
-    background: #1a1a1a;
-    color: #d4d4d4;
-    border-radius: 4px;
-    font-family: 'SF Mono', Consolas, monospace;
-    font-size: 11px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
-
-  /* ---- 底部语法速查 ---- */
-  footer.syntaxbar {
-    padding: 5px 14px;
-    background: var(--ui-panel);
-    border-top: 1px solid var(--ui-border);
-    font-size: 10px;
-    color: var(--ui-muted);
-    display: flex; gap: 10px;
-    overflow-x: auto;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  footer.syntaxbar b { color: var(--ui-text); }
-  footer.syntaxbar .sep { color: var(--ui-border); }
-  footer.syntaxbar .tail { margin-left: auto; color: var(--ui-primary); }
-
-  @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; }
-    .pane.editor { height: 40vh; border-right: none; border-bottom: 1px solid var(--ui-border); }
-  }
-</style>
+<!-- 工具自身 UI（隔离于 .article） -->
+<link rel="stylesheet" href="./themes/tokens.css" />
 </head>
 <body>
 
@@ -257,7 +43,12 @@
     <button data-column="story">✍️ 人物故事</button>
   </div>
 
-  <label title="主色（覆盖栏目预设）">
+  <label title="色板（覆盖栏目默认主/强调色）">
+    色板
+    <select id="sel-palette" title="切换色板，立即覆盖主色与强调色"></select>
+  </label>
+
+  <label title="主色微调（覆盖色板的 primary）">
     色
     <input type="color" id="sel-color" value="#1a5276" />
     <button class="ghost" id="btn-reset-color" title="恢复栏目默认主色">↺</button>
@@ -267,12 +58,13 @@
   <span id="status">就绪</span>
   <button class="ghost" id="btn-load">载入 .md</button>
   <input type="file" id="file-input" accept=".md,.markdown,.txt" style="display:none" />
-  <button class="ghost" id="btn-dark" title="深色预览（仅预览，不影响复制）">🌙</button>
+  <button class="ghost" id="btn-dark" title="切换 Dark 主题（影响导出 HTML）">🌙</button>
   <button class="ghost" id="btn-source" title="查看生成的 HTML">&lt;/&gt;</button>
   <button class="primary" id="btn-copy">复制富文本</button>
 </header>
 
 <div class="specbar">
+  <span class="spec-group-label">排版</span>
   <div class="spec">
     <span>字号</span>
     <input type="range" id="sel-size" min="13" max="18" step="1" value="15" />
@@ -285,10 +77,34 @@
   </div>
   <div class="spec">
     <span>字距</span>
-    <input type="range" id="sel-ls" min="0" max="2" step="0.5" value="1" />
-    <span class="spec-val" id="val-ls">1px</span>
+    <input type="range" id="sel-ls" min="0" max="2" step="0.1" value="0.5" />
+    <span class="spec-val" id="val-ls">0.5px</span>
   </div>
-  <button id="btn-reset-spec" title="恢复栏目默认排版参数">重置参数</button>
+
+  <span class="spec-divider"></span>
+  <span class="spec-group-label">布局</span>
+  <div class="spec" title="左右页边距（影响导出 HTML）">
+    <span>横边距</span>
+    <input type="range" id="sel-pad-x" min="8" max="32" step="1" value="18" />
+    <span class="spec-val" id="val-pad-x">18px</span>
+  </div>
+  <div class="spec" title="上下页边距（影响导出 HTML）">
+    <span>纵边距</span>
+    <input type="range" id="sel-pad-y" min="8" max="40" step="1" value="22" />
+    <span class="spec-val" id="val-pad-y">22px</span>
+  </div>
+  <div class="spec" title="段落之间间距（em）">
+    <span>段距</span>
+    <input type="range" id="sel-pgap" min="0.6" max="2" step="0.05" value="1.1" />
+    <span class="spec-val" id="val-pgap">1.10em</span>
+  </div>
+  <div class="spec" title="章节（H2 前）间距（em）">
+    <span>章距</span>
+    <input type="range" id="sel-sgap" min="1" max="4" step="0.1" value="2.0" />
+    <span class="spec-val" id="val-sgap">2.00em</span>
+  </div>
+
+  <button id="btn-reset-spec" title="恢复栏目默认排版与布局参数">重置参数</button>
   <button id="btn-reset-content" title="恢复栏目默认示例内容" style="display:none">重置内容</button>
   <span id="preset-info"></span>
 </div>
@@ -338,7 +154,7 @@
 </footer>
 
 <!-- ============================================================ -->
-<!-- 嵌入各栏目默认 Markdown（app.js 通过 textContent 读取）          -->
+<!-- 嵌入各栏目默认 Markdown（render.js 通过 textContent 读取）      -->
 <!-- ============================================================ -->
 <script type="text/markdown" id="md-default-academic">
 ---
@@ -663,7 +479,61 @@ author: "李微"
 *下一期，我们将走进另一位从钳工转型算法工程师的故事。*
 </script>
 
+<!-- ============================================================ -->
+<!-- 第三方依赖（CDN）                                              -->
+<!-- ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
-<script src="./app.js"></script>
+<!-- highlight.js 11.x：仅加载 common 子集，覆盖大多数语言 -->
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.10.0/highlight.min.js"></script>
+
+<!-- ============================================================ -->
+<!-- WeChat 兼容补丁（独立模块，挂在 window.WechatFixes）           -->
+<!-- ============================================================ -->
+<script src="./wechat-fixes.js"></script>
+
+<!-- ============================================================ -->
+<!-- InkFlow 自身模块（IIFE，挂在 window.InkFlow）                  -->
+<!-- 加载顺序：parsers → config → decorators → exporter → 顶层      -->
+<!-- ============================================================ -->
+<!-- parsers -->
+<script src="./src/parsers/frontmatter.js"></script>
+<script src="./src/parsers/hr-scanner.js"></script>
+
+<!-- config（依赖 InkFlow.escapeHtml；ALERT_CLASSES 给 gfm-alert 用） -->
+<script src="./src/config/font-stacks.js"></script>
+<script src="./src/config/palettes.js"></script>
+<script src="./src/config/alert-presets.js"></script>
+<script src="./src/config/skeletons.js"></script>
+
+<!-- gfm-alert 依赖 ALERT_CLASSES + escapeHtml，必须在 config 之后 -->
+<script src="./src/parsers/gfm-alert.js"></script>
+
+<!-- hljs 适配（CDN 失败时也安全跳过） -->
+<script src="./src/hljs-adapter.js"></script>
+
+<!-- decorators（先加载注册表，再加载各 decorator） -->
+<script src="./src/decorators/pipeline.js"></script>
+<script src="./src/decorators/header.js"></script>
+<script src="./src/decorators/tag-pills.js"></script>
+<script src="./src/decorators/callout.js"></script>
+<script src="./src/decorators/code-block.js"></script>
+<script src="./src/decorators/bullets.js"></script>
+<script src="./src/decorators/hr-deco.js"></script>
+<script src="./src/decorators/blockquote.js"></script>
+<script src="./src/decorators/h2-line.js"></script>
+<script src="./src/decorators/h3-prefix.js"></script>
+<script src="./src/decorators/col-label-prefix.js"></script>
+<script src="./src/decorators/ref-list.js"></script>
+<script src="./src/decorators/footer.js"></script>
+
+<!-- exporter -->
+<script src="./src/exporter/bake.js"></script>
+<script src="./src/exporter/copy.js"></script>
+
+<!-- 顶层：state → render → main -->
+<script src="./src/state.js"></script>
+<script src="./src/render.js"></script>
+<script src="./src/main.js"></script>
+
 </body>
 </html>

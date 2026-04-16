@@ -1,0 +1,303 @@
+/* ============================================================
+ * 工具 UI Tokens —— 顶栏 / specbar / 编辑器 / 预览器框架
+ *
+ * 范围：仅服务排版工具 UI（topbar / specbar / 手机框 / 源码视图等），
+ *      与文章本体的 .article 样式完全隔离（不互相污染）。
+ *
+ * 拆分原因：
+ *   - 原 index.html 内嵌 ~270 行 <style>，调试和复用都不方便
+ *   - 提取后 index.html 仅剩结构 + script，CSS 全部走外链
+ *   - 未来可拆 tokens-light.css / tokens-dark.css（暂不需要）
+ * ============================================================ */
+
+:root {
+  --ui-bg:        #f5f5f7;
+  --ui-panel:     #ffffff;
+  --ui-border:    #e0e0e4;
+  --ui-text:      #1d1d1f;
+  --ui-muted:     #6e6e73;
+  --ui-primary:   #1f6feb;
+  --ui-mono:      'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+ * 顶部 topbar
+ * ============================================================ */
+header.topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+header.topbar h1 {
+  margin: 0; font-size: 13px; font-weight: 600;
+}
+header.topbar .badge {
+  padding: 2px 8px;
+  background: var(--ui-primary);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+#sel-column-group {
+  display: flex; gap: 4px; margin-left: 8px;
+}
+#sel-column-group button {
+  padding: 4px 10px;
+  border: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 12px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+#sel-column-group button.active {
+  border-color: var(--ui-primary);
+  background: #f0f7ff;
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+header.topbar label {
+  font-size: 11px; color: var(--ui-muted);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+header.topbar input[type="color"] {
+  width: 28px; height: 22px;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  border-radius: 2px;
+  cursor: pointer;
+}
+header.topbar select {
+  height: 24px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  color: var(--ui-text);
+  font-size: 11px;
+  border-radius: 2px;
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ui-muted) 50%),
+                    linear-gradient(135deg, var(--ui-muted) 50%, transparent 50%);
+  background-position: calc(100% - 12px) 50%, calc(100% - 8px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+
+header.topbar .spacer { flex: 1; }
+
+header.topbar button.ghost {
+  padding: 4px 10px;
+  border: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 11px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+header.topbar button.ghost.active {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: #f0f7ff;
+}
+header.topbar button.ghost:hover { background: #f5f5f7; }
+
+header.topbar button.primary {
+  padding: 5px 14px;
+  border: none;
+  background: var(--ui-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+}
+header.topbar button.primary:hover { opacity: 0.9; }
+
+#status { font-size: 11px; color: var(--ui-muted); padding: 0 6px; }
+
+/* ============================================================
+ * specbar（滑块栏）
+ * ============================================================ */
+.specbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 6px 14px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--ui-border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+.specbar .spec {
+  display: flex; align-items: center; gap: 6px;
+}
+.specbar input[type="range"] {
+  width: 64px;
+  accent-color: var(--ui-primary);
+}
+.specbar .spec-val {
+  font-family: var(--ui-mono);
+  font-size: 11px;
+  color: var(--ui-text);
+  min-width: 34px;
+}
+.specbar .spec-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--ui-border);
+  margin: 0 2px;
+}
+.specbar .spec-group-label {
+  font-size: 10px;
+  color: var(--ui-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-right: -4px;
+  font-weight: 600;
+}
+.specbar button {
+  padding: 2px 8px;
+  border: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 10px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.specbar button:hover { background: #fff; }
+.specbar #preset-info {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ui-muted);
+}
+
+/* ============================================================
+ * 主区 grid
+ * ============================================================ */
+main {
+  flex: 1; display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
+.pane { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.pane-header {
+  padding: 6px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 11px; color: var(--ui-muted);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.pane.editor { border-right: 1px solid var(--ui-border); }
+#editor {
+  flex: 1; width: 100%;
+  padding: 14px;
+  border: none; outline: none; resize: none;
+  font-family: var(--ui-mono);
+  font-size: 13px; line-height: 1.7;
+  background: #fff;
+  color: #333;
+  overflow-y: auto;
+}
+
+/* ============================================================
+ * 预览：手机边框
+ * ============================================================ */
+#preview-wrap {
+  flex: 1; overflow-y: auto;
+  background: var(--ui-bg);
+  padding: 16px 8px;
+}
+#phone-frame {
+  width: 375px; max-width: 100%;
+  margin: 0 auto;
+  background: transparent;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+#phone-frame .phone-statusbar {
+  height: 24px;
+  background: #f8f8f8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #999;
+}
+#phone-frame.is-dark .phone-statusbar {
+  background: #0A0A0A; color: #666;
+}
+/* article 自身的 padding 由 --md-page-padding-x/-y 驱动，
+   phone-frame 不再覆盖。 */
+
+/* ============================================================
+ * 源码视图
+ * ============================================================ */
+#source-view {
+  display: none;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 14px;
+  background: #1a1a1a;
+  color: #d4d4d4;
+  border-radius: 4px;
+  font-family: var(--ui-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ============================================================
+ * 底部语法速查
+ * ============================================================ */
+footer.syntaxbar {
+  padding: 5px 14px;
+  background: var(--ui-panel);
+  border-top: 1px solid var(--ui-border);
+  font-size: 10px;
+  color: var(--ui-muted);
+  display: flex; gap: 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+footer.syntaxbar b   { color: var(--ui-text); }
+footer.syntaxbar .sep{ color: var(--ui-border); }
+footer.syntaxbar .tail { margin-left: auto; color: var(--ui-primary); }
+
+/* ============================================================
+ * 响应式
+ * ============================================================ */
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+  .pane.editor {
+    height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--ui-border);
+  }
+}

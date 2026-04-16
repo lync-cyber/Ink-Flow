@@ -1,0 +1,198 @@
+/* ============================================================
+ * 技术专题 — 午夜蓝 · 暗绿强调 · 工程精确感
+ *
+ * Light: 午夜蓝（#0C1F37）+ 暗绿（#1C6A42），轻蓝纸面
+ *        代码块走 catppuccin-latte 浅色（继承 code-light.css）
+ * Dark : 提亮蓝（#7AB0E0）+ 提亮绿（#5DD4A0），深 IDE 底
+ *
+ * 形态选用：
+ *   - callout-window（mac IDE 窗口风：titlebar + body）
+ *
+ * 栏目专属差异：
+ *   - 头部：// 注释风栏目名 + tag + metabar（read_time/difficulty/prerequisites）
+ *   - H2：左 4px 主色竖条 + 等宽字体
+ *   - H3：› 前缀 + 等宽
+ *   - 列表：▶ 三角 + 数字 badge（accent 绿）
+ *   - 代码块头部：mac 三圆点
+ *   - HR：· · · 三点
+ *   - 引用边框用 accent
+ * ============================================================ */
+
+/* ====================== Light ====================== */
+.article.col-tech {
+  --md-text:        #1A1F2E;
+  --md-text-sec:    #4F5868;
+  --md-text-ter:    #8E96A4;
+
+  --md-primary:        #0C1F37;
+  --md-primary-soft:   #2D4566;
+  --md-on-primary:     #E5E9F0;
+  --md-accent:         #1C6A42;
+  --md-accent-soft:    #4F9E72;
+  --md-on-accent:      #FFFFFF;
+
+  --md-bg:          #F0F4FA;
+  --md-bg-deep:     #DDE5F4;
+  --md-border:      #BBC6D8;
+  --md-border-soft: #E4EAF2;
+
+  --md-inline-code-fg: #0A5C35;
+  --md-quote-mark:     #C0CCDE;
+  --md-quote-border:   var(--md-accent);
+}
+
+/* ====================== Dark ====================== */
+.article.col-tech.is-dark {
+  --md-text:        #DCE3EF;
+  --md-text-sec:    #A0AAB8;
+  --md-text-ter:    #686F7C;
+
+  --md-primary:        #7AB0E0;
+  --md-primary-soft:   #5688B5;
+  --md-on-primary:     #0A1224;
+  --md-accent:         #5DD4A0;
+  --md-accent-soft:    #44A37A;
+  --md-on-accent:      #0A1F14;
+
+  --md-surface:     #0F1320;
+  --md-bg:          #181E2D;
+  --md-bg-deep:     #0A0E18;
+  --md-border:      #28304A;
+  --md-border-soft: #1B2236;
+
+  --md-inline-code-fg: var(--md-accent);
+  --md-quote-mark:     #2A3450;
+}
+
+/* ====================== 栏目头部 ====================== */
+.article.col-tech .col-header {
+  margin-bottom: 1.5em;
+}
+.article.col-tech .col-label {
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  color: var(--md-text-ter);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+/* "// " 前缀通过 JS 注入 .col-label-prefix span（避免伪元素） */
+.article.col-tech .col-label .col-label-prefix {
+  color: var(--md-accent);
+}
+.article.col-tech .col-meta {
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  margin-left: 10px;
+  letter-spacing: 0.04em;
+}
+.article.col-tech .col-header h1 {
+  font-size: calc(var(--md-font-size) * 1.4);
+  margin: 0.4em 0 0.65em;
+  letter-spacing: -0.005em;
+}
+
+/* metabar 卡片：read_time / difficulty / prerequisites */
+.article.col-tech .col-metabar {
+  background: var(--md-bg);
+  border-left: 3px solid var(--md-accent);
+  padding: 9px 14px;
+  font-size: 11px;
+  color: var(--md-text-sec);
+  line-height: 1.7;
+  font-family: 'SF Mono', Consolas, monospace;
+  border-radius: 0 3px 3px 0;
+  margin-top: 0.7em;
+}
+.article.col-tech .col-metabar strong { color: var(--md-primary); }
+
+/* ====================== 标题 ====================== */
+.article.col-tech h2 {
+  display: block;
+  margin: var(--md-section-gap) 0 0.85em;
+  padding-left: 12px;
+  border-left: 4px solid var(--md-primary);
+  font-family: 'SF Mono', Consolas, Monaco, 'Microsoft YaHei', monospace;
+  font-size: calc(var(--md-font-size) * 1.13);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+.article.col-tech h3 {
+  margin: 1.55em 0 0.6em;
+  color: var(--md-text-sec);
+  font-family: 'SF Mono', Consolas, Monaco, 'Microsoft YaHei', monospace;
+  font-size: calc(var(--md-font-size) * 0.98);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+/* "›" 前缀通过 JS 注入 .h3-prefix span（避免伪元素） */
+.article.col-tech h3 .h3-prefix {
+  color: var(--md-accent);
+  font-size: 1.2em;
+  margin-right: 7px;
+  font-weight: 700;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.article.col-tech h4 {
+  margin: 1.3em 0 0.4em;
+  color: var(--md-primary);
+  font-size: var(--md-font-size);
+  font-weight: 700;
+  font-family: 'SF Mono', Consolas, Monaco, 'Microsoft YaHei', monospace;
+}
+
+/* ====================== 列表（▶ + accent badge） ====================== */
+.article.col-tech .li-bullet {
+  color: var(--md-accent);
+  font-size: 0.7em;
+  padding-top: 0.3em;
+  opacity: 0.85;
+}
+.article.col-tech .li-num-badge {
+  background: var(--md-accent);
+  color: var(--md-on-accent);
+  font-family: 'SF Mono', Consolas, monospace;
+  font-weight: 700;
+}
+.article.col-tech .li-num {
+  font-family: 'SF Mono', Consolas, monospace;
+  font-weight: 700;
+}
+
+/* ====================== 代码块头部（mac 三圆点） ====================== */
+.article.col-tech .code-head .code-dots {
+  letter-spacing: 0.25em;
+}
+
+/* ====================== 引用大引号（等宽字体） ====================== */
+.article.col-tech .bq-open,
+.article.col-tech .bq-close {
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 1.1em;
+}
+
+/* ====================== 分割线（虚线） ====================== */
+.article.col-tech hr {
+  border-top: 1px dashed var(--md-border);
+}
+.article.col-tech .hr-deco {
+  color: var(--md-border);
+  letter-spacing: 0.4em;
+  padding-right: 0.4em;
+}
+
+/* ====================== 表格（等宽 + tabular-nums） ====================== */
+.article.col-tech table {
+  font-family: 'SF Mono', Consolas, 'Microsoft YaHei', monospace;
+  font-size: 0.88em;
+}
+.article.col-tech th { font-size: 0.9em; letter-spacing: 0.05em; }
+.article.col-tech td { font-variant-numeric: tabular-nums; }
+
+/* ====================== 尾部签名（等宽） ====================== */
+.article.col-tech .col-sig-text {
+  font-family: 'SF Mono', Consolas, monospace;
+  letter-spacing: 0.04em;
+}

@@ -1,0 +1,47 @@
+/* ============================================================
+ * Tag Pill 原语 · 高宽统一徽章
+ *
+ * 解决问题：industry 头部 tags（融资 / 并购 / 监管 / 市场数据）
+ * 在不同字符长度下高宽不齐。
+ *
+ * 关键约束：
+ *   - 固定 height + line-height 锁定视觉高度
+ *   - min-width = 4.5em 容下 4 中文字
+ *   - inline-flex 居中（微信降级为 inline-block + text-align:center）
+ *   - white-space:nowrap 禁止换行裂开
+ *   - tabular-nums 保证数字宽度一致
+ *
+ * 适用：任何需要"等高 inline 标签"的场景，目前由 industry 使用。
+ * ============================================================ */
+
+.article .col-tags {
+  margin: 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0;  /* 消除 inline-block 间隙 */
+}
+
+.article .col-tags li {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5em;
+  height: 22px;
+  margin: 0 6px 6px 0;
+  padding: 0 12px;
+  line-height: 22px;       /* 兜底：微信 inline-block 时仍生效 */
+  background: var(--md-bg);
+  color: var(--md-primary);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--md-border);
+  border-radius: 2px;
+}
+
+/* 装饰子弹在 col-tags 内禁用（由 decorateListBullets 注入会污染） */
+.article .col-tags li .li-bullet { display: none; }

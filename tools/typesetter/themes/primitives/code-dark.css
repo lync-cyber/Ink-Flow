@@ -1,0 +1,28 @@
+/* ============================================================
+ * 代码块 · Dark 主题（catppuccin-mocha 深色调色板）
+ *
+ * 与 code-light.css 同名变量对偶，Dark 模式自动接管。
+ * ============================================================ */
+
+.article {
+  --code-dark-bg:         #1E1E2E;  /* base */
+  --code-dark-fg:         #CDD6F4;  /* text */
+  --code-dark-keyword:    #CBA6F7;  /* mauve */
+  --code-dark-string:     #A6E3A1;  /* green */
+  --code-dark-comment:    #6C7086;  /* overlay */
+  --code-dark-number:     #FAB387;  /* peach */
+  --code-dark-function:   #89B4FA;  /* blue */
+  --code-dark-type:       #F9E2AF;  /* yellow */
+  --code-dark-symbol:     #F2CDCD;  /* flamingo */
+  --code-dark-meta:       #B4BEFE;  /* lavender */
+
+  --code-dark-head-bg:    #11111B;  /* crust */
+  --code-dark-head-fg:    #A6ADC8;
+}
+
+.article.is-dark {
+  --md-code-bg:        var(--code-dark-bg);
+  --md-code-fg:        var(--code-dark-fg);
+  --md-code-head-bg:   var(--code-dark-head-bg);
+  --md-code-head-fg:   var(--code-dark-head-fg);
+}

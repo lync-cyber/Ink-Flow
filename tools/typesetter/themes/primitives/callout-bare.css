@@ -1,0 +1,57 @@
+/* ============================================================
+ * Callout 原语 · Bare（叙事旁注风）
+ *
+ * 视觉特征：
+ *   - 无边框、无背景，居中
+ *   - 标签：斜体小写，宽字距，文学感
+ *   - 内容：斜体衬线，引导读者"暂停"的呼吸节奏
+ *   - 上下用宽 margin 留白，代替边框分割
+ *
+ * 适用栏目：story（人物故事）
+ * ============================================================ */
+
+.article.col-story .alert {
+  margin: 1.8em auto;
+  padding: 0.4em 2.2em;
+  max-width: 92%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: center;
+  position: relative;
+}
+
+.article.col-story .alert-title {
+  display: block;
+  margin: 0 0 0.6em;
+  padding: 0;
+  background: transparent;
+  color: var(--alert-color, var(--md-accent));
+  border: none;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 0.88em;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  line-height: 1.4;
+  text-transform: none;
+  text-align: center;
+}
+
+.article.col-story .alert > p,
+.article.col-story .alert > ul,
+.article.col-story .alert > ol {
+  font-style: italic;
+  color: var(--md-text-sec);
+  font-size: 0.95em;
+  line-height: 1.95;
+  margin: 0.4em 0;
+  text-align: center;
+}
+.article.col-story .alert > ul,
+.article.col-story .alert > ol {
+  display: inline-block;
+  text-align: left;
+}
+.article.col-story .alert > p:first-of-type { margin-top: 0; }
+.article.col-story .alert > p:last-child    { margin-bottom: 0; }

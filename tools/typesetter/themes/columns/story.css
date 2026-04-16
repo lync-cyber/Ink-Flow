@@ -1,0 +1,255 @@
+/* ============================================================
+ * 人物故事 — 深赭棕 · 衬线字体 · 暖米纸 · 叙事温度
+ *
+ * Light: 深赭棕（#563322）+ 中赭（#8A5A3C），温暖米白
+ * Dark : 暖米黄（#D8B58A）+ 浅赭（#C8916E），深咖底
+ *
+ * 形态选用：
+ *   - callout-bare（无边框 + 居中斜体 + 留白替代边框）
+ *
+ * 栏目专属差异：
+ *   - 头部：居中大字距，by 作者
+ *   - H1：font-weight 400（文学感）
+ *   - H2：居中 + .h2-deco 装饰行（— · —）
+ *   - H3：italic 居中
+ *   - 引用：去边框 + 大引号 + 居中斜体
+ *   - 列表：◦ 空心点
+ *   - HR：✦
+ *   - 表格：去边框，仅底线（叙事而非数据）
+ * ============================================================ */
+
+/* ====================== Light ====================== */
+.article.col-story {
+  --md-text:        #2A1F18;
+  --md-text-sec:    #6A5347;
+  --md-text-ter:    #9A8A80;
+
+  --md-primary:        #563322;
+  --md-primary-soft:   #8A5A3C;
+  --md-on-primary:     #FBF8F3;
+  --md-accent:         #8A5A3C;
+  --md-accent-soft:    #B0876A;
+  --md-on-accent:      #FBF8F3;
+
+  --md-surface:     #FBF8F3;
+  --md-bg:          #F5EDE2;
+  --md-bg-deep:     #E8D9CA;
+  --md-border:      #C8B8A8;
+  --md-border-soft: #DCCFBC;
+
+  --md-link:           var(--md-primary);
+  --md-inline-code-fg: #6B3A1F;
+  --md-quote-mark:     #C8B8A8;
+  --md-quote-mark-size: 1.55em;
+  --md-bullet:         var(--md-accent);
+}
+
+/* ====================== Dark ====================== */
+.article.col-story.is-dark {
+  --md-text:        #E5DCCF;
+  --md-text-sec:    #B5A597;
+  --md-text-ter:    #7A6E62;
+
+  --md-primary:        #D8B58A;
+  --md-primary-soft:   #B58F66;
+  --md-on-primary:     #1A100A;
+  --md-accent:         #C8916E;
+  --md-accent-soft:    #9F7150;
+  --md-on-accent:      #1A100A;
+
+  --md-surface:     #1A130D;
+  --md-bg:          #221A12;
+  --md-bg-deep:     #120C08;
+  --md-border:      #3A2E22;
+  --md-border-soft: #2A2118;
+
+  --md-link:           var(--md-primary);
+  --md-inline-code-fg: var(--md-primary);
+  --md-quote-mark:     #4A3A2C;
+}
+
+/* ====================== 栏目头部 ====================== */
+.article.col-story .col-header {
+  margin-bottom: 2.2em;
+  text-align: center;
+}
+.article.col-story .col-badge {
+  margin-bottom: 1.2em;
+}
+.article.col-story .col-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.65em;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding-right: 0.65em;
+}
+.article.col-story .col-meta {
+  display: block;
+  margin: 0.5em 0 0;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.05em;
+}
+.article.col-story .col-header h1 {
+  font-size: calc(var(--md-font-size) * 1.55);
+  font-weight: 400;
+  line-height: 1.65;
+  margin: 0 0 0.6em;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.article.col-story .col-abstract {
+  border: none;
+  background: transparent;
+  padding: 0 1em;
+  font-style: italic;
+  font-size: 0.95em;
+  line-height: 2;
+  text-align: center;
+}
+.article.col-story .col-meta-strip {
+  margin-top: 0.7em;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+
+/* ====================== 标题 ====================== */
+.article.col-story h2 {
+  margin: var(--md-section-gap) 0 0.2em;
+  font-size: calc(var(--md-font-size) * 1.3);
+  font-weight: 400;
+  text-align: center;
+  letter-spacing: 0.05em;
+  line-height: 1.55;
+}
+.article.col-story .h2-deco {
+  display: block;
+  text-align: center;
+  color: var(--md-border);
+  font-size: 0.78em;
+  letter-spacing: 0.35em;
+  padding-right: 0.35em;
+  margin: 0.35em 0 1.4em;
+  user-select: none;
+}
+
+.article.col-story h3 {
+  margin: 1.8em 0 0.7em;
+  color: var(--md-primary);
+  font-size: calc(var(--md-font-size) * 1.06);
+  font-style: italic;
+  font-weight: 400;
+  text-align: center;
+}
+
+.article.col-story h4 {
+  margin: 1.4em 0 0.45em;
+  color: var(--md-primary);
+  font-size: var(--md-font-size);
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* ====================== 段落 ====================== */
+.article.col-story p {
+  margin: 0 0 1.25em;
+  line-height: 2.0;
+}
+
+/* ====================== 引用：去边框 + 大引号 + 居中 ====================== */
+.article.col-story blockquote {
+  margin: 1.8em 0;
+  padding: 0.2em 1.5em;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: center;
+}
+.article.col-story blockquote p {
+  margin: 0 0 0.55em;
+  color: var(--md-text-sec);
+  font-style: italic;
+  font-size: 1em;
+  line-height: 1.95;
+  text-align: center;
+}
+.article.col-story blockquote p:last-child { margin-bottom: 0; }
+
+/* ====================== 列表 ====================== */
+.article.col-story .li-bullet {
+  font-size: 1em;
+  padding-top: 0.08em;
+}
+.article.col-story .li-num {
+  color: var(--md-primary);
+  font-style: italic;
+  font-weight: 600;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.article.col-story ul > li,
+.article.col-story ol > li {
+  line-height: 1.9;
+}
+
+/* ====================== 分割线（✦） ====================== */
+.article.col-story hr {
+  opacity: 0.6;
+}
+.article.col-story .hr-deco {
+  font-size: 1em;
+  letter-spacing: 0.8em;
+  padding-right: 0.8em;
+  margin-bottom: 2.2em;
+}
+
+/* ====================== 代码块（衬线 lang） ====================== */
+.article.col-story .code-head .code-lang {
+  font-style: italic;
+}
+
+/* ====================== 图片（柔和阴影） ====================== */
+.article.col-story img {
+  border-radius: 3px;
+  box-shadow: 0 3px 14px rgba(86, 51, 34, 0.1);
+}
+.article.col-story figcaption {
+  font-style: italic;
+  text-align: right;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+/* ====================== 表格（仅横线，去边框） ====================== */
+.article.col-story table { border: none; }
+.article.col-story th {
+  background: transparent;
+  color: var(--md-primary);
+  border-bottom: 2px solid var(--md-primary);
+  border-top: 1px solid var(--md-border);
+  border-left: none;
+  border-right: none;
+  font-weight: 600;
+}
+.article.col-story td {
+  border: none;
+  border-bottom: 1px solid var(--md-bg-deep);
+}
+.article.col-story tbody tr:nth-child(2n) td { background: transparent; }
+
+/* ====================== 行内 ====================== */
+.article.col-story em { color: var(--md-text-sec); font-style: italic; }
+
+/* ====================== 尾部签名（居中 + 短线） ====================== */
+.article.col-story .col-sig {
+  text-align: center;
+}
+.article.col-story .col-sig-rule {
+  width: 40%;
+  margin: 0 auto 0.8em;
+}
+.article.col-story .col-sig-text {
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.06em;
+}
