@@ -89,7 +89,12 @@
   letter-spacing: -0.005em;
 }
 
-/* metabar 卡片：read_time / difficulty / prerequisites */
+/* metabar 卡片：read_time / difficulty / prerequisites
+ *
+ * 样式（不变）：浅蓝底 + accent 左竖条 + 等宽小字 + strong 加粗主色
+ * 布局（新增）：flex-wrap，read+难度 inline `·` 分隔；prereq 用
+ * .metabar-wide 通过 flex-basis:100% 强制独立成行，长前置不再挤换行。
+ */
 .article.col-tech .col-metabar {
   background: var(--md-bg);
   border-left: 3px solid var(--md-accent);
@@ -100,8 +105,20 @@
   font-family: 'SF Mono', Consolas, monospace;
   border-radius: 0 3px 3px 0;
   margin-top: 0.7em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 2px;
 }
 .article.col-tech .col-metabar strong { color: var(--md-primary); }
+.article.col-tech .col-metabar .metabar-sep {
+  color: var(--md-text-ter);
+  padding: 0 2px;
+}
+.article.col-tech .col-metabar .metabar-wide {
+  flex-basis: 100%;
+}
 
 /* ====================== 标题 ====================== */
 .article.col-tech h2 {

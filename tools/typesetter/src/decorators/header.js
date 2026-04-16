@@ -54,23 +54,35 @@
     }
 
     // ---- tech 专属：metabar（read_time / difficulty / prerequisites） ----
+    // 保持视觉样式不变（卡片 + `·` 分隔 + 等宽 + strong 加粗），
+    // 仅用 flex-wrap 调整布局：read+难度同行 inline，prereq 自动换行成独立一行，
+    // 避免长 prereq 把"难度"挤到换行处，造成断点错位。
+    // tech 不再生成通用 col-meta-strip（避免与 metabar 内的 read_time 重复）
     if (column === 'tech') {
-      const parts = [];
-      if (meta.read_time)    parts.push(`<strong>${escape(meta.read_time)}</strong>`);
-      if (meta.difficulty)   parts.push(`难度 ${escape(String(meta.difficulty))}`);
-      if (meta.prerequisites)parts.push(`前置：${escape(String(meta.prerequisites))}`);
-      if (parts.length) {
+      const inline = [];
+      if (meta.read_time) {
+        inline.push(`<span class="metabar-item"><strong>${escape(meta.read_time)}</strong></span>`);
+      }
+      if (meta.difficulty) {
+        inline.push(`<span class="metabar-item">难度 ${escape(String(meta.difficulty))}</span>`);
+      }
+      const inlineHtml = inline.join('<span class="metabar-sep">·</span>');
+      const wideHtml = meta.prerequisites
+        ? `<span class="metabar-item metabar-wide">前置：${escape(String(meta.prerequisites))}</span>`
+        : '';
+      if (inlineHtml || wideHtml) {
         const bar = document.createElement('div');
         bar.className = 'col-metabar';
-        bar.innerHTML = parts.join('  ·  ');
+        bar.innerHTML = inlineHtml + wideHtml;
         headerEl.appendChild(bar);
       }
+      return; // tech 跳过下方 col-meta-strip，已由 metabar 完整承载
     }
 
     // ---- 通用 col-meta-strip（次行 meta：阅读时长 / 作者 / 字数） ----
     if (column === 'industry') return;  // industry 用 tag pills 承载，不要 strip
     const stripParts = [];
-    if (column !== 'tech' && meta.read_time) stripParts.push(escape(meta.read_time));
+    if (meta.read_time) stripParts.push(escape(meta.read_time));
     if (column !== 'story' && meta.author && primary !== `by ${meta.author}`) {
       stripParts.push(`by ${escape(meta.author)}`);
     }
