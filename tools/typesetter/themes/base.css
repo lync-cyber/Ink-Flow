@@ -312,12 +312,37 @@
   margin: var(--md-block-gap) 0;
   text-align: center;
 }
+/* figure 内的 <img> 不再叠加默认的 auto margin（避免双倍上下空白） */
+.article figure img,
+.article figure a > img {
+  margin: 0 auto;
+}
 .article figcaption {
   font-size: 0.83em;
   color: var(--md-text-ter);
   margin-top: 0.5em;
   text-align: center;
   line-height: 1.6;
+}
+
+/* ============================================================
+ * Mermaid 渲染容器
+ *   - 由 src/parsers/mermaid-ext.js 输出 <div class="mermaid-diagram">
+ *   - SVG 自身样式由 mermaid lib 注入 inline；这里只控外层间距/对齐
+ * ============================================================ */
+.article .mermaid-diagram {
+  margin: var(--md-block-gap) 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.article .mermaid-diagram > svg {
+  max-width: 100%;
+  height: auto;
+}
+.article .mermaid-diagram .mermaid-loading {
+  color: var(--md-text-ter);
+  font-size: 13px;
+  padding: 12px;
 }
 
 /* ============================================================

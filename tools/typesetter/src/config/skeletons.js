@@ -37,11 +37,17 @@
   };
 
   // ---- 默认 pipeline（按执行顺序） ----
+  // mermaid / figureCaption 须在 codeBlock 之后、bullets/h2Line 之前：
+  //   - mermaid 把异步渲染结果填到占位 .mermaid-diagram 里
+  //   - figureCaption 把 <p><img></p> 升级为 <figure><img><figcaption>
+  //   两者都改 DOM 结构，需在结构相关 decorator 之前完成
   const DEFAULT_PIPELINE = [
     'header',
     'tagPills',
     'callout',
     'codeBlock',
+    'mermaid',
+    'figureCaption',
     'bullets',
     'hrDeco',
     'blockquote',

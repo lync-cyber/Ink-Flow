@@ -508,6 +508,9 @@ author: "李微"
 <!-- gfm-alert 依赖 ALERT_CLASSES + escapeHtml，必须在 config 之后 -->
 <script src="./src/parsers/gfm-alert.js"></script>
 
+<!-- mermaid 扩展（marked tokenizer + 缓存表）；mermaid lib 由 decorator 懒加载 -->
+<script src="./src/parsers/mermaid-ext.js"></script>
+
 <!-- hljs 适配（CDN 失败时也安全跳过） -->
 <script src="./src/hljs-adapter.js"></script>
 
@@ -517,6 +520,8 @@ author: "李微"
 <script src="./src/decorators/tag-pills.js"></script>
 <script src="./src/decorators/callout.js"></script>
 <script src="./src/decorators/code-block.js"></script>
+<script src="./src/decorators/mermaid.js"></script>
+<script src="./src/decorators/figure-caption.js"></script>
 <script src="./src/decorators/bullets.js"></script>
 <script src="./src/decorators/hr-deco.js"></script>
 <script src="./src/decorators/blockquote.js"></script>

@@ -527,8 +527,11 @@ def rule_image_references(lines: list[str], _config: dict, result: LintResult):
             continue
 
         # E1: 图片缺少 alt 文本
+        # typesetter 的 figureCaption decorator 会把 alt 自动渲染为 <figcaption>，
+        # 缺 alt 就丢失图注，需要警告。
         if re.search(r"!\[\]\(", ctx.text):
-            result.add("E1", "warning", ctx.line_num, "图片缺少 alt 文本（用作图注）")
+            result.add("E1", "warning", ctx.line_num,
+                       "图片缺少 alt 文本（typesetter 会把 alt 自动渲染为图注 figcaption）")
 
         # E3: 绝对路径
         if re.search(r"!\[.*\]\(file://", ctx.text) or re.search(r"!\[.*\]\([A-Z]:\\", ctx.text):
