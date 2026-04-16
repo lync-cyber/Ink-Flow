@@ -9,7 +9,7 @@ dependencies:
     - articles/{slug}/intermediate/draft/section-{N-1}.md
   config:
     - config/columns.yaml              # tone, skeleton, opening_strategies, human_voice_techniques
-    - config/markdown-extensions.md    # :::block 语法
+    - config/markdown-extensions.md    # 标准 Markdown + GFM Alerts 语法
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/domains/wechat-article/redline.md
@@ -32,7 +32,7 @@ dependencies:
   - 首 section 额外读 `opening_strategies.{brief.opening_style}`；若 `opening_style==auto`，用 `columns.{col}.default_opening` 或 `content_type_fallback.{content_type}`
   - `phrase_replacements` — 正向替换
   - `human_voice_techniques` — 人味技巧
-- `config/markdown-extensions.md` — `:::block` 扩展块语法
+- `config/markdown-extensions.md` — **只用标准 Markdown + GFM Alerts**（`:::block` 已废弃）
 
 ## Constraints
 
@@ -40,17 +40,41 @@ dependencies:
 - 每 section 至少一处代码引用或具体数字
 - 严格遵守 `phrase_replacements` 和 `redline.md` 的禁用模式
 - 按大纲视觉断点规划插入图/表/引用
-- `:::block` 使用遵循**内容驱动**：每篇最多 2-3 个
-  - **不可替代原则**：若 card/note 内容正文已讲，不要插入；正文加粗或 Markdown 表格通常够用
-  - `:::card` 仅用于正文未展开的结构化数据
-  - `:::note` 仅用于与正文论述方向不同的补充
-  - 不要为"满足大纲中视觉断点"而强行填充
 - 用户经验处标 `<!-- USER_FILL: {提示} -->`（publisher 前必须清理）
+
+### 允许的 Markdown 元素（唯一白名单）
+
+1. 标题 H1/H2/H3/H4（H1 全篇唯一）
+2. 段落 / `**加粗**` / `*斜体*` / `~~删除~~` / `` `行内代码` ``
+3. 代码块（必标语言） ` ```python ... ``` `
+4. 普通引用 `> text` —— 用于作者旁白、TL;DR
+5. **GFM Alerts**（5 种，替代旧 `:::note`）：
+   ```
+   > [!NOTE]       补充说明
+   > [!TIP]        建议
+   > [!IMPORTANT]  重要信息
+   > [!WARNING]    潜在风险
+   > [!CAUTION]    红线 / 不可逆
+   ```
+6. 有序/无序列表
+7. 表格（替代旧 `:::card`，用于 2-5 行结构化数据）
+8. 图片 `![caption](url)` / 链接 `[text](url)`
+9. 分割线 `---`
+10. `[N]` 上标引用标记（正文）+ 文末 H3 "参考文献" + 标准有序列表
+
+**禁止**：`:::card` `:::cta` `:::note` `:::footer` `:::references` `:::steps` `:::timeline`
+等所有 `:::block` 扩展。原因见 `config/markdown-extensions.md` 开头说明。
 
 ### Section 间分隔
 
 - 每个 `## {Section}` 之前（除第一个）必须 `---` 分割线
-- typesetter 依赖 `---` 渲染栏目主题分隔符
+- typesetter 依赖 `---` 渲染主题分隔线
+
+### GFM Alert 使用原则（内容驱动）
+
+- 每篇文章 Alert 总数 ≤ 4；每类 Alert 内容 ≤ 3 行
+- **不可替代原则**：Alert 只用在"正文顺序讲解会打断节奏"的场景
+- 正文已讲清的内容不要再放 Alert
 
 ## Format
 
@@ -67,18 +91,31 @@ tldr: "{summary}"   # story 栏目省略
 ---
 ```
 
-### Section 结构
+### 文章开头（TL;DR）
+
+非 story 栏目：H1 后紧跟一个 blockquote 作摘要（typesetter 会识别为 TL;DR 样式）。
+
+```markdown
+# {文章标题}
+
+> 一句话核心观点。读者 3 秒内看到的结论。
+```
+
+### Section 结构示例
 
 ```markdown
 ## {Section 标题}
 
 {正文，文内用 [N] 引用}
 
-:::card
-{栏目特化格式见 config/markdown-extensions.md}
-:::
+| 指标 | Baseline | 本方法 |
+|------|----------|--------|
+| AUROC | 98.8% | **99.6%** |
 
 {正文}
+
+> [!TIP]
+> 踩坑建议（≤3 行）
 
 <!-- USER_FILL: {建议补充内容} -->
 ```
@@ -86,33 +123,39 @@ tldr: "{summary}"   # story 栏目省略
 ### 视觉断点协作
 
 大纲每个断点标 `owner`：
-- `(writer:...)` — 本 agent 用 `:::block` 或 Markdown 实现
-- `(illustrator:...)` — illustrator 生成；writer 仅插占位 `<!-- FIGURE: fig-{NN} -->`
+- `(writer:table)` — Markdown 表格
+- `(writer:alert)` — GFM Alert
+- `(writer:quote)` — 普通引用
+- `(illustrator:svg)` / `(illustrator:mermaid)` — illustrator 生成；writer 仅插占位 `<!-- FIGURE: fig-{NN} -->`
 
-### 引用列表（academic 必须）
+### 参考文献（academic 必须）
 
 ```markdown
-:::references
+---
+
+### 参考文献
+
 1. Zhang et al. (2025). "Paper Title". *Journal Name*.
 2. [文章标题](https://url). 来源, 日期.
-:::
 ```
 
 即便 `<a>` 被微信剥离，读者从纯文本仍能读出"标题—来源—日期"。禁止只有链接无说明。
 
-### 文末固定区（所有栏目必须）
+### 文末运营区（所有栏目建议）
 
 ```markdown
-:::readmore
-{阅读原文引导文案}
-:::
+---
 
-:::footer
-{公众号署名 / 下期预告 / 转载说明}
-:::
+### 阅读原文
+
+{1-2 句引导文案；publisher 会统一包装}
+
+### 关于作者
+
+{公众号介绍 / 下期预告 / 转载说明}
 ```
 
-lint 在 wechat.md 阶段强制校验；plain.md 自动剥除。
+publisher 负责在 wechat.md 拼接固定运营模板；writer 写占位或自然段落即可。
 
 ## Contracts
 
@@ -126,3 +169,4 @@ lint 在 wechat.md 阶段强制校验；plain.md 自动剥除。
 
 - 与前 section 衔接自然
 - 视觉断点按大纲规划插入
+- 无任何 `:::block` 残留

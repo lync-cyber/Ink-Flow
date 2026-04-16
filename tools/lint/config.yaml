@@ -3,25 +3,21 @@
 # lint.py 在加载时合并 data 文件，构造完整配置
 
 rules:
-  block_syntax:
+  forbidden_blocks:
     enabled: true
     severity: error
-    # 合法 :::block 类型（与 typesetter components.jsx 同步）
-    valid_types:
-      - card
-      - cta
-      - footer
-      - media
-      - miniapp
-      - vote
-      - collection
-      - hashtag
-      - readmore
-      - label
-      - note
-      - references
-      - timeline
-      - steps
+    # :::block 扩展已退役。任何 ^::: 残留均视为错误。
+    # 迁移指引：config/markdown-extensions.md § 10 迁移表
+
+  gfm_alerts:
+    enabled: true
+    severity: warning
+    allowed_types:
+      - NOTE
+      - TIP
+      - IMPORTANT
+      - WARNING
+      - CAUTION
 
   typography:
     enabled: true
@@ -31,10 +27,6 @@ rules:
   theme_constraints:
     enabled: true
     severity: error
-
-  block_content:
-    enabled: true
-    severity: warning
 
   image_references:
     enabled: true
@@ -57,11 +49,6 @@ rules:
     enabled: true
     severity: error
     # 字号阈值来源：.claude/rules/data/typography-limits.yaml 的 svg 段
-
-  fixed_footer_area:
-    enabled: true
-    severity: error
-    # article.md 必须包含 :::readmore 和 :::footer
 
   forbidden_patterns:
     enabled: true

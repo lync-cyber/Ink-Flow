@@ -28,14 +28,15 @@ except ImportError:
 
 DEFAULT_CONFIG = {
     "rules": {
-        "block_syntax": {
+        "forbidden_blocks": {
             "enabled": True,
             "severity": "error",
-            "valid_types": [
-                "card", "cta", "footer", "media", "miniapp",
-                "vote", "collection", "hashtag", "readmore", "label", "note",
-                "references", "timeline", "steps",
-            ],
+            # 任何 ^::: 残留都视为错误。:::block 扩展已退役，迁移表见 config/markdown-extensions.md § 10。
+        },
+        "gfm_alerts": {
+            "enabled": True,
+            "severity": "warning",
+            "allowed_types": ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"],
         },
         "typography": {
             "enabled": True,
@@ -45,7 +46,6 @@ DEFAULT_CONFIG = {
             "allowed_headings": [2, 3, 4],
         },
         "theme_constraints": {"enabled": True, "severity": "error"},
-        "block_content": {"enabled": True, "severity": "warning"},
         "image_references": {"enabled": True, "severity": "warning"},
         "css_safety": {
             "enabled": True,
@@ -54,7 +54,7 @@ DEFAULT_CONFIG = {
             "forbidden_tags": ["<style", "<script"],
         },
         "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
-            # 与 lint-config.yaml 的 forbidden_patterns.words 同步（PyYAML 不可用时的回退）
+            # 与 .claude/rules/data/forbidden-phrases.yaml 同步（PyYAML 不可用时的回退）
             "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
             "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
             "毫无疑问", "不言而喻", "从某种意义上说", "在一定程度上",
@@ -132,7 +132,7 @@ def load_config(config_path: str | None) -> dict:
 
 
 def get_forbidden_words(config: dict) -> list[str]:
-    """从配置中读取禁用词列表（单一事实来源: lint-config.yaml）"""
+    """从配置中读取禁用词列表（单一事实来源: .claude/rules/data/forbidden-phrases.yaml）"""
     fp = config.get("rules", {}).get("forbidden_patterns", {})
     return fp.get("words", [])
 
@@ -154,16 +154,15 @@ def get_column_overrides(config: dict, column: str) -> dict:
 
 class LineContext:
     """每行的上下文状态"""
-    __slots__ = ("line_num", "text", "stripped", "in_frontmatter", "in_code_block", "in_custom_block")
+    __slots__ = ("line_num", "text", "stripped", "in_frontmatter", "in_code_block")
 
     def __init__(self, line_num: int, text: str, stripped: str,
-                 in_frontmatter: bool, in_code_block: bool, in_custom_block: bool):
+                 in_frontmatter: bool, in_code_block: bool):
         self.line_num = line_num
         self.text = text
         self.stripped = stripped
         self.in_frontmatter = in_frontmatter
         self.in_code_block = in_code_block
-        self.in_custom_block = in_custom_block
 
 
 def parse_frontmatter(lines: list[str]) -> dict:
@@ -196,7 +195,6 @@ def iter_lines(lines: list[str]):
     in_frontmatter = False
     frontmatter_seen = 0
     in_code_block = False
-    in_custom_block = False
 
     for i, raw_line in enumerate(lines, 1):
         text = raw_line.rstrip("\n\r")
@@ -207,39 +205,29 @@ def iter_lines(lines: list[str]):
             if frontmatter_seen == 0:
                 in_frontmatter = True
                 frontmatter_seen = 1
-                yield LineContext(i, text, stripped, True, False, False)
+                yield LineContext(i, text, stripped, True, False)
                 continue
             elif in_frontmatter:
                 in_frontmatter = False
                 frontmatter_seen = 2
-                yield LineContext(i, text, stripped, True, False, False)
+                yield LineContext(i, text, stripped, True, False)
                 continue
 
         if in_frontmatter:
-            yield LineContext(i, text, stripped, True, False, False)
+            yield LineContext(i, text, stripped, True, False)
             continue
 
         # 代码块追踪
         if stripped.startswith("```"):
             in_code_block = not in_code_block
-            yield LineContext(i, text, stripped, False, True, in_custom_block)
+            yield LineContext(i, text, stripped, False, True)
             continue
 
         if in_code_block:
-            yield LineContext(i, text, stripped, False, True, in_custom_block)
+            yield LineContext(i, text, stripped, False, True)
             continue
 
-        # :::block 追踪
-        if re.match(r"^:::\w+", stripped):
-            in_custom_block = True
-            yield LineContext(i, text, stripped, False, False, False)  # block opener 自身不算 "in block"
-            continue
-        if stripped == ":::":
-            in_custom_block = False
-            yield LineContext(i, text, stripped, False, False, False)
-            continue
-
-        yield LineContext(i, text, stripped, False, False, in_custom_block)
+        yield LineContext(i, text, stripped, False, False)
 
 
 # ============================================================
@@ -308,43 +296,52 @@ def split_sentences(text: str) -> list[str]:
     return [s for s in parts if s.strip()]
 
 
-def rule_block_syntax(lines: list[str], config: dict, result: LintResult):
-    """规则 A: :::block 语法正确性"""
-    valid_types = set(config["rules"]["block_syntax"].get("valid_types", []))
-    in_block = False
-    block_type = ""
-    block_start = 0
+def rule_forbidden_blocks(lines: list[str], config: dict, result: LintResult):
+    """规则 A: :::block 扩展已退役，任何 ^::: 残留都视为错误
+
+    迁移指引见 config/markdown-extensions.md § 10：
+    - :::note/:::warning → GFM Alert `> [!NOTE]` / `> [!WARNING]`
+    - :::card / :::cta → 普通段落或 Markdown 表格
+    - :::references → H3 "参考文献" + 标准有序列表
+    - :::footer / :::readmore → H3 "关于作者" / H3 "阅读原文"
+    - :::timeline / :::steps → 有序列表
+    """
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+        if ctx.stripped.startswith(":::"):
+            tag = ctx.stripped.lstrip(":").strip() or "(close)"
+            result.add("A1", "error", ctx.line_num,
+                       f"检测到已废弃的 :::block 语法 ({tag})；"
+                       "请改用标准 Markdown / GFM Alerts，见 config/markdown-extensions.md § 10 迁移表")
+
+
+def rule_gfm_alerts(lines: list[str], config: dict, result: LintResult):
+    """规则 N: GFM Alert 语法校验
+
+    合法语法：`> [!TYPE]` 位于 blockquote 首行，TYPE ∈ {NOTE, TIP, IMPORTANT, WARNING, CAUTION}
+    小写或未知类型视为 warning（某些渲染器会静默降级为普通 blockquote）。
+    """
+    alert_cfg = config["rules"].get("gfm_alerts", {})
+    allowed = {t.upper() for t in alert_cfg.get("allowed_types",
+                                                ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"])}
+
+    # 形如 > [!NOTE] 或 > [!tip] ；允许 blockquote 前导空格
+    pattern = re.compile(r"^\s*>\s*\[!([A-Za-z]+)\]\s*$")
 
     for ctx in iter_lines(lines):
         if ctx.in_frontmatter or ctx.in_code_block:
             continue
-
-        m = re.match(r"^:::(\S+)$", ctx.stripped)
-        if m:
-            new_type = m.group(1)
-            if not in_block:
-                # 开始标记
-                in_block = True
-                block_type = new_type
-                block_start = ctx.line_num
-                # A2: 类型合法性
-                if new_type not in valid_types:
-                    result.add("A2", "warning", ctx.line_num, f"未知 :::block 类型: {new_type}")
-            else:
-                # A3: 嵌套
-                result.add("A3", "error", ctx.line_num,
-                           f"检测到 :::block 嵌套（外层 {block_type} 从 L{block_start} 开始）")
-                block_type = new_type
-                block_start = ctx.line_num
-        elif ctx.stripped == ":::" and in_block:
-            # 闭合标记
-            in_block = False
-            block_type = ""
-
-    # A1: 文件结束时未闭合
-    if in_block:
-        result.add("A1", "error", block_start,
-                    f"未闭合的 :::{block_type} block（从第 {block_start} 行开始）")
+        m = pattern.match(ctx.text)
+        if not m:
+            continue
+        raw = m.group(1)
+        if raw != raw.upper():
+            result.add("N1", "warning", ctx.line_num,
+                       f"GFM Alert 类型应为大写: [!{raw}] → [!{raw.upper()}]")
+        if raw.upper() not in allowed:
+            result.add("N2", "warning", ctx.line_num,
+                       f"未知 GFM Alert 类型: [!{raw}]（允许: {sorted(allowed)}）")
 
 
 def rule_typography(lines: list[str], config: dict, result: LintResult):
@@ -383,12 +380,7 @@ def rule_typography(lines: list[str], config: dict, result: LintResult):
         paragraph_start = 0
 
     for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
-            flush_paragraph()
-            continue
-
-        # 跳过 :::block 开闭标记行
-        if re.match(r"^:::", ctx.stripped):
+        if ctx.in_frontmatter or ctx.in_code_block:
             flush_paragraph()
             continue
 
@@ -553,62 +545,6 @@ def rule_image_references(lines: list[str], _config: dict, result: LintResult):
         result.add("E2", "warning", 0, "文中有 [N] 引用标记但缺少文末编号列表")
 
 
-def rule_block_content(lines: list[str], _config: dict, result: LintResult):
-    """规则 D: 自定义 block 内容结构"""
-    current_block_type = None
-    block_start = 0
-    block_content: list[str] = []
-
-    def check_block():
-        if not current_block_type or not block_content:
-            return
-        content = "\n".join(block_content)
-
-        # D1: :::vote 格式
-        if current_block_type == "vote":
-            if "？" not in content and "?" not in content:
-                result.add("D1", "warning", block_start,
-                            ":::vote 缺少问题分隔符（？或 ?）")
-            if "/" not in content:
-                result.add("D1", "warning", block_start,
-                            ":::vote 缺少选项分隔符（/）")
-
-        # D2: :::collection 格式
-        elif current_block_type == "collection":
-            if "：" not in content and ":" not in content:
-                result.add("D2", "warning", block_start,
-                            ":::collection 缺少系列标题分隔符（：）")
-            if "本篇" not in content:
-                result.add("D2", "warning", block_start,
-                            ":::collection 缺少当前文章标记（本篇）")
-
-        # D3: :::hashtag 格式
-        elif current_block_type == "hashtag":
-            if "#" not in content:
-                result.add("D3", "warning", block_start,
-                            ":::hashtag 缺少 # 前缀标签")
-
-    for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block:
-            continue
-
-        m = re.match(r"^:::(\S+)$", ctx.stripped)
-        if m:
-            check_block()
-            current_block_type = m.group(1)
-            block_start = ctx.line_num
-            block_content = []
-        elif ctx.stripped == ":::":
-            check_block()
-            current_block_type = None
-            block_content = []
-        elif current_block_type:
-            block_content.append(ctx.text)
-
-    # 处理未闭合 block 的内容（A1 已报告未闭合）
-    check_block()
-
-
 def rule_article_structure(lines: list[str], column: str, config: dict, result: LintResult):
     """规则 S: 文章结构完整性（确定性检查，减少 LLM 验证负担）"""
     theme_id = COLUMN_ALIASES.get(column, column) if column else ""
@@ -666,21 +602,6 @@ def rule_article_structure(lines: list[str], column: str, config: dict, result: 
             result.add("S5", "warning", ctx.line_num,
                         "检测到 TODO 标记（发布前应处理）")
 
-    # S6: :::block 闭合后无空行（影响后续段落解析）
-    prev_was_close = False
-    for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block:
-            prev_was_close = False
-            continue
-        if ctx.stripped == ":::":
-            prev_was_close = True
-            continue
-        if prev_was_close and ctx.stripped:
-            # 紧接 ::: 闭合标记后有内容但无空行
-            result.add("S6", "warning", ctx.line_num,
-                        ":::block 闭合标记后建议空一行再写正文（避免解析粘连）")
-        prev_was_close = False
-
     # S7: frontmatter column 与文件实际栏目一致性（信息性）
     if fm.get("column") and column and fm["column"] != column:
         fm_col = fm["column"]
@@ -727,28 +648,6 @@ def rule_svg_readability(lines: list[str], config: dict, result: LintResult):
             in_svg = False
 
 
-def rule_fixed_footer_area(lines: list[str], column: str, config: dict, result: LintResult):
-    """规则 X: 文末固定区 — article.md 必须包含 :::readmore 和 :::footer 块
-
-    运营元素（阅读原文入口、下期预告/公众号署名）是微信公众号文章的固定结构，
-    缺失会丢失引流与 CTA。在 article.md（typesetter 输入）阶段强制校验。
-    plain.md 不适用此规则（format-exporting 会主动剥除）。
-    """
-    full_text = "\n".join(lines)
-    has_readmore = bool(re.search(r"^:::readmore\b", full_text, re.MULTILINE))
-    has_footer = bool(re.search(r"^:::footer\b", full_text, re.MULTILINE))
-
-    # 最后一行行号（便于定位缺失错误）
-    last_line = len(lines) if lines else 0
-
-    if not has_readmore:
-        result.add("X1", "error", last_line,
-                   "article.md 缺少 :::readmore 块（阅读原文引导，运营必需）")
-    if not has_footer:
-        result.add("X2", "error", last_line,
-                   "article.md 缺少 :::footer 块（公众号署名/下期预告，运营必需）")
-
-
 def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: LintResult):
     """规则 T: typesetter 兼容性检查"""
     theme_id = COLUMN_ALIASES.get(column, column) if column else ""
@@ -773,30 +672,21 @@ def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: 
             result.add("T5", "warning", ctx.line_num,
                         "检测到未替换的图表占位符（format-exporting 应已替换为内联内容）")
 
-    # T6: 引用文献应使用 :::references
+    # T6: 有 [N] 引用标记时应有 H3 "参考文献" 区（标准 Markdown，取代旧 :::references）
     has_citation = bool(re.search(r"\[\d+\]", full_text))
-    has_ref_block = bool(re.search(r"^:::references", full_text, re.MULTILINE))
-    if has_citation and not has_ref_block:
-        # 检查是否有普通有序列表形式的引用
-        has_trailing_ol = False
-        for ctx in iter_lines(lines):
-            if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
-                continue
-            if re.match(r"^\d+\.\s+.*\[.*\]\(http", ctx.stripped):
-                has_trailing_ol = True
-                break
-        if has_trailing_ol:
-            result.add("T6", "warning", 0,
-                        "引用文献建议使用 :::references 块包裹（紧凑排版，提升移动端体验）")
+    has_ref_heading = bool(re.search(r"^#{2,4}\s*参考文献\s*$", full_text, re.MULTILINE))
+    if has_citation and not has_ref_heading:
+        result.add("T6", "warning", 0,
+                    "文中含 [N] 引用但缺少 H3 '参考文献' 段（publisher 会基于此段生成引用列表）")
 
 
 def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
-    """规则 G: 禁用词检查（从 lint-config.yaml 的 forbidden_patterns.words 读取）"""
+    """规则 G: 禁用词检查（从 .claude/rules/data/forbidden-phrases.yaml 读取）"""
     words = get_forbidden_words(config)
     if not words:
         return
     for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block or ctx.in_custom_block:
+        if ctx.in_frontmatter or ctx.in_code_block:
             continue
         for word in words:
             if word in ctx.text:
@@ -835,8 +725,11 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
     result = LintResult(file_path, column)
 
     # 按类别执行规则
-    if rules_cfg.get("block_syntax", {}).get("enabled", True):
-        rule_block_syntax(lines, config, result)
+    if rules_cfg.get("forbidden_blocks", {}).get("enabled", True):
+        rule_forbidden_blocks(lines, config, result)
+
+    if rules_cfg.get("gfm_alerts", {}).get("enabled", True):
+        rule_gfm_alerts(lines, config, result)
 
     if rules_cfg.get("typography", {}).get("enabled", True):
         rule_typography(lines, config, result)
@@ -850,9 +743,6 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
     if rules_cfg.get("image_references", {}).get("enabled", True):
         rule_image_references(lines, config, result)
 
-    if rules_cfg.get("block_content", {}).get("enabled", True):
-        rule_block_content(lines, config, result)
-
     if rules_cfg.get("forbidden_patterns", {}).get("enabled", True):
         rule_forbidden_patterns(lines, config, result)
 
@@ -865,15 +755,6 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
     if rules_cfg.get("svg_readability", {}).get("enabled", True):
         rule_svg_readability(lines, config, result)
 
-    # 文末固定区校验 — 仅对 article.md（typesetter 输入）启用；
-    # plain.md 主动剥除运营块，不参与校验。
-    if rules_cfg.get("fixed_footer_area", {}).get("enabled", True):
-        # 仅对位于 output/ 下的 article.md 启用（typesetter 输入）；
-        # drafts/article.md 等中间产物不触发此规则。
-        p = Path(file_path)
-        if p.name == "article.md" and p.parent.name == "output":
-            rule_fixed_footer_area(lines, column, config, result)
-
     return result
 
 
@@ -881,7 +762,7 @@ def main():
     parser = argparse.ArgumentParser(description="InkFlow Markdown Lint — 文章格式校验工具")
     parser.add_argument("file", help="要校验的 Markdown 文件路径")
     parser.add_argument("--column", default="", help="栏目名（如未指定，从 frontmatter 读取）")
-    parser.add_argument("--config", default=None, help="配置文件路径（默认: lint-config.yaml）")
+    parser.add_argument("--config", default=None, help="配置文件路径（默认: tools/lint/config.yaml）")
     args = parser.parse_args()
 
     if not Path(args.file).exists():
@@ -891,7 +772,7 @@ def main():
     # 默认配置路径
     config_path = args.config
     if not config_path:
-        default_cfg = Path(__file__).parent / "lint-config.yaml"
+        default_cfg = Path(__file__).parent / "config.yaml"
         if default_cfg.exists():
             config_path = str(default_cfg)
 

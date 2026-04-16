@@ -1,316 +1,228 @@
-# Markdown 扩展语法参考
+# Markdown 语法规约（InkFlow × 微信公众号）
 
-> Writer 输出与 typesetter 渲染共用一套语法，本文件为 `:::block` 栏目特化格式的**单一事实来源**。
-> 标准 Markdown + `:::block` 扩展块语法。Typesetter（`tools/typesetter/index.html`）为排版引擎。
+> **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出、typesetter 渲染共用一套语法。
 >
-> **职责分工**: 本文件定义组件"怎么写"（语法、格式、栏目差异）。"选什么组件"的决策由 writer/illustrator agent 结合 `config/columns.yaml` 的 `suggested_components` 字段做判断。
+> **核心原则**：只使用**标准 Markdown + GFM Alerts**。不发明新容器语法。
+> 原因：任何非标准扩展块（如 `:::card`、`:::footer`）粘贴到微信公众号后台都会被剥离样式，
+> 导致本地预览与线上成品严重偏离。本规约在 2026 年重构时**全面废弃** `:::block` 体系。
+>
+> **职责分工**：本文件定义"能写什么"。"写什么最合适"由 writer/illustrator agent 结合
+> `config/columns.yaml` 的 `suggested_components` 字段判断。
 
 ---
 
-## 标准 Markdown 元素
+## 1. 标准 Markdown 元素
 
-typesetter 会根据栏目主题自动应用不同样式（颜色、标记符号、布局方式）。
-
-| 元素 | 语法 | 栏目差异化 |
-|------|------|-----------|
-| H1 标题 | `# title` | 首个 H1 渲染为栏目标识+标题区（每栏目布局不同） |
-| H2 标题 | `## heading` | academic=底线, industry=色块, tech=左侧色条+monospace, story=居中装饰 |
-| H3 标题 | `### heading` | academic=左边框, industry=圆点, tech=圆点前缀+monospace, story=斜体居中 |
-| 段落 | 自然段落 | story 行高 2.0，其余 1.75 |
-| 引用 | `> text` | story=居中大引号, tech=提示块（含💡时）, 其余=左侧色条 |
-| 无序列表 | `- item` | academic=■, industry=→+交替背景, tech=▸, story=空心圆 |
-| 有序列表 | `1. item` | tech=编号徽章，其余=数字加点 |
-| 代码块 | ` ```lang ``` ` | tech 头栏用 primary 色，其余用 #2c3e50 |
-| 表格 | `\| col \| col \|` | 表头 primary 背景，末列 accent 色 |
-| 分割线 | `---` | academic=§, industry=色条, tech=· · ·, story=圆点装饰 |
-| 图片 | `![caption](url)` | story 图注右对齐+斜体，其余居中 |
-
-### 内联格式
-
-| 语法 | 渲染效果 |
-|------|---------|
-| `**bold**` | 加粗，文字色=primary |
-| `*italic*` | 斜体 |
-| `` `code` `` | 等宽背景色块，文字色=primary |
-| `~~text~~` | accent 色虚下划线 |
-| `[text](url)` | accent 色链接+底线 |
-| `[1]` | accent 色上标引用 `[1]` |
+| 元素 | 语法 | 渲染说明 |
+|------|------|---------|
+| H1 标题 | `# title` | 全篇唯一；typesetter 所有主题均有差异化渲染（居中/左带线/底线等） |
+| H2 标题 | `## heading` | default=色块，simple=左色条，grace=圆角色块+阴影 |
+| H3 标题 | `### heading` | default=左色条，simple=前缀破折号，grace=左色条+底虚线 |
+| H4 标题 | `#### heading` | 所有主题：主色加粗文字 |
+| 段落 | 自然段落 | story 栏目 line-height=2.0，其余 1.75 |
+| 引用 | `> text` | 各主题边色条，浅底 |
+| 无序列表 | `- item` | 统一实心圆点 |
+| 有序列表 | `1. item` | 统一阿拉伯数字 |
+| 代码块 | ` ```lang ` | 深色主题，语言标记必填（触发高亮） |
+| 行内代码 | `` `code` `` | 浅色背景 + 主色文字 |
+| 表格 | `\| col \| col \|` | 表头主色背景、白字；单元格细边框 |
+| 分割线 | `---` | 虚线或渐变线（主题差异） |
+| 图片 | `![caption](url)` | 居中，`caption` 自动作为图注 |
+| 链接 | `[text](url)` | 主色文字 + 主色下划线 |
+| 强调 | `**bold**` / `*italic*` / `~~del~~` | 加粗文字着主色 |
 
 ---
 
-## 摘要区（TL;DR）
+## 2. GFM Alerts（唯一允许的"容器"扩展）
 
-首个 H1 后紧跟的 blockquote 自动渲染为文章摘要（academic 栏目左侧 accent 色条，其他栏目各有样式）。
+**5 种类型**，由 GitHub 定义，typesetter 基于 [marked-alert](https://github.com/bent10/marked-extensions) 渲染。
+
+```markdown
+> [!NOTE]
+> 补充说明，不影响主线阅读。
+
+> [!TIP]
+> 建议或最佳实践，读者可直接采纳。
+
+> [!IMPORTANT]
+> 关键信息，读者必须关注。
+
+> [!WARNING]
+> 潜在风险，提醒读者规避。
+
+> [!CAUTION]
+> 红线 / 致命错误 / 不可逆操作。
+```
+
+**用法映射**（替代旧 `:::note`）：
+
+| 场景 | 用哪个 |
+|------|--------|
+| 非主线补充、历史背景、相关链接 | `[!NOTE]` |
+| 最佳实践、快捷写法 | `[!TIP]` |
+| 必读的前置条件 | `[!IMPORTANT]` |
+| 常见陷阱、性能坑 | `[!WARNING]` |
+| 数据丢失 / 不可逆 / 红线 | `[!CAUTION]` |
+
+**约束**：
+- 每类 ≤ 3 行内容；超过用普通段落或拆分
+- 每篇文章 Alert 总数建议 ≤ 4
+- 不嵌套 Alert
+- 首行后可选自定义标题：`> [!TIP] 我的建议`
+
+---
+
+## 3. 摘要区（TL;DR）
+
+**非 story 栏目必须**：H1 之后紧跟一个 blockquote。typesetter 会把它作为文章摘要渲染。
 
 ```markdown
 # 文章标题
 
-> 这段会被渲染为摘要/导语，而非普通引用。
+> 一句话核心观点。读者 3 秒内看到的结论。
 ```
 
-story 栏目不使用 TL;DR（无摘要区）。
+**story 栏目禁用 TL;DR** —— 故事直接开场，摘要会破坏叙事节奏。
 
 ---
 
-## `:::block` 扩展块语法
+## 4. 引用文献（标准有序列表 + 上标标记）
 
-以 `:::type` 开始，`:::` 结束，中间为内容。
-
-### :::card — 信息卡片
-
-**适用**: key-value 环境信息、数据指标对比、人物简档、事件概要（≤5 行内容）
-**不适用**: 超过 5 行内容（改用 Markdown 表格）；纯装饰性列举（用正文即可）
-
-每个栏目渲染为不同卡片类型：
-
-**academic**（数据对比卡）— 第1行=标题，数据行用 `/` 分隔指标，`*` 开头=脚注：
+文内用 `[1]` 上标标记；文末用**标准有序列表**汇总。
 
 ```markdown
-:::card
-表1：主流方法性能对比
-PatchCore 99.1% / EfficientAD 98.8% / ★本文方法 99.6%
-* AUROC指标，15类缺陷加权平均
-:::
-```
-
-**industry**（新闻卡）— 第1行=标签，数字行=日期，后续=标题+描述：
-
-```markdown
-:::card
-融资
-2025.12.15
-XX公司完成B轮2亿融资
-专注工业AI视觉检测，估值达15亿
-:::
-```
-
-**tech**（环境/需求卡）— 第1行=标题，后续为 key: value 键值对：
-
-```markdown
-:::card
-⚙️ 环境要求
-Python: ≥3.10
-PyTorch: ≥2.0
-GPU: RTX 3060+
-:::
-```
-
-**story**（人物档案卡）— 第1行=标签，后续为人物信息：
-
-```markdown
-:::card
-人物档案
-张工，38岁
-某汽车零部件厂质检主管
-从业15年，经历3次产线升级
-:::
-```
-
-### :::cta — 行动引导
-
-**适用**: 文末引导读者行动（收藏/分享/关注/实操）；每篇最多 1 个
-**不适用**: 文中中间位置（CTA 应在文末或文末前一段）
-另见: `writing-guiding` skill 的栏目 CTA 推荐表
-
-每栏目不同 CTA 样式：
-
-```markdown
-:::cta
-可选的自定义文本（如 GitHub 仓库 URL）
-:::
-```
-
-- academic: 「阅读原文」居中按钮
-- industry: 「订阅周报」+ 关注按钮
-- tech: 开源仓库展示 + Star 按钮
-- story: 「分享给 TA」边框按钮
-
-### :::footer — 文末区
-
-**适用**: 每篇文章末尾（公众号名称、tagline、二维码、往期推荐）
-
-```markdown
-:::footer
-公众号名称
-:::
-```
-
-自动注入栏目 tagline、二维码位、往期推荐、版权声明。
-
-### :::media — 音视频嵌入
-
-```markdown
-:::media
-音频标题 / 视频标题
-:::
-```
-
-渲染为音频播放器 + 视频卡片占位。实际发布需在公众号后台插入 `<mpvoice>` / `<mpvideo>`。
-
-### :::miniapp — 小程序卡片
-
-```markdown
-:::miniapp
-小程序名称 — 简短描述
-:::
-```
-
-每栏目不同图标（academic=📊, industry=🗺, tech=💻, story=👤）。
-
-### :::vote — 投票
-
-```markdown
-:::vote
-你更看好哪种方案？选项A / 选项B / 选项C
-:::
-```
-
-用 `？`或 `?` 分隔问题与选项，选项用 `/` 分隔。
-
-### :::collection — 合集导航
-
-**适用**: 系列文章导航（多篇连载、专题系列）
-
-```markdown
-:::collection
-系列名称：第1篇标题 / 第2篇（本篇）/ 第3篇标题
-:::
-```
-
-含"本篇"的条目自动高亮为当前文章。
-
-### :::hashtag — 话题标签
-
-```markdown
-:::hashtag
-#工业AI #视觉检测 #边缘部署
-:::
-```
-
-### :::readmore — 阅读原文引导
-
-```markdown
-:::readmore
-可选的自定义提示文本
-:::
-```
-
-不填则使用栏目默认文案。
-
-### :::note — 提示/注释
-
-**适用**: 重要提示、常见误区澄清、注意事项（≤3 行）
-**不适用**: 超过 3 行的说明（融入正文段落）；纯补充信息（用 blockquote）
-
-单行提示：
-
-```markdown
-:::note
-这是一条提示信息，会显示为带左侧色条的 💡 提示块。
-:::
-```
-
-多行提示（第一行加粗为标题，后续行各自独立渲染）：
-
-```markdown
-:::note
-常见误解 vs 真相
-"调了 cancel() 就停了" — 多数框架只标记状态，不终止执行中的 LLM 调用。
-"超时会自动清理资源" — 超时触发后，已发出的 API 请求仍在运行。
-:::
-```
-
-### :::references — 引用文献
-
-**适用**: academic 栏目必须；其他栏目有外部引用时使用
-**不适用**: 无外部引用的文章（story 栏目通常不需要）
-
-紧凑排版的文末引用区，12px 字号、accent 色编号、浅色背景。替代普通有序列表，提升移动端阅读体验。
-
-```markdown
-:::references
-1. Zhang et al. (2025). "Paper Title". *Journal Name*.
-2. [文章标题](https://url). 来源, 日期.
-3. Li et al. (2024). "Paper Title". *Conference*.
-:::
-```
-
-学术引用格式：`作者 (年份). "标题". *期刊/会议*.`
-网页引用格式：`[标题](URL). 来源, 日期.`
-
-### :::timeline — 时间轴
-
-**适用**: 3+ 个时间节点的事件演进（项目里程碑、版本历史）
-**不适用**: 仅 2 个时间点（用正文叙述）；无时间维度的列举（用列表）
-
-纵向时间轴，每行格式为 `日期 描述`：
-
-```markdown
-:::timeline
-2024-03 项目立项，完成技术选型
-2024-06 v1.0 发布，支持基础检测
-2024-12 v2.0 发布，引入 AI 模型
-:::
-```
-
-### :::steps — 步骤条
-
-**适用**: 线性操作步骤（安装流程、配置过程），3-6 步为宜
-**不适用**: 有分支判断的流程（用 Mermaid 流程图）；超过 6 步（拆分为多个 section）
-
-编号步骤卡片，每行格式为 `Step N 标题: 描述`（或 `N. 标题: 描述`）：
-
-```markdown
-:::steps
-Step 1 环境准备: 安装 Python 3.10+ 和 PyTorch
-Step 2 数据导入: 将训练数据放入 data/ 目录
-Step 3 模型训练: 运行 train.py 启动训练
-:::
-```
-
-### :::label — 区段标签（开发模式）
-
-```markdown
-:::label
-文章头部区 [N]
-:::
-```
-
-仅在 typesetter 预览中可见，用于标注区段。`[N]` 显示为红色新标记。
+近年异常检测方法有突破性进展[1][2]。
 
 ---
 
-## 引用文献
+### 参考文献
 
-使用标准上标引用 `[N]` 标记文内引用，文末用 `:::references` 块汇总（紧凑排版）：
-
-```markdown
-近年来，无监督异常检测展现出了突破性潜力[1]。
-
-:::references
-1. Zhang et al. (2025). "Industrial Anomaly Detection via Transformer". *CVPR 2025*.
-2. Li et al. (2024). "EfficientAD: Accurate Visual Anomaly Detection". *NeurIPS 2024*.
-3. [边缘AI部署实战](https://example.com/edge-ai). TechBlog, 2025-01.
-:::
+1. Zhang et al. (2025). "Industrial Anomaly Detection". *CVPR 2025*.
+2. Li et al. (2024). "EfficientAD". *NeurIPS 2024*.
+3. [边缘 AI 部署实战](https://example.com/edge-ai). TechBlog, 2025-01.
 ```
 
-academic 栏目必须包含文末引用列表。引用统一使用 `:::references` 而非普通有序列表。
+- **academic 栏目必须**包含文末参考文献列表
+- 格式：学术引用 `作者 (年份). "标题". *期刊*.`；网页引用 `[标题](URL). 来源, 日期.`
+- 禁止只放 URL 不写说明；微信会剥链接，读者必须能从纯文本读出来源
 
 ---
 
-## 数据指标展示
+## 5. 图表
 
-使用 `:::card` 块展示数据指标。academic 栏目的 card 会自动解析 `/` 分隔的指标行为并排数据展示。
+### 5.1 Mermaid（线性流程、简单树）
 
-需高亮的指标加 `★` 前缀。
+```markdown
+​```mermaid
+flowchart LR
+  A[输入] --> B[处理] --> C[输出]
+​```
+```
+
+typesetter 在预览时渲染为 SVG。发布前由 `tools/render/mermaid.py` 转为内联 SVG，
+或者由 illustrator agent 直接产出 SVG。
+
+### 5.2 内联 SVG（精确图表、循环、数据可视化）
+
+```html
+<svg viewBox="0 0 640 360" ...>
+  <!-- 内联 SVG，遵守 typography-limits.yaml 的 svg 段硬约束 -->
+</svg>
+```
+
+微信特有约束（禁 id 属性、禁 `<style>/<script>/<a>`）详见
+`.claude/rules/data/typography-limits.yaml` 的 `svg_wechat:` 段。
 
 ---
 
-## 栏目特有约定
+## 6. 结构化数据 —— 用 Markdown 表格代替 `:::card`
+
+旧 `:::card` 的**所有用途**都可以用标准 Markdown 表格完成，且兼容性更好：
+
+```markdown
+| 环境 | 版本要求 |
+|------|----------|
+| Python | ≥ 3.10 |
+| PyTorch | ≥ 2.0 |
+| GPU | RTX 3060+ |
+```
+
+如果数据只有 2-3 行、且需要突出某行，用**加粗行**代替卡片高亮：
+
+```markdown
+| 方法 | AUROC |
+|------|-------|
+| PatchCore | 99.1% |
+| EfficientAD | 98.8% |
+| **本文方法** | **99.6%** |
+```
+
+---
+
+## 7. 时间轴、步骤 —— 用标准列表
+
+### 时间轴（旧 `:::timeline`）
+
+```markdown
+- **2024-03** 项目立项，完成技术选型
+- **2024-06** v1.0 发布，支持基础检测
+- **2024-12** v2.0 发布，引入 AI 模型
+```
+
+### 步骤（旧 `:::steps`）
+
+```markdown
+1. **环境准备** — 安装 Python 3.10+ 和 PyTorch
+2. **数据导入** — 将训练数据放入 `data/` 目录
+3. **模型训练** — 运行 `train.py` 启动训练
+```
+
+---
+
+## 8. 文末运营区（约定俗成，无特殊语法）
+
+公众号文章末尾固定结构，用**H3 标题 + 正文段落**组织。
+typesetter 不再强制校验；publisher 按模板拼接。
+
+```markdown
+---
+
+### 阅读原文
+
+{一段描述性文字，引导读者点击"阅读原文"查看 GitHub 仓库 / 原始链接}
+
+### 关于作者
+
+{公众号介绍、往期推荐链接、下期预告}
+```
+
+可选：`#话题 #标签` 直接写在段落里，微信后台有独立的 tag 输入栏。
+
+---
+
+## 9. 栏目特有约定
 
 | 栏目 | 特有约定 |
 |------|---------|
-| academic | 必须有文末引用列表；H1 后 blockquote 作为摘要 |
-| industry | 通常 ≤3 sections；card 用于新闻/事件 |
-| tech | 代码块是核心元素；card 用于环境需求 |
-| story (story) | 无 TL;DR；行高 2.0；引号居中显示；card 用于人物档案 |
+| academic | 必须有文末参考文献列表；H1 后必须有 TL;DR blockquote |
+| industry | 通常 ≤3 个 section；表格用于事件/数据对比 |
+| tech | 代码块是核心元素，必标语言；表格用于环境需求 |
+| story | **禁用 TL;DR**；行高 2.0；引用用 `> text` 即可 |
+
+---
+
+## 10. 迁移提示（从 `:::block` 体系迁移）
+
+| 旧语法 | 新写法 |
+|--------|--------|
+| `:::card` | Markdown 表格 / 加粗行 |
+| `:::note` | `> [!NOTE]` / `> [!TIP]` |
+| `:::cta` | 段落 + H3，或直接写阅读原文引导 |
+| `:::footer` | H3 "关于作者" + 段落 |
+| `:::readmore` | H3 "阅读原文" + 段落 |
+| `:::references` | H3 "参考文献" + 标准有序列表 |
+| `:::timeline` | 无序列表，日期加粗 |
+| `:::steps` | 有序列表，步骤名加粗 |
+| `:::hashtag` | 段落内 `#标签 #标签` |
+| `:::vote` / `:::collection` / `:::miniapp` / `:::media` | 段落 + 普通 `[阅读原文](url)` 链接；交互组件发布时在公众号后台插入 |
+| `:::label` | 删除（仅调试标记） |

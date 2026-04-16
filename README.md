@@ -39,15 +39,15 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
 
 config/                     # 项目配置（纳入版本管理）
   ├── inkflow.yaml           # 项目配置 + stage 契约
-  ├── columns.yaml           # 栏目统一配置（视觉+业务）
+  ├── columns.yaml           # 栏目统一配置（视觉+业务+typesetter 预设）
   ├── artifact-layout.yaml   # 产物路径约定
-  └── markdown-extensions.md # :::block 语法说明
+  └── markdown-extensions.md # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
 
 styles/                     # 个人化风格档案（用户生成，升级不覆盖）
   └── {profile}/style-profile.md
 
 tools/                      # 工具链
-  ├── wechat-typesetter/    # 排版工具（HTML 渲染）
+  ├── typesetter/           # 轻量级排版器（marked.js + 3 主题 + 栏目预设）
   ├── lint/                 # 格式校验脚本 + 配置
   ├── render/               # mermaid / svg-sanitize / theme-sync
   └── bootstrap.sh          # 框架部署/升级脚本
@@ -97,7 +97,7 @@ brief → research → outline → draft ∥ figures → audit → polish → pu
 - `brief`: 用户交互式填写写作指令卡
 - `research`: 调研 + 事实收集（可跳过）
 - `outline`: 大纲 + 视觉断点规划 → **Checkpoint 1**
-- `draft`: 逐 section 写作（含 Markdown 扩展标记）
+- `draft`: 逐 section 写作（标准 Markdown + GFM Alerts）
 - `figures`: 品牌色驱动生成 SVG/Mermaid（与 draft 并行）
 - `audit`: 六维审校（只审不改）
 - `polish`: 基于审校报告去 AI 味润色 → **Checkpoint 2**
@@ -110,7 +110,7 @@ brief → research → outline → draft ∥ figures → audit → polish → pu
 | orchestrator | opus | 全流程 | 编排 pipeline、调度子 agent、用户交互 |
 | researcher | sonnet | research | Web 调研、事实收集、代码片段 |
 | outliner | opus | outline | 结构设计、视觉断点规划 |
-| writer | opus | draft | 逐 section 写作，使用 Markdown 扩展标记 |
+| writer | opus | draft | 逐 section 写作（标准 Markdown + GFM Alerts） |
 | illustrator | sonnet | figures | 品牌色驱动生成 SVG/Mermaid 配图 |
 | auditor | opus | audit | 六维审校（只审不改） |
 | polisher | sonnet | polish | 基于审校报告去 AI 味润色 |
@@ -144,7 +144,7 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 
 ### 品牌视觉系统
 
-栏目配置（视觉+业务）统一定义在 `config/columns.yaml`。Writer 使用 Markdown + `:::block` 扩展标记（`:::card`, `:::note`, `:::cta` 等），publish 阶段标准化 Markdown 后由 typesetter 渲染为品牌 HTML。
+栏目配置（视觉+业务+typesetter 预设）统一定义在 `config/columns.yaml`。Writer 输出标准 Markdown + GFM Alerts（`> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]`），publish 阶段导出 `export/wechat.md`；在 `tools/typesetter/index.html` 中粘贴后，栏目预设按 frontmatter 自动匹配（theme + 主色 + 字体），点击"复制富文本"即可贴进公众号后台。
 
 ### 错误处理
 

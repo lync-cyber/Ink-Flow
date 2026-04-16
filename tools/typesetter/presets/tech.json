@@ -1,0 +1,10 @@
+{
+  "column": "tech",
+  "name": "技术专题",
+  "theme": "default",
+  "primaryColor": "#4a235a",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+  "fontSize": "15px",
+  "lineHeight": "1.75",
+  "description": "经典主题 + 紫罗兰品牌色，代码友好的工程风格"
+}

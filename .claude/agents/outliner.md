@@ -38,12 +38,14 @@ dependencies:
   - **不应插入**：正文已说清的内容、为凑数量、与前后文重复
   - 允许某 section 无视觉断点（标"无"即可）
 - 视觉断点必须标 **owner**：
-  - `(writer:card)` — `:::card` 结构化数据
-  - `(writer:table)` — Markdown 简单对比 ≤5 行
-  - `(writer:note)` — `:::note` 补充信息
+  - `(writer:table)` — Markdown 表格（结构化数据 / 对比，2-5 行）
+  - `(writer:alert)` — GFM Alert `> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]`（提示、警示）
+  - `(writer:quote)` — 普通 blockquote（引言、作者旁白、TL;DR）
+  - `(writer:list)` — 有序/无序列表（时间轴、步骤、要点）
   - `(illustrator:svg)` — 数据图表、双列对比、循环/闭环结构
   - `(illustrator:mermaid)` — 线性流程、简单树状结构
-  - 判断原则：typesetter 原生可渲染 → writer；需精确视觉布局 → illustrator；循环/闭环 → 必用 SVG
+  - 判断原则：标准 Markdown 或 GFM Alert 可表达 → writer；需精确视觉布局 → illustrator；循环/闭环 → 必用 SVG
+  - **禁用 `:::block`**：旧扩展语法已退役，全部替换为标准 Markdown + GFM Alerts（详见 `config/markdown-extensions.md` § 10 迁移表）
 - 开头 section 必须 3 秒内抓住注意力（标 opening_style）
 - 结尾 section 含 CTA（从 `brief.cta_type` 读）
 - 从 research.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记
@@ -71,7 +73,7 @@ dependencies:
 
 ## Section N（结尾）: {论点标题}
 - ...
-- CTA: {cta_type} — {CTA 文案方向}
+- CTA: {cta_type} — {CTA 文案方向，由 writer 以普通段落或 H3 呈现}
 
 ## 不确定项
 - {从调研中继承的未解决问题}

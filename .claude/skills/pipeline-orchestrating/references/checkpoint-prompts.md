@@ -45,11 +45,13 @@
 
 ```
 已生成以下文件：
-- articles/{slug}/output/article.md (Markdown + :::block 扩展格式)
-{其他格式文件列表}
+- articles/{slug}/export/wechat.md（标准 Markdown + GFM Alerts，typesetter 输入）
+- articles/{slug}/export/plain.md（纯 Markdown，跨平台可复制）
+- articles/{slug}/export/teaser.md（摘要 + 关键词）
 
 下一步：
-1. 复制 article.md 内容到 typesetter（tools/typesetter/index.html）
-2. 选择栏目主题 → 预览 → 复制 HTML → 粘贴到公众号编辑器
-3. 发布后触发 creation-reviewing 完成学习闭环
+1. 打开 tools/typesetter/index.html（或 https://md.doocs.org）
+2. 粘贴 wechat.md 内容 → 栏目预设会根据 frontmatter 自动匹配
+3. 点击"复制富文本" → 粘贴到公众号后台编辑器
+4. 发布后触发 creation-reviewing 完成学习闭环
 ```

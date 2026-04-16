@@ -1,55 +1,175 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>微信公众号排版工具</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231f6feb'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='34' font-family='Arial, sans-serif' fill='white'%3EW%3C/text%3E%3C/svg%3E"
-    />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html,
-      body,
-      #root {
-        height: 100%;
-        overflow: hidden;
-      }
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #999;
-      }
-      textarea::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 3px;
-      }
-    </style>
-    <script type="module" crossorigin src="./assets/index-DpsNCRfA.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-HtIDmmPe.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-      if (typeof mermaid !== "undefined") {
-        mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose" });
-      }
-    </script>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>InkFlow · 微信公众号排版</title>
+<link rel="stylesheet" href="./themes/base.css" />
+<link rel="stylesheet" href="./themes/default.css" />
+<link rel="stylesheet" href="./themes/grace.css" />
+<link rel="stylesheet" href="./themes/simple.css" />
+<style>
+  :root {
+    --ui-bg: #f5f5f7;
+    --ui-border: #e0e0e4;
+    --ui-text: #1d1d1f;
+    --ui-muted: #6e6e73;
+    --ui-primary: #1f6feb;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: var(--ui-text);
+    background: var(--ui-bg);
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--ui-border);
+    flex-wrap: wrap;
+  }
+  header h1 {
+    margin: 0; font-size: 14px; font-weight: 600;
+    color: var(--ui-text);
+  }
+  header .badge {
+    padding: 2px 8px;
+    background: var(--ui-primary);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  header label {
+    font-size: 12px; color: var(--ui-muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  header select, header input[type="color"], header input[type="text"] {
+    font: inherit; font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid var(--ui-border);
+    background: #fff; border-radius: 4px;
+    color: var(--ui-text);
+  }
+  header input[type="color"] { padding: 0; width: 32px; height: 26px; }
+  header button {
+    padding: 6px 14px; font-size: 12px;
+    border: 1px solid var(--ui-primary);
+    background: var(--ui-primary); color: #fff;
+    border-radius: 4px; cursor: pointer;
+  }
+  header button.ghost {
+    background: #fff; color: var(--ui-primary);
+  }
+  header button:hover { opacity: 0.85; }
+  header .spacer { flex: 1; }
+  #status { font-size: 12px; color: var(--ui-muted); }
 
-  </body>
+  main {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .pane { display: flex; flex-direction: column; overflow: hidden; }
+  .pane-header {
+    padding: 8px 12px;
+    background: #fafafa;
+    border-bottom: 1px solid var(--ui-border);
+    font-size: 12px; color: var(--ui-muted);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  #editor {
+    flex: 1; width: 100%;
+    padding: 16px;
+    border: none; outline: none; resize: none;
+    font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    font-size: 13px; line-height: 1.6;
+    background: #fff;
+    color: #333;
+  }
+  #preview-wrap {
+    flex: 1; overflow-y: auto; background: #fff;
+    padding: 24px 28px;
+  }
+  .article { max-width: 680px; margin: 0 auto; }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .pane:first-child { height: 40vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>InkFlow 排版 <span class="badge">基于 doocs/md</span></h1>
+
+  <label>栏目
+    <select id="sel-column">
+      <option value="academic">学术前沿</option>
+      <option value="industry">行业趋势</option>
+      <option value="tech">技术专题</option>
+      <option value="story">人物故事</option>
+      <option value="custom">自定义</option>
+    </select>
+  </label>
+
+  <label>主题
+    <select id="sel-theme">
+      <option value="default">经典</option>
+      <option value="grace">优雅</option>
+      <option value="simple">简洁</option>
+    </select>
+  </label>
+
+  <label>主色
+    <input type="color" id="sel-color" value="#1a5276" />
+  </label>
+
+  <label>字号
+    <select id="sel-size">
+      <option value="14px">14</option>
+      <option value="15px" selected>15</option>
+      <option value="16px">16</option>
+      <option value="17px">17</option>
+    </select>
+  </label>
+
+  <label>字族
+    <select id="sel-font">
+      <option value="sans">无衬线</option>
+      <option value="serif">衬线</option>
+    </select>
+  </label>
+
+  <div class="spacer"></div>
+  <span id="status">就绪</span>
+  <button class="ghost" id="btn-load">载入 .md</button>
+  <input type="file" id="file-input" accept=".md,.markdown,.txt" style="display:none" />
+  <button id="btn-copy">复制富文本</button>
+</header>
+
+<main>
+  <section class="pane">
+    <div class="pane-header">
+      <span>Markdown 源</span>
+      <span id="char-count">0 字符</span>
+    </div>
+    <textarea id="editor" placeholder="粘贴或载入 wechat.md ……"></textarea>
+  </section>
+  <section class="pane">
+    <div class="pane-header">
+      <span>预览 (粘贴后微信公众号效果)</span>
+      <span id="preset-info"></span>
+    </div>
+    <div id="preview-wrap">
+      <article id="preview" class="article theme-default"></article>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script src="./app.js"></script>
+</body>
 </html>

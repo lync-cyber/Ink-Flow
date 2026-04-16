@@ -46,22 +46,23 @@ dependencies:
 
 | 内容类型 | 格式 | 负责 |
 |---|---|---|
-| key-value 数据 | `:::card` | writer |
-| 简单对比表 (≤5行) | Markdown 表格 | writer |
-| 结论总结 (≤3条) | `:::card` | writer |
-| 提示/误区文字 | `:::note` | writer |
+| key-value 数据 | Markdown 表格 | writer |
+| 简单对比表 (≤5 行) | Markdown 表格 | writer |
+| 结论总结 (≤3 条) | 有序列表 + 加粗首词 | writer |
+| 提示/误区文字 | GFM Alert (`> [!NOTE/TIP/WARNING]`) | writer |
 | 复杂流程图/架构图 | Mermaid/SVG | **illustrator** |
 | 数据图表 | SVG | **illustrator** |
-| 双列对比误区卡 | SVG | **illustrator** |
+| 双列对比误区图 | SVG | **illustrator** |
 | 金句卡 | SVG | **illustrator** |
 
 - 线性流程/简单树 → Mermaid；循环/闭环/精确视觉 → 直接 SVG
+- 所有输出符合 `config/markdown-extensions.md` 定义的白名单（标准 Markdown + GFM Alerts + Mermaid/SVG 代码块）
 
 ### 生成约束
 
 - **禁止 emoji**——节点用文字或编号，emoji 有强烈 AI 感
 - 所有 SVG 颜色来自 `columns.yaml` 栏目色板，不自行选色
-- **不生成结论卡**——结论卡由 writer 用 `:::card` 实现
+- **不生成结论卡 / key-value 卡片** ——由 writer 用 Markdown 表格实现
 - 图表自解释——脱离正文也能看懂
 - 每张图附一行说明文字
 - SVG 字号 / 字体栈 / 字重硬约束全部读 `typography-limits.yaml`
