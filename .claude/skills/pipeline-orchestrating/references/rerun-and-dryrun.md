@@ -14,6 +14,6 @@
 当用户选择"预览 pipeline"或说"dry-run"时执行。**不 spawn 任何 agent，零 token 消耗**。
 
 1. 确定目标：若有指定 slug → 读取该文章的 brief 和 state；若无 → 用 AskUserQuestion 请用户选择
-2. 从 `config/inkflow.yaml` 的 stages 列表逐 stage 检查：SKIP 条件、依赖状态、上下文文件、Rule 可用性、Agent 可用性
+2. 从 `framework/config/inkflow.yaml` 的 stages 列表逐 stage 检查：SKIP 条件、依赖状态、上下文文件、Rule 可用性、Agent 可用性
 3. 输出汇总表（stage、状态、agent、model、上下文文件、rules）
 4. 用 AskUserQuestion 提供后续操作

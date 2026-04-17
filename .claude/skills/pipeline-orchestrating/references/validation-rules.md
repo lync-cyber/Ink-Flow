@@ -1,6 +1,6 @@
 # 验证规则参考
 
-编排器在每个阶段完成后，从 `config/inkflow.yaml` 的 `stages.{stage}.validation` 字段读取规则并独立校验输出文件。校验与 agent 上下文完全隔离——agent 不感知评判标准，避免"应试"行为污染输出质量。
+编排器在每个阶段完成后，从 `framework/config/inkflow.yaml` 的 `stages.{stage}.validation` 字段读取规则并独立校验输出文件。校验与 agent 上下文完全隔离——agent 不感知评判标准，避免"应试"行为污染输出质量。
 
 ## 7 种验证类型
 
@@ -10,7 +10,7 @@
 
 ### b. optional_sections
 - 解析 skip_if 条件（格式: "brief.field == value"）
-- 从 articles/{slug}/intermediate/01-brief.md frontmatter 读取对应字段
+- 从 content/articles/{slug}/intermediate/01-brief.md frontmatter 读取对应字段
 - 条件成立 → 跳过该 section
 - 条件不成立 → 按 required_sections 检查
 
@@ -33,7 +33,7 @@
 - 有匹配 → 记录 violation（附来源 rule 和行号）
 
 ### g. platform_checks
-- **css_safety**: 从 `tools/lint/config.yaml` 的 `rules.css_safety.forbidden_css` 读取禁用列表（单一事实来源），用 Grep 检查输出文件
+- **css_safety**: 从 `.claude/skills/quality-linting/scripts/config.yaml` 的 `rules.css_safety.forbidden_css` 读取禁用列表（单一事实来源），用 Grep 检查输出文件
 - **heading_level**: 用 Grep 提取所有 `^#` 行，验证标题级别在 allowed 列表中
 - **image_width**: 用 Grep 提取 width 属性值，验证不超过 max_width
 

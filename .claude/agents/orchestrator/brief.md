@@ -33,11 +33,11 @@ Q: "这篇文章属于哪个栏目？"
 ### Step 3 — 生成 brief
 
 1. 自动生成 slug（中文 pinyin 或英文 kebab-case）
-2. 读 `config/inkflow.yaml` 的 `defaults` 填充未指定字段
+2. 读 `framework/config/inkflow.yaml` 的 `defaults` 填充未指定字段
 3. `content_column` 使用英文 ID（academic/industry/tech/story）
 4. Frontmatter 模板见 `.claude/skills/pipeline-orchestrating/references/brief-template.md`
-5. 产物路径从 `config/artifact-layout.yaml` 的 `paths.brief` 读取
-6. 创建 `articles/{slug}/intermediate/` `review/` `export/` 目录结构
+5. 产物路径从 `framework/config/artifact-layout.yaml` 的 `paths.brief` 读取
+6. 创建 `content/articles/{slug}/intermediate/` `review/` `export/` 目录结构
 
 ### Step 4 — 确认
 
@@ -50,8 +50,8 @@ Q: "Brief 已生成，请确认"（附 frontmatter 摘要）
 
 ### 初始化 state
 
-写入 `workspace/pipeline-states/{slug}.json`：
-- 从 `config/inkflow.yaml` 的 stages 列表动态生成，不硬编码
+写入 `runtime/pipeline-states/{slug}.json`：
+- 从 `framework/config/inkflow.yaml` 的 stages 列表动态生成，不硬编码
 - 每 stage 默认 `{"status":"pending"}`；brief 标记 completed
 
 ## Pipeline 完成后建议

@@ -1,0 +1,196 @@
+# ============================================================
+# InkFlow 项目配置（合并了原 .inkflow.yaml + stage-contracts.yaml）
+# 单一事实来源：stages 字段既定义流程也定义合约与校验
+# ============================================================
+
+# workspace_mode: framework — 框架开发模式（content/articles/ 被 gitignore）
+# workspace_mode: content — 内容创作模式（content/articles/ 纳入版本管理）
+workspace_mode: content
+
+domains:
+  - wechat-article
+
+# 模型分配（权威来源 — agent frontmatter 的 model 字段必须与此保持一致）
+model_allocation:
+  orchestrator: opus
+  researcher: sonnet
+  outliner: opus
+  writer: opus
+  illustrator: sonnet
+  auditor: opus
+  polisher: sonnet
+  publisher: sonnet
+
+# Brief 默认字段
+defaults:
+  target_length: 1500
+  content_type: deep_dive
+  audience: tech_intermediate
+  skip_research: false
+  no_figures: false
+  skip_seo: false
+  publish_timing: evening
+  cta_type: follow
+  cover_style: auto
+  style_profile: default
+  opening_style: auto
+
+# ============================================================
+# 工作流阶段 — 既是执行顺序，也是合约
+# agent：该阶段由哪个 agent 执行（user_input 表示由 orchestrator 直接生成）
+# output：产物路径（使用 artifact-layout.yaml 的路径占位）
+# requires：依赖阶段
+# skip_if：跳过条件（从 brief frontmatter 读值）
+# parallel_with：可并行执行
+# checkpoint：true 表示需用户审核才能推进
+# validation：orchestrator 在 agent 完成后独立校验，与 agent 上下文隔离
+# ============================================================
+stages:
+  - name: brief
+    type: user_input
+    output: "content/articles/{slug}/intermediate/01-brief.md"
+
+  - name: research
+    agent: researcher
+    skip_if: "brief.skip_research == true"
+    output: "content/articles/{slug}/intermediate/02-research-memo.md"
+    validation:
+      required_sections: ["关键事实", "代码片段", "对比表格", "不确定项"]
+      optional_sections:
+        - name: "SEO 关键词"
+          skip_if: "brief.skip_seo == true"
+        - name: "竞品分析"
+          skip_if: "brief.content_type == opinion || brief.content_column == story"
+      word_count: { min: 500, max: 5000 }
+      required_patterns: ["\\[来源\\]\\(http"]
+      forbidden_patterns: ["TODO", "待补充"]
+
+  - name: outline
+    agent: outliner
+    checkpoint: true
+    requires: [brief]
+    output: "content/articles/{slug}/intermediate/03-outline-structure.md"
+    validation:
+      required_sections: ["总览"]
+      required_per_section: ["论点", "关键细节", "预估字数", "视觉断点"]
+      word_count: { min: 300, max: 2000 }
+      forbidden_patterns: ["TODO"]
+
+  - name: draft
+    agent: writer
+    requires: [outline]
+    output: "content/articles/{slug}/intermediate/04a-draft/merged-draft.md"
+    section_output: "content/articles/{slug}/intermediate/04a-draft/section-{N}.md"
+    validation:
+      section_tolerance: 0.20
+      merged_word_count: { min: 800, max: 5000 }
+      forbidden_patterns: ["TODO"]
+      forbidden_phrases_from: .claude/rules/data/forbidden-phrases.yaml
+
+  - name: figures
+    agent: illustrator
+    skip_if: "brief.no_figures == true"
+    requires: [outline]
+    parallel_with: [draft]
+    output: "content/articles/{slug}/intermediate/04b-figure/figure-index.md"
+    individual_output: "content/articles/{slug}/intermediate/04b-figure/fig-{N}.{md|svg}"
+    validation:
+      required_patterns: ["```mermaid|<svg"]
+
+  - name: audit
+    agent: auditor
+    requires: [draft]
+    output: "content/articles/{slug}/review/05-audit-report.md"
+    validation:
+      required_sections: ["审校报告", "事实准确性", "论证完整性", "AI 味检测", "风格偏离", "句式问题", "传播性评估", "审校统计"]
+      severity_levels: [高, 中, 低]
+      issue_table_header: "| 序号 | 位置 | 问题描述 | 严重性 | 修改建议 |"
+
+  - name: polish
+    agent: polisher
+    checkpoint: true
+    requires: [audit]
+    output: "content/articles/{slug}/review/06-polish-trace.md"
+    final_output: "content/articles/{slug}/export/07-final-manuscript.md"
+    validation:
+      required_sections: ["润色结果", "变更溯源表", "润色变更摘要"]
+      forbidden_patterns: ["TODO", "待确认"]
+      forbidden_phrases_from: .claude/rules/data/forbidden-phrases.yaml
+      platform_checks:
+        - type: css_safety
+          source: .claude/rules/data/platform-limits.yaml
+        - type: heading_level
+          source: .claude/rules/data/platform-limits.yaml
+        - type: image_width
+          source: .claude/rules/data/platform-limits.yaml
+
+  - name: publish
+    agent: publisher
+    checkpoint: true
+    requires: [polish]
+    output: "content/articles/{slug}/export/08-wechat-publish.md"
+    additional_outputs:
+      - "content/articles/{slug}/export/08-plain-publish.md"
+      - "content/articles/{slug}/export/08-teaser-120chars.md"
+    validation:
+      required_patterns: ["^# "]
+      forbidden_patterns:
+        - "<!-- FIGURE:"
+        - "<!-- MEDIA:"
+        - "<!-- USER_FILL:"
+        - '<img src="\.\./'
+        - '<svg[^>]* id='
+
+# ============================================================
+# 导出格式（publish 阶段使用）
+# ============================================================
+exports:
+  - format: wechat_md
+    description: "Markdown Nice 适配格式"
+    output: "content/articles/{slug}/export/08-wechat-publish.md"
+  - format: plain_md
+    description: "纯净 Markdown（知乎/掘金等）"
+    output: "content/articles/{slug}/export/08-plain-publish.md"
+  - format: teaser
+    description: "短摘要版（朋友圈/社群分发）"
+    output: "content/articles/{slug}/export/08-teaser-120chars.md"
+    word_limit: 120
+
+# ============================================================
+# Skill 注册表
+# ============================================================
+registry:
+  skills_paths: [.claude/skills]
+  rules_paths:  [.claude/rules]
+
+# ============================================================
+# 路径常量（全局使用 · 单一事实来源）
+# ============================================================
+paths:
+  articles_root: content/articles
+  styles_root: content/styles
+  references_dir: content/references
+  retrospectives_dir: content/retrospectives
+  state_dir: runtime/pipeline-states
+  style_profile: content/styles/default/style-profile.md
+  columns_config: framework/config/columns.yaml
+  markdown_extensions: framework/config/markdown-extensions.md
+  artifact_layout: framework/config/artifact-layout.yaml
+
+# ============================================================
+# 本地排版工具（基于 doocs/md）
+# 入口：双击 framework/tools/typeset.bat (Win) / framework/tools/typeset.command (Mac/Linux)
+# 首次初始化由启动脚本自动完成（等价于 node framework/tools/typeset/setup.mjs）
+# 详见 framework/tools/typeset/README.md
+# ============================================================
+typeset:
+  engine: doocs-md
+  engine_image: doocs/md        # Docker Hub image
+  engine_tag: 2.1.0-assets      # *-assets 镜像是专门抽预构建 SPA 用的
+  engine_inner_path: /app/assets
+  dist_dir: framework/tools/typeset/dist
+  serve_host: 127.0.0.1
+  serve_port: 7788
+  # 数据源（serve 启动时扫描并注入到 doocs）
+  theme_source: content/styles/*/theme.css
+  article_source: content/articles/*/export/08-wechat-publish.md

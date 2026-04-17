@@ -1,6 +1,6 @@
 # HTML 预览生成指南
 
-SKILL.md §4 触发后读此文件。生成 `workspace/column-design/{slug}/preview.html`，
+SKILL.md §4 触发后读此文件。生成 `content/styles/{slug}/preview.html`，
 两方向系统性对比，让用户用浏览器打开后决策。
 
 ## 两方向的对比逻辑
@@ -41,14 +41,14 @@ SKILL.md §4 触发后读此文件。生成 `workspace/column-design/{slug}/prev
 ```
 ⑮ H5 更细分层                ⑳ 脚注区（底部 ordered list）
 ⑯ em 斜体（英文术语 / 论文名）㉑ 金句居中段 .pullquote（CLAUDE.md 规定每篇 1 个）
-⑰ del 删除线（对比 / 废弃）   ㉒ TL;DR 导语卡 .lede
+⑰ del 删除线（对比 / 废弃）   ㉒ 摘要导语卡 .lede
 ⑱ 表格 table / thead / td     ㉓ 文末 CTA 卡 .cta
 ⑲ GFM callout（note / tip）   ㉔ 标签行 .tags（文章头 #tag）
 ```
 
 **栏目默认扩展组合**（起点，可调）：
 - **tech / academic**：核心 14 + 全部扩展（技术文表格和 callout 高频）
-- **industry**：核心 14 + 表格 + TL;DR + 标签
+- **industry**：核心 14 + 表格 + 摘要引言 + 标签
 - **story**：核心 14 + 金句 + em（论文/书名）
 
 扩展组件对应的 CSS 钩子和 writer MD 写法见 `theme.md` §四 + §五。
@@ -171,7 +171,7 @@ doocs 主题 CSS（§5）才要避免伪元素，因为微信粘贴会剥离。
 
 生成后告诉用户：
 
-> 两套完整排版主张已渲染到 `workspace/column-design/{slug}/preview.html`，用的是你提供的真实内容。
+> 两套完整排版主张已渲染到 `content/styles/{slug}/preview.html`，用的是你提供的真实内容。
 > - **A · [气质词]** — [一句话]
 > - **B · [气质词]** — [一句话]
 >

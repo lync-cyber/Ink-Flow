@@ -7,10 +7,10 @@
 
 校验项:
   1. 路径一致性 — agent/skill 中的路径引用与目录结构一致
-  2. YAML Schema — config/inkflow.yaml 必填字段 + stages 结构
+  2. YAML Schema — framework/config/inkflow.yaml 必填字段 + stages 结构
   3. Agent Frontmatter 完整性 — 必填字段 + RCCF 正文结构
   4. Skill Frontmatter 完整性 — 必填字段
-  5. 交叉引用 — config/inkflow.yaml stages 中引用的 agent 文件存在
+  5. 交叉引用 — framework/config/inkflow.yaml stages 中引用的 agent 文件存在
   6. 领域包完整性 — domain YAML 中列出的 skill/rule 均存在
   7. Typesetter WeChat CSS 兼容性
   8. 文件清理校验
@@ -133,7 +133,7 @@ def parse_yaml_list(text: str, section_name: str) -> list[str]:
 
 
 def parse_stages(text: str) -> list[dict[str, str]]:
-    """从 config/inkflow.yaml 提取 stages 列表中的 name 和 agent 字段"""
+    """从 framework/config/inkflow.yaml 提取 stages 列表中的 name 和 agent 字段"""
     lines = text.splitlines()
     in_stages = False
     stages = []
@@ -197,32 +197,32 @@ def check_path_consistency(repo: Path):
 def check_yaml_schema(repo: Path):
     section("2. YAML Schema 校验")
 
-    # config/inkflow.yaml
-    inkflow = repo / "config/inkflow.yaml"
+    # framework/config/inkflow.yaml
+    inkflow = repo / "framework/config/inkflow.yaml"
     if not inkflow.exists():
-        error("config/inkflow.yaml 不存在")
+        error("framework/config/inkflow.yaml 不存在")
         return
 
     # version 由 git tag 管理，不要求在 YAML 中硬编码
     # model_allocation 已移除（模型由 agent frontmatter 的 model 字段决定）
     for field in ("domains", "stages"):
         if file_contains(inkflow, rf"^{field}:"):
-            ok(f"config/inkflow.yaml 包含 {field}")
+            ok(f"framework/config/inkflow.yaml 包含 {field}")
         else:
-            error(f"config/inkflow.yaml 缺少必填字段: {field}")
+            error(f"framework/config/inkflow.yaml 缺少必填字段: {field}")
 
     # 校验 stages 结构：每个 stage 必须有 name
     text = inkflow.read_text(encoding="utf-8")
     stages = parse_stages(text)
     if stages:
-        ok(f"config/inkflow.yaml 定义了 {len(stages)} 个 stage")
+        ok(f"framework/config/inkflow.yaml 定义了 {len(stages)} 个 stage")
         for stage in stages:
             if "name" not in stage:
-                error(f"config/inkflow.yaml stage 缺少 name 字段")
+                error(f"framework/config/inkflow.yaml stage 缺少 name 字段")
     else:
-        error("config/inkflow.yaml stages 段为空")
+        error("framework/config/inkflow.yaml stages 段为空")
 
-    # 模型分配由各 agent frontmatter 的 model 字段直接管理，无需在 config/inkflow.yaml 中重复
+    # 模型分配由各 agent frontmatter 的 model 字段直接管理，无需在 framework/config/inkflow.yaml 中重复
 
 
 def check_agent_frontmatter(repo: Path):
@@ -294,9 +294,9 @@ def check_skill_frontmatter(repo: Path):
 def check_cross_references(repo: Path):
     section("5. 交叉引用完整性")
 
-    inkflow = repo / "config/inkflow.yaml"
+    inkflow = repo / "framework/config/inkflow.yaml"
     if not inkflow.exists():
-        error("config/inkflow.yaml 不存在，跳过交叉引用检查")
+        error("framework/config/inkflow.yaml 不存在，跳过交叉引用检查")
         return
 
     text = inkflow.read_text(encoding="utf-8")
@@ -332,7 +332,7 @@ def check_cross_references(repo: Path):
                     else:
                         error(f"合约 rules 引用 '{rm.group(1)}' 不存在")
 
-                sm = re.match(r"\s+source:\s*(tools/.+\.yaml)", line)
+                sm = re.match(r"\s+source:\s*(framework/tools/.+\.yaml)", line)
                 if sm:
                     source_path = repo / sm.group(1)
                     if source_path.exists():
@@ -342,7 +342,7 @@ def check_cross_references(repo: Path):
         else:
             error(f"contracts_source '{contracts_match.group(1).strip()}' 不存在")
 
-    # 兼容：检查 config/inkflow.yaml 中直接定义的 rules/source 引用（旧格式）
+    # 兼容：检查 framework/config/inkflow.yaml 中直接定义的 rules/source 引用（旧格式）
     for line in text.splitlines():
         m = re.match(r"\s+-\s+\.claude/rules/(.+\.md)", line)
         if m:
@@ -353,7 +353,7 @@ def check_cross_references(repo: Path):
                 error(f"rules 引用 '{m.group(1)}' 不存在")
 
     for line in text.splitlines():
-        m = re.match(r"\s+source:\s*(tools/.+\.yaml)", line)
+        m = re.match(r"\s+source:\s*(framework/tools/.+\.yaml)", line)
         if m:
             source_path = repo / m.group(1)
             if source_path.exists():
@@ -366,18 +366,18 @@ def check_domain_completeness(repo: Path):
     section("6. 领域规则目录完整性")
 
     rules_dir = repo / ".claude" / "rules"
-    inkflow = repo / "config/inkflow.yaml"
+    inkflow = repo / "framework/config/inkflow.yaml"
     if not inkflow.exists():
-        warn("config/inkflow.yaml 不存在，跳过")
+        warn("framework/config/inkflow.yaml 不存在，跳过")
         return
 
     domain_refs = parse_yaml_list(inkflow.read_text(encoding="utf-8"), "domains")
     for domain_ref in domain_refs:
         domain_dir = rules_dir / "domains" / domain_ref
         if domain_dir.is_dir():
-            ok(f"config/inkflow.yaml domain '{domain_ref}' 对应规则目录存在")
+            ok(f"framework/config/inkflow.yaml domain '{domain_ref}' 对应规则目录存在")
         else:
-            error(f"config/inkflow.yaml domain '{domain_ref}' 缺少 .claude/rules/domains/{domain_ref}/")
+            error(f"framework/config/inkflow.yaml domain '{domain_ref}' 缺少 .claude/rules/domains/{domain_ref}/")
 
 
 # ============================================================
@@ -389,18 +389,18 @@ def check_file_cleanup(repo):
     section("Check 7: 文件清理校验")
 
     # typesetter 模块已废弃，不应再出现
-    typesetter_dir = repo / "tools" / "typesetter"
+    typesetter_dir = repo / "framework" / "tools" / "typesetter"
     if typesetter_dir.exists():
-        error("tools/typesetter/ 应已移除（视觉交接迁移到 workspace/column-design/）")
+        error("framework/tools/typesetter/ 应已移除（视觉交接迁移到 content/styles/）")
     else:
-        ok("tools/typesetter/ 已移除")
+        ok("framework/tools/typesetter/ 已移除")
 
     # mermaid renderer 必须在位
-    mermaid_py = repo / "tools" / "render" / "mermaid.py"
+    mermaid_py = repo / ".claude" / "scripts" / "mermaid.py"
     if mermaid_py.exists():
-        ok("tools/render/mermaid.py 存在")
+        ok(".claude/scripts/mermaid.py 存在")
     else:
-        error("tools/render/mermaid.py 缺失")
+        error(".claude/scripts/mermaid.py 缺失")
 
 
 # ============================================================
@@ -420,7 +420,7 @@ def check_column_completeness(repo):
     """校验 columns.yaml 中每个栏目包含所有必填字段（业务字段，视觉字段已移出）"""
     section("Check 9: 栏目必填字段完整性")
 
-    columns_path = repo / "config" / "columns.yaml"
+    columns_path = repo / "framework" / "config" / "columns.yaml"
     if not columns_path.exists():
         error("columns.yaml 不存在")
         return
@@ -488,10 +488,10 @@ def check_column_completeness(repo):
 DEPRECATED_SKILLS = {
     "style-profiling":   "style-learning (profile 模式)",
     "style-studying":    "style-learning (study 模式)",
-    "article-structuring": "已合并进 config/columns.yaml 的 skeleton 段",
-    "writing-guiding":     "已合并进 config/columns.yaml 的 phrase_replacements / human_voice_techniques",
-    "opening-crafting":    "已合并进 config/columns.yaml 的 opening_strategies",
-    "visual-theming":      "column-designing（产出 workspace/column-design/{slug}/theme.css）",
+    "article-structuring": "已合并进 framework/config/columns.yaml 的 skeleton 段",
+    "writing-guiding":     "已合并进 framework/config/columns.yaml 的 phrase_replacements / human_voice_techniques",
+    "opening-crafting":    "已合并进 framework/config/columns.yaml 的 opening_strategies",
+    "visual-theming":      "column-designing（产出 content/styles/{slug}/theme.css）",
     "format-linting":      "quality-linting",
     "format-exporting":    "publisher agent（publish 阶段）",
 }
@@ -510,7 +510,7 @@ def check_skill_name_references(repo: Path):
 
     existing_skills = {p.name for p in skills_dir.iterdir() if p.is_dir()}
 
-    # 要扫描的文件集合：所有顶层文档 + agents + skills + tools/lint/lint.py + CLAUDE.md/README.md
+    # 要扫描的文件集合：所有顶层文档 + agents + skills + .claude/skills/quality-linting/scripts/lint.py + CLAUDE.md/README.md
     scan_files: list[Path] = []
     scan_files.append(repo / "README.md")
     scan_files.append(repo / "CLAUDE.md")
@@ -667,8 +667,8 @@ def main():
     verbose = "-v" in sys.argv or "--verbose" in sys.argv
 
     repo = Path(__file__).resolve().parent.parent
-    if not (repo / "config/inkflow.yaml").exists():
-        print(f"错误: 未找到 config/inkflow.yaml，请在 InkFlow 项目根目录运行", file=sys.stderr)
+    if not (repo / "framework/config/inkflow.yaml").exists():
+        print(f"错误: 未找到 framework/config/inkflow.yaml，请在 InkFlow 项目根目录运行", file=sys.stderr)
         sys.exit(1)
 
     check_path_consistency(repo)

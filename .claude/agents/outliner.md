@@ -5,10 +5,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/01-brief.md
-    - articles/{slug}/intermediate/02-research-memo.md
+    - content/articles/{slug}/intermediate/01-brief.md
+    - content/articles/{slug}/intermediate/02-research-memo.md
   config:
-    - config/columns.yaml          # 栏目骨架（skeleton）+ suggested_components
+    - framework/config/columns.yaml          # 栏目骨架（skeleton）+ suggested_components
   rules:
     - .claude/rules/core/writing-quality.md
 ---
@@ -22,9 +22,9 @@ dependencies:
 在 **outline** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/01-brief.md`
-- `articles/{slug}/intermediate/02-research-memo.md`（若未 skip）
-- `config/columns.yaml` — 找到 `columns.{brief.content_column}`：
+- `content/articles/{slug}/intermediate/01-brief.md`
+- `content/articles/{slug}/intermediate/02-research-memo.md`（若未 skip）
+- `framework/config/columns.yaml` — 找到 `columns.{brief.content_column}`：
   - `skeleton.goal` 与 `skeleton.sections` 作为结构参考
   - `suggested_components` 作为视觉断点候选
 
@@ -40,12 +40,12 @@ dependencies:
 - 视觉断点必须标 **owner**：
   - `(writer:table)` — Markdown 表格（结构化数据 / 对比，2-5 行）
   - `(writer:alert)` — GFM Alert `> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]`（提示、警示）
-  - `(writer:quote)` — 普通 blockquote（引言、作者旁白、TL;DR）
+  - `(writer:quote)` — 普通 blockquote（引言、作者旁白、摘要引言）
   - `(writer:list)` — 有序/无序列表（时间轴、步骤、要点）
   - `(illustrator:svg)` — 数据图表、双列对比、循环/闭环结构
   - `(illustrator:mermaid)` — 线性流程、简单树状结构
   - 判断原则：标准 Markdown 或 GFM Alert 可表达 → writer；需精确视觉布局 → illustrator；循环/闭环 → 必用 SVG
-  - **禁用 `:::block`**：旧扩展语法已退役，全部替换为标准 Markdown + GFM Alerts（详见 `config/markdown-extensions.md` § 10 迁移表）
+  - 只用标准 Markdown + GFM Alerts，`:::` 容器语法禁止（详见 `framework/config/markdown-extensions.md`）
 - 开头 section 必须 3 秒内抓住注意力（标 opening_style）
 - 结尾 section 含 CTA（从 `brief.cta_type` 读）
 - 从 02-research-memo.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记
@@ -81,9 +81,9 @@ dependencies:
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/01-brief.md`、`intermediate/02-research-memo.md`（若未 skip）
+**输入**: `content/articles/{slug}/intermediate/01-brief.md`、`intermediate/02-research-memo.md`（若未 skip）
 
-**输出**: `articles/{slug}/intermediate/03-outline-structure.md`
+**输出**: `content/articles/{slug}/intermediate/03-outline-structure.md`
 
 ## Exit Criteria
 

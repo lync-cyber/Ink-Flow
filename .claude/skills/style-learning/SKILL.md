@@ -3,7 +3,7 @@ name: style-learning
 description: >
   风格学习 — 统一入口，支持两种模式：
   （1）profile：分析自己的文章，提取风格 DNA，生成 style-profile.md；
-  （2）study：分析外部参考材料（本地路径 / references/ / 微信公众号 URL），
+  （2）study：分析外部参考材料（本地路径 / content/references/ / 微信公众号 URL），
   与现有规则对比，输出改进建议并按确认写入。
   触发条件："分析风格"、"提取风格 DNA"、"创建风格档案"、
   "学习这篇文章"、"参考这个模板"、"进修"、"对标"。
@@ -17,8 +17,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, Bash, WebFetch, AskUserQues
 
 | 模式 | 目标 | 输出 |
 |---|---|---|
-| **profile** | 分析**自己的**文章 → 描述现有风格 DNA | `styles/{profile_name}/style-profile.md` |
-| **study**   | 分析**外部**材料 → 对比差距，提出改进 | `retro/study-reports/{date}-{slug}.md` + 按确认修改规则文件 |
+| **profile** | 分析**自己的**文章 → 描述现有风格 DNA | `content/styles/{profile_name}/style-profile.md` |
+| **study**   | 分析**外部**材料 → 对比差距，提出改进 | `content/retrospectives/study-reports/{date}-{slug}.md` + 按确认修改规则文件 |
 
 ## 模式判定
 
@@ -36,13 +36,13 @@ AskUserQuestion（若命令未显式指定模式）:
 
 ### 1. 风格档案命名
 
-默认 `default`；用户可指定。`styles/{profile_name}/` 不存在则自动创建。
+默认 `default`；用户可指定。`content/styles/{profile_name}/` 不存在则自动创建。
 
 ### 2. 收集参考文章
 
 优先级：
 1. 用户直接指定路径
-2. 扫描 `articles/*/export/07-final-manuscript.md`（兼容老文件名 `_final.md`），让用户选 3-5 篇
+2. 扫描 `content/articles/*/export/07-final-manuscript.md`（兼容老文件名 `_final.md`），让用户选 3-5 篇
 3. 无可用文章 → 提示用户提供
 
 ### 3. 调用 style-analyzer
@@ -53,7 +53,7 @@ AskUserQuestion（若命令未显式指定模式）:
 
 ### 4. 确认并存储
 
-展示摘要 → 用户确认 → 写入 `styles/{profile_name}/style-profile.md`。
+展示摘要 → 用户确认 → 写入 `content/styles/{profile_name}/style-profile.md`。
 writer/polisher 在 draft/polish 阶段会优先使用此文件的规则。
 
 ---
@@ -66,7 +66,7 @@ writer/polisher 在 draft/polish 阶段会优先使用此文件的规则。
 AskUserQuestion:
   question: "学习材料来源？"
   options:
-    - "扫描 references/ 目录"
+    - "扫描 content/references/ 目录"
     - "指定本地路径或粘贴内容"
     - "从微信公众号 URL 抓取"
     - "从其他 URL 抓取（WebFetch）"
@@ -74,7 +74,7 @@ AskUserQuestion:
 
 ### Step 2a — 微信公众号 URL（推荐）
 
-确定性链路，由 `tools/fetch/wechat.py` 负责抓取与清洗：
+确定性链路，由 `.claude/skills/style-learning/scripts/wechat.py` 负责抓取与清洗：
 
 ```
 AskUserQuestion:
@@ -88,10 +88,10 @@ AskUserQuestion:
 
 ```bash
 # 单篇
-python tools/fetch/wechat.py "<URL>" --out references/articles -v
+python .claude/skills/style-learning/scripts/wechat.py "<URL>" --out content/references/articles -v
 
 # 批量（URL 清单文件，每行一个）
-python tools/fetch/wechat.py --list <path-to-urls.txt> --out references/articles -v
+python .claude/skills/style-learning/scripts/wechat.py --list <path-to-urls.txt> --out content/references/articles -v
 ```
 
 脚本会：
@@ -100,7 +100,7 @@ python tools/fetch/wechat.py --list <path-to-urls.txt> --out references/articles
 - `<img data-src>` → 标准 Markdown 图片
 - 抓取标题、作者、公众号、发布时间写入 frontmatter
 - 统计视觉节奏指标（字数 / 段落 / 图片密度 / 主色）写入 `visual_metrics`
-- 落地到 `references/articles/wechat-{yyyymmdd}-{title-slug}.md`
+- 落地到 `content/references/articles/wechat-{yyyymmdd}-{title-slug}.md`
 
 **抓取失败处理（L4 人工介入）**：
 
@@ -120,7 +120,7 @@ preserving headings, paragraphs and quotes. Omit navigation, footer, and
 related-posts sections.")
 ```
 
-将返回内容以相同命名规范手写落地到 `references/articles/{slug}.md`（frontmatter 仅写 source_url + title + fetched_at）。
+将返回内容以相同命名规范手写落地到 `content/references/articles/{slug}.md`（frontmatter 仅写 source_url + title + fetched_at）。
 
 ### Step 3 — 读本地参考 + 调用分析
 
@@ -128,18 +128,18 @@ related-posts sections.")
 
 | 维度 | 对比目标 | 输出 |
 |---|---|---|
-| 写作风格 | `styles/{profile}/style-profile.md` | 风格 DNA 差异 |
-| 句式质量 | `config/columns.yaml` 的 `phrase_replacements` + `rules/data/forbidden-phrases.yaml` + `redline.md` | 新替换规则或禁用模式 |
+| 写作风格 | `content/styles/{profile}/style-profile.md` | 风格 DNA 差异 |
+| 句式质量 | `framework/config/columns.yaml` 的 `phrase_replacements` + `rules/data/forbidden-phrases.yaml` + `redline.md` | 新替换规则或禁用模式 |
 | 排版手法 | `rules/core/platform-base.md` + `domains/wechat-article/platform.md` | 排版改进 |
-| 结构模板 | `config/columns.yaml` 的 `columns.{col}.skeleton` | 骨架调整 |
-| 视觉设计 | `config/columns.yaml` 的色板 + `suggested_components` + 新抓取文章的 `visual_metrics` | 组件搭配 |
+| 结构模板 | `framework/config/columns.yaml` 的 `columns.{col}.skeleton` | 骨架调整 |
+| 视觉设计 | `framework/config/columns.yaml` 的色板 + `suggested_components` + 新抓取文章的 `visual_metrics` | 组件搭配 |
 
 **执行流程：**
 
-1. Read 所有目标 Markdown（来自 `references/articles/` 或用户指定路径），识别类型（文章 / 模板 / 风格指南），提取栏目
+1. Read 所有目标 Markdown（来自 `content/references/articles/` 或用户指定路径），识别类型（文章 / 模板 / 风格指南），提取栏目
 2. Read InkFlow 当前配置：
-   - `styles/default/style-profile.md`（若存在）
-   - `config/columns.yaml`
+   - `content/styles/default/style-profile.md`（若存在）
+   - `framework/config/columns.yaml`
    - `.claude/rules/data/forbidden-phrases.yaml`
    - `.claude/rules/domains/wechat-article/redline.md`
 3. 逐维度输出，每条含：
@@ -163,17 +163,17 @@ AskUserQuestion:
 
 | 建议类型 | 目标文件 |
 |---|---|
-| 风格规则 | `styles/{profile}/style-profile.md` |
-| 正向替换 | `config/columns.yaml` 的 `phrase_replacements` |
+| 风格规则 | `content/styles/{profile}/style-profile.md` |
+| 正向替换 | `framework/config/columns.yaml` 的 `phrase_replacements` |
 | 禁用模式 | `.claude/rules/data/forbidden-phrases.yaml` 对应分组 |
-| 骨架调整 | `config/columns.yaml` 的 `columns.{col}.skeleton` |
-| 视觉建议 | `config/columns.yaml` 的 `colors` / `suggested_components` |
+| 骨架调整 | `framework/config/columns.yaml` 的 `columns.{col}.skeleton` |
+| 视觉建议 | `framework/config/columns.yaml` 的 `colors` / `suggested_components` |
 
 每次写入前 Read 确认当前内容，用 Edit 精确修改。
 
 ### Step 6 — 完整报告
 
-落地到 `retro/study-reports/{yyyymmdd}-{slug}.md`，包含：
+落地到 `content/retrospectives/study-reports/{yyyymmdd}-{slug}.md`，包含：
 - 本次学习的材料清单（含 source_url）
 - 每条建议的采纳状态
 - 涉及的文件变更列表（git diff 风格摘要）
@@ -186,9 +186,9 @@ AskUserQuestion:
 - **建议必须具体到文件/字段** — 不能只说"建议调整风格"
 - **参考材料质量不高时应如实指出** — 不强行提取
 - **URL 抓取失败不阻塞流程** — 优雅降级到粘贴正文模式
-- **缓存** — `references/articles/` 里已有同 URL（按 `source_url` 精确匹配 frontmatter）则直接复用，询问是否重抓
+- **缓存** — `content/references/articles/` 里已有同 URL（按 `source_url` 精确匹配 frontmatter）则直接复用，询问是否重抓
 
 ## 依赖
 
-- `tools/fetch/wechat.py`（微信 URL 抓取）
+- `.claude/skills/style-learning/scripts/wechat.py`（微信 URL 抓取）
 - `requests`、`beautifulsoup4`（首次使用需 `pip install -e .` 或 `pip install requests beautifulsoup4`）

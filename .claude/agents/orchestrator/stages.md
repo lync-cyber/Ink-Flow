@@ -2,13 +2,13 @@
 
 ## 阶段执行通用算法
 
-从 `config/inkflow.yaml` 的 stages 列表读取阶段定义；每阶段按顺序执行：
+从 `framework/config/inkflow.yaml` 的 stages 列表读取阶段定义；每阶段按顺序执行：
 
 ```
 FOR each stage from current_stage to end:
 
   1. SKIP CHECK
-     读 stage.skip_if；从 articles/{slug}/intermediate/01-brief.md frontmatter 取值。
+     读 stage.skip_if；从 content/articles/{slug}/intermediate/01-brief.md frontmatter 取值。
      条件成立 → status=skipped，记录 reason，NEXT。
 
   2. DEPENDENCY CHECK
@@ -45,7 +45,7 @@ FOR each stage from current_stage to end:
   8. STATE UPDATE
      Read → 更新 status/completed_at/artifacts/duration_seconds/retries
      Write 写回 JSON。
-     追加 retro/runs/{run_id}.log.md。
+     追加 content/retrospectives/runs/{run_id}.log.md。
 ```
 
 ## Draft 分节循环（writer 专用）
@@ -62,11 +62,11 @@ FOR each section:
   - status=in_progress，started_at
   - 调用 writer（writer 自行读 columns.yaml 对应栏目的 skeleton/tone；
     首 section 再读 opening_strategies 对应策略）
-  - 输出 → articles/{slug}/intermediate/04a-draft/section-{NN}.md
+  - 输出 → content/articles/{slug}/intermediate/04a-draft/section-{NN}.md
   - 校验（字数 ±20%、无 forbidden_patterns）
   - status=completed
 
-所有 section 完成 → 合并为 articles/{slug}/intermediate/04a-draft/merged-draft.md
+所有 section 完成 → 合并为 content/articles/{slug}/intermediate/04a-draft/merged-draft.md
 ```
 
 ## Audit + Polish 子步骤
@@ -82,7 +82,7 @@ polisher → review/06-polish-trace.md + export/07-final-manuscript.md（按 aud
 1. 调用 publisher（允许使用 quality-linting skill）
 2. publisher 执行：格式校验 → 语法标准化 → 语义检查 → 多格式导出
 3. 生成运营元数据（摘要、关键词、封面变量）
-4. 按 config/inkflow.yaml 的 exports 导出到 export/
+4. 按 framework/config/inkflow.yaml 的 exports 导出到 export/
 5. 进入 CP3（checkpoints.md）
 ```
 

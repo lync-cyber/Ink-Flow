@@ -25,15 +25,15 @@ AskUserQuestion:
     - 自定义时间段
 ```
 
-可选附带已有选题列表（用户直接提供或从 articles/ 下未完成的 brief 扫描）。
+可选附带已有选题列表（用户直接提供或从 content/articles/ 下未完成的 brief 扫描）。
 
 ## 数据读取
 
-1. `config/columns.yaml` — 读取每个栏目的：
+1. `framework/config/columns.yaml` — 读取每个栏目的：
    - `frequency`（发布频率目标）
    - `best_time`（推荐发布时间）
    - `content_mix`（月度总量控制）
-2. `articles/*/intermediate/01-brief.md` — 扫描所有已发布文章的 frontmatter，提取：
+2. `content/articles/*/intermediate/01-brief.md` — 扫描所有已发布文章的 frontmatter，提取：
    - 栏目（column）
    - 发布日期（publish_date，若有）
    - 内容类型（content_type）
@@ -56,7 +56,7 @@ AskUserQuestion:
 
 ## 输出格式
 
-生成排期表到 `retro/content-calendar.md`：
+生成排期表到 `content/retrospectives/content-calendar.md`：
 
 ```markdown
 # 内容排期: {起始日期} - {结束日期}
@@ -80,7 +80,7 @@ AskUserQuestion:
 AskUserQuestion:
   question: "排期已生成，请确认或调整"
   options:
-    - "确认排期" — 保存到 retro/content-calendar.md
+    - "确认排期" — 保存到 content/retrospectives/content-calendar.md
     - "调整某个时间槽" — 指定修改
     - "增加/减少文章数量" — 重新平衡
     - "为第一篇开始创作" — 触发 pipeline-orchestrating 进入 brief 创建

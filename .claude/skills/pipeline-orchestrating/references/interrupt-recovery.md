@@ -30,13 +30,13 @@ Resume 时对每个标记为 `completed` 的依赖阶段执行：
 3. 若文件缺失或为空 → 重置该阶段为 `pending`，通知用户
 
 约定路径映射：
-- brief → `articles/{slug}/intermediate/01-brief.md`
-- research → `articles/{slug}/intermediate/02-research-memo.md`
-- outline → `articles/{slug}/intermediate/03-outline-structure.md`
-- draft → `articles/{slug}/drafts/full.md`
-- figures → `articles/{slug}/figures/summary.md`
-- audit → `articles/{slug}/review/05-audit-report.md`
-- polish → `articles/{slug}/export/07-final-manuscript.md`
+- brief → `content/articles/{slug}/intermediate/01-brief.md`
+- research → `content/articles/{slug}/intermediate/02-research-memo.md`
+- outline → `content/articles/{slug}/intermediate/03-outline-structure.md`
+- draft → `content/articles/{slug}/drafts/full.md`
+- figures → `content/articles/{slug}/figures/summary.md`
+- audit → `content/articles/{slug}/review/05-audit-report.md`
+- polish → `content/articles/{slug}/export/07-final-manuscript.md`
 
 ## Draft Section 级恢复
 

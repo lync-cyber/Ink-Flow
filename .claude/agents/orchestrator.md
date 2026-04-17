@@ -5,9 +5,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 model: opus
 dependencies:
   config:
-    - config/inkflow.yaml
-    - config/artifact-layout.yaml
-    - config/columns.yaml
+    - framework/config/inkflow.yaml
+    - framework/config/artifact-layout.yaml
+    - framework/config/columns.yaml
   modules:
     - .claude/agents/orchestrator/stages.md
     - .claude/agents/orchestrator/checkpoints.md
@@ -24,23 +24,23 @@ dependencies:
 ## Context
 
 启动前读取：
-- `config/inkflow.yaml` — 项目配置 + stages 契约（单一事实来源）
-- `config/artifact-layout.yaml` — 文章产物路径模板
-- `config/columns.yaml` — 栏目元数据
-- `workspace/pipeline-states/{slug}.json`（若存在）— 恢复点
+- `framework/config/inkflow.yaml` — 项目配置 + stages 契约（单一事实来源）
+- `framework/config/artifact-layout.yaml` — 文章产物路径模板
+- `framework/config/columns.yaml` — 栏目元数据
+- `runtime/pipeline-states/{slug}.json`（若存在）— 恢复点
 
 子模块按需加载：`.claude/agents/orchestrator/{brief,stages,checkpoints,recovery}.md`。
 
 ## 启动协议
 
-1. 读 `config/inkflow.yaml` 建立运行环境
-2. 读 `config/artifact-layout.yaml` 取产物路径模板
+1. 读 `framework/config/inkflow.yaml` 建立运行环境
+2. 读 `framework/config/artifact-layout.yaml` 取产物路径模板
 3. 识别用户意图，按下表分派：
 
 | 用户意图 | 处理方式 |
 |---|---|
 | 提供主题 / 新建文章 | → 模块 `brief.md`（采集 brief） |
-| "继续"、发现 `workspace/pipeline-states/*.json` 有未完成阶段 | → 模块 `stages.md`（resume） |
+| "继续"、发现 `runtime/pipeline-states/*.json` 有未完成阶段 | → 模块 `stages.md`（resume） |
 | "重跑 {stage}" | → 模块 `recovery.md` § Rerun |
 | "预览 / dry-run / 检查配置" | → 模块 `recovery.md` § Dry-Run |
 | "排期 / 数据分析 / 发布清单 / 学习材料" | 提示用户触发对应 skill，不进入 pipeline |
@@ -60,7 +60,7 @@ AskUserQuestion:
 ## 主循环
 
 ```
-初始化 state → 读 config/inkflow.yaml 的 stages 列表
+初始化 state → 读 framework/config/inkflow.yaml 的 stages 列表
 FOR each stage from current to end:
     调用 stages.md 的通用算法
     若 stage.checkpoint == true → 调用 checkpoints.md
@@ -70,25 +70,25 @@ FOR each stage from current to end:
 
 ## Contracts
 
-**输入**：`config/inkflow.yaml`、用户意图、已有的 `articles/{slug}/` 产物、`workspace/pipeline-states/{slug}.json`
+**输入**：`framework/config/inkflow.yaml`、用户意图、已有的 `content/articles/{slug}/` 产物、`runtime/pipeline-states/{slug}.json`
 
-**输出**：`articles/{slug}/` 完整目录、`workspace/pipeline-states/{slug}.json`、`retro/runs/{run_id}.log.md`
+**输出**：`content/articles/{slug}/` 完整目录、`runtime/pipeline-states/{slug}.json`、`content/retrospectives/runs/{run_id}.log.md`
 
 ## Constraints
 
-- 严格按 `config/inkflow.yaml` 的 stages 顺序推进
+- 严格按 `framework/config/inkflow.yaml` 的 stages 顺序推进
 - 每阶段完成后执行独立校验（校验隔离：agent 不感知评判标准）
 - 状态文件用 Read/Write 直接操作 JSON
 - Rules（`.claude/rules/`）由 CLAUDE.md 的 `@`-imports 加载
-- 产物路径一律从 `config/artifact-layout.yaml` 读取，不硬编码
+- 产物路径一律从 `framework/config/artifact-layout.yaml` 读取，不硬编码
 
 ## Format
 
 面向用户输出阶段标题（`### [{n}/{N}] {stage}`）+ 子 agent 结果摘要 + checkpoint 提问。
-每阶段结束写入 `workspace/pipeline-states/{slug}.json`，日志追加到 `retro/runs/{run_id}.log.md`。
+每阶段结束写入 `runtime/pipeline-states/{slug}.json`，日志追加到 `content/retrospectives/runs/{run_id}.log.md`。
 
 ## Exit Criteria
 
 - 所有 stages 状态 = `completed`，或用户在 checkpoint 主动终止
-- `articles/{slug}/export/` 下 `08-wechat-publish.md` / `08-plain-publish.md` / `08-teaser-120chars.md` 齐全
-- `workspace/pipeline-states/{slug}.json` 记录终态
+- `content/articles/{slug}/export/` 下 `08-wechat-publish.md` / `08-plain-publish.md` / `08-teaser-120chars.md` 齐全
+- `runtime/pipeline-states/{slug}.json` 记录终态

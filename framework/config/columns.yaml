@@ -1,0 +1,236 @@
+# ============================================================
+# 栏目统一配置（单一事实来源）
+# 业务定位 + 骨架结构 + 开头策略 + 语气指南
+# 视觉字段（配色/字体/typesetter 预设）已移至独立产物：
+#   content/styles/{slug}/theme.css
+# 由 column-designing skill 产出，下游 skill 导入 doocs/md
+# ============================================================
+
+version: "6.0"
+
+# ---- 栏目名映射（brief.content_column 兼容别名）----
+column_aliases:
+  personal: story
+  人物故事: story
+  学术前沿: academic
+  行业趋势: industry
+  技术专题: tech
+
+# ============================================================
+# 栏目定义
+# ============================================================
+columns:
+
+  # ════════════════════════════════════════
+  academic:
+    name: "学术前沿"
+    nameEn: "Academic Frontier"
+    personality: "克制严谨、数据与逻辑层级优先、适合大量留白"
+    default_opening: blunt
+    default_cta: bookmark
+    suggested_components: [data_chart]
+    frequency: "2-3/月"
+    best_time: "周三/四 20:30-21:30"
+    kpi_targets:
+      completion_rate: 0.40
+      bookmark_rate: 0.05
+      share_rate: 0.03
+    skeleton:
+      goal: "让非该研究方向的技术读者理解'这篇论文证明了什么、为什么重要、工业界能做什么'。"
+      sections:
+        - "一句话结论 — 论文的核心发现（不是摘要，是你的判断）"
+        - "问题背景 — 这个问题之前为什么难？解决它有什么价值？"
+        - "核心方法 — 方法论要点，用类比代替公式"
+        - "关键结果 — 用数据说话，对比 baseline"
+        - "对工业界的启示 — 落地可能性分析：谁能用、何时用、有什么限制"
+        - "收尾 — 要点表格 / 引导段落 / 或 H3 '阅读原文'"
+      title_guidance: "提炼核心发现，避免照搬论文标题。范例：'{发现} 意味着 {影响}'"
+    tone:
+      id: objective_with_judgment
+      rules:
+        - "专业感 + 翻译：每个专业概念下一句用类比解释"
+        - "数据有对比：从 82% 提升到 94%，超过同期 3 个 baseline"
+        - "结论有立场：不说'具有一定前景'，说'调试时间可以减半'"
+      voice: "客观但有判断力"
+      interaction_hook: "你觉得这个方法在 X 场景下还能用吗？"
+
+  # ════════════════════════════════════════
+  industry:
+    name: "行业趋势"
+    nameEn: "Industry Pulse"
+    personality: "简报式紧凑、信息密度高、节奏明快、适合卡片化"
+    default_opening: contrast
+    default_cta: share
+    suggested_components: [comparison_table]
+    frequency: "周报+突发"
+    best_time: "周一 07:30-08:30"
+    kpi_targets:
+      open_rate: 0.15
+      share_rate: 0.08
+    skeleton:
+      goal: "帮读者在信息噪声中形成判断，而不只是转述信息。"
+      sections:
+        - "一句话判断 — 你的核心论断（不是'X 发生了'，是'X 意味着 Y'）"
+        - "发生了什么 — 事件/数据/信号列举（保持时效性标注）"
+        - "为什么重要 — 影响链条分析"
+        - "谁会受影响 — 分角色分析：工程师/管理者/供应商/用户"
+        - "行动建议 — 针对主要读者群体的可操作建议"
+        - "收尾"
+      title_guidance: "判断型或冲突型。范例：'X 正在发生，{角色} 需要准备了'"
+    tone:
+      id: opinionated
+      rules:
+        - "有时间感：标注信息来源的时间点"
+        - "多信号共振：两三个独立信号指向同一方向才叫趋势"
+        - "写判断不写综述：'X 将被边缘化'，非'X 面临一定挑战'"
+      voice: "有立场、不中立"
+      interaction_hook: "你所在的团队开始用了吗？"
+
+  # ════════════════════════════════════════
+  tech:
+    name: "技术专题"
+    nameEn: "Tech Deep Dive"
+    personality: "工具化、装饰最少、功能性最强；内容可为软件/硬件/工业/材料等任何可落地技术"
+    default_opening: pain_point
+    default_cta: bookmark_try
+    suggested_components: [flow_chart]
+    frequency: "2-4/月"
+    best_time: "周二/四 21:00-22:00"
+    kpi_targets:
+      completion_rate: 0.35
+      bookmark_rate: 0.08
+    skeleton:
+      goal: "读者读完能带走可迁移的设计判断，不只是'知道 X 是什么'。"
+      sections:
+        - "一句话结论 — 这个方案解决了什么具体问题（精确到场景）"
+        - "问题定义 — 痛点描述，用失败案例或误区引出"
+        - "方案详解 — 步骤拆解，每步有可复现的依据（代码片段 / 配置参数 / 工艺参数 / 电路图 / 流程图，按内容形态选）"
+        - "性能验证 — 实测数据或对比基准（必须有具体数字）"
+        - "避坑要点 — '我们踩过的坑'或'容易忽略的点'"
+        - "收尾"
+      title_guidance: "实用框架型。范例：'X 实战：{解决什么}'"
+    tone:
+      id: practical_direct
+      rules:
+        - "踩坑叙事：用失败经历引出正确做法"
+        - "前提说清：版本、依赖、工艺条件、实验环境——读者要能复现"
+        - "避坑具体：不说'注意性能问题'，说'超过 1000 条数据会超时，改用 X'"
+      voice: "实用、直接，像给同事讲经验"
+      interaction_hook: "试完了来评论区说说效果？"
+
+  # ════════════════════════════════════════
+  story:
+    name: "人物故事"
+    nameEn: "Profiles & Stories"
+    personality: "温暖有机、引言突出、段落宽松、叙事优先"
+    default_opening: story
+    default_cta: comment
+    suggested_components: []
+    frequency: "1/月"
+    best_time: "周六上午/周日晚"
+    kpi_targets:
+      share_rate: 0.10
+      min_comments: 15
+    skeleton:
+      goal: "让读者产生共鸣，觉得'说的就是我'，并拿走 1 个可立刻改变行为的观点。"
+      sections:
+        - "一句话核心观点 — 带立场，不要软化表达"
+        - "故事/场景 — 具体事件，用叙事语气（时间+场景+转折），不超过 3 段"
+        - "反思与分析 — 为什么会这样？是认知缺陷还是环境问题"
+        - "我现在怎么做 — 改进方案，具体到行为层面"
+        - "给同行的建议 — 泛化到读者场景，用第二人称"
+        - "收尾"
+      title_guidance: "第一人称、对话感。范例：'我为什么放弃了 X'"
+    tone:
+      id: conversational
+      rules:
+        - "第一人称到底：用'我'不用'笔者'"
+        - "场景具体：不说'某次项目'，说'2024 年某个深夜...'"
+        - "观点强硬：'X 不好'，而非'X 可能有一些局限性'"
+      voice: "对话感，像给有经验的朋友聊天"
+      interaction_hook: "你有没有过类似的经历？"
+
+# ============================================================
+# 开头策略（原 opening-crafting skill 内容）
+# writer 在写第一个 section 时按 brief.opening_style 选择
+# ============================================================
+opening_strategies:
+
+  pain_point:
+    framework: "SCQA — 场景→冲突→问题→答案预告"
+    template: "你是不是也遇到过 {痛点}？上周我 {具体场景}，结果 {后果}。"
+    principles:
+      - "用第二人称'你'建立共鸣"
+      - "用具体场景代替抽象描述"
+    suited_for: "技术教程、问题解决类"
+
+  story:
+    framework: "先事件后道理，3 句话进入主题"
+    template: "{时间}，我在 {场景} 做 {事}，{转折}。"
+    principles: ["铺垫 ≤3 句，快速进入转折点"]
+    suited_for: "经验分享、踩坑总结（人物故事首选）"
+
+  contrast:
+    framework: "数据/认知反差制造张力"
+    template: "大多数人以为 {常识}，但实际上 {反常识}。"
+    principles: ["反差足够大但不失真", "最好有数据支撑"]
+    suited_for: "深度分析、观点类（行业趋势首选）"
+
+  question:
+    framework: "直接抛出读者关心的问题"
+    template: "{核心问题}？这个问题我研究了 {时间}，答案比你想的 {方向}。"
+    principles: ["问题要具体", "预告答案制造好奇"]
+    suited_for: "技术选型、方案对比"
+
+  blunt:
+    framework: "不铺垫，直接给结论"
+    template: "结论先说：{核心观点}。以下是 {N} 个理由。"
+    principles: ["适合对读者来说结论本身就有冲击力的话题"]
+    suited_for: "快评、观点输出（学术前沿也适用）"
+
+# content_type → opening_style 回退映射（brief.opening_style=auto 且无栏目时）
+content_type_fallback:
+  opinion: blunt
+  tutorial: pain_point
+  deep_dive: contrast
+  quick_take: question
+
+# ============================================================
+# 正向替换规则（原 writing-guiding skill 内容）
+# polisher 使用；与 forbidden-phrases 互补：redline 说"禁止什么"，此处说"改成什么"
+# ============================================================
+phrase_replacements:
+  "换言之": "说白了"
+  "需要注意的是": ["我踩过的坑是", "容易忽略的是"]
+  "这充分说明了": "直接陈述判断"
+  "从实验结果来看": "实验跑了 3 遍，结果都是..."
+  "研究表明": ["{研究者}发现", "我们测了一下，发现"]
+  "可以发现": "直接说发现了什么"
+  "通过以上介绍": "删掉"
+  "相信读者已经了解": "删掉"
+  "我们可以看到": "直接描述看到的"
+  "效果非常显著": "给具体数字（快了 40% / 减少 2/3 代码量）"
+
+# ============================================================
+# 人味技巧（通用，writer/polisher 使用）
+# ============================================================
+human_voice_techniques:
+  rhythm:
+    - "允许适度逻辑跳跃和口语化（过于顺滑本身是 AI 特征）"
+    - "偶尔短句制造节奏：'就这样。' / '但这还不是重点。'"
+  subjective:
+    - "每篇至少 1 处个人经验/观点（标记为 <!-- USER_FILL: {提示} -->）"
+    - "适当反问句增加互动感"
+  cognitive_flip:
+    - "'X 不是 A，而是 B'制造认知反差"
+    - "先误区后正解"
+  golden_sentence:
+    requirement: "每篇至少 1 个'截图级金句'（≤20 字 + 强观点 + 可独立传播）"
+    position: "文章前 1/3 处"
+
+# ============================================================
+# 总量控制
+# ============================================================
+content_mix:
+  monthly_target: "7-10"
+  max_per_day: 1

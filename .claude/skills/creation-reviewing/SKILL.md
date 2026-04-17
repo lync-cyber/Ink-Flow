@@ -30,8 +30,8 @@ AskUserQuestion:
 
 对 AI 初稿与用户终审版本做 diff：
 
-- AI 初稿: `articles/{slug}/drafts/full.md`
-- 用户终审: `articles/{slug}/export/07-final-manuscript.md`
+- AI 初稿: `content/articles/{slug}/drafts/full.md`
+- 用户终审: `content/articles/{slug}/export/07-final-manuscript.md`
 
 用 Read tool 分别读取两个文件，直接对比分析：
 - 新增段落数、删除段落数、修改段落数、净字数变化
@@ -73,7 +73,7 @@ AskUserQuestion:
 ## Step 4 — 写入记忆 + 输出报告
 
 - 用户确认的规律通过 Claude Code 原生 memory 系统持久化（feedback / project 类型）
-- 输出完整复盘报告到 `articles/{slug}/retro.md`
+- 输出完整复盘报告到 `content/articles/{slug}/retro.md`
 
 ### 规则晋升建议
 

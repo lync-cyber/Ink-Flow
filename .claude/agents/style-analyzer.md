@@ -7,7 +7,7 @@ dependencies:
   invoked_by:
     - .claude/skills/style-learning/SKILL.md
   artifacts_written:
-    - styles/default/style-profile.md   # 由调用方决定实际路径
+    - content/styles/default/style-profile.md   # 由调用方决定实际路径
 ---
 
 ## Role
@@ -20,7 +20,7 @@ dependencies:
 
 启动前需读取：
 - 调用方传入的参考文章路径或内容（3-5 篇）
-- 若参考文件由 `tools/fetch/wechat.py` 抓取，其 frontmatter 的 `visual_metrics` 字段提供数值化的视觉节奏信号，需一并读取
+- 若参考文件由 `.claude/skills/style-learning/scripts/wechat.py` 抓取，其 frontmatter 的 `visual_metrics` 字段提供数值化的视觉节奏信号，需一并读取
 
 ## Constraints
 

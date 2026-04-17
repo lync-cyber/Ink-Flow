@@ -5,11 +5,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/04a-draft/merged-draft.md
-    - articles/{slug}/intermediate/02-research-memo.md
-    - articles/{slug}/intermediate/04b-figure/figure-index.md   # 若存在
+    - content/articles/{slug}/intermediate/04a-draft/merged-draft.md
+    - content/articles/{slug}/intermediate/02-research-memo.md
+    - content/articles/{slug}/intermediate/04b-figure/figure-index.md   # 若存在
   config:
-    - config/columns.yaml                              # tone / voice 判断基准
+    - framework/config/columns.yaml                              # tone / voice 判断基准
   rules:
     - .claude/rules/core/fact-check.md
     - .claude/rules/core/writing-quality.md
@@ -26,10 +26,10 @@ dependencies:
 在 **audit** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/04a-draft/merged-draft.md`
-- `articles/{slug}/intermediate/04b-figure/figure-index.md`（若有）
-- `articles/{slug}/intermediate/02-research-memo.md`（事实核查依据）
-- `config/columns.yaml` — `columns.{content_column}.tone` 风格基准
+- `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
+- `content/articles/{slug}/intermediate/04b-figure/figure-index.md`（若有）
+- `content/articles/{slug}/intermediate/02-research-memo.md`（事实核查依据）
+- `framework/config/columns.yaml` — `columns.{content_column}.tone` 风格基准
 - `.claude/rules/data/forbidden-phrases.yaml` — AI 味检测清单
 
 ## Constraints
@@ -43,7 +43,7 @@ dependencies:
 - **句式问题**: 被动句过多、长句（>40字）、冗余过渡
 - **传播性评估**: 标题转发欲、金句密度、开头钩子强度（1-5 分量化）
 
-维度数量可能随规则演进而调整，以 `config/inkflow.yaml` 中 `audit.validation.required_sections` 为权威清单。
+维度数量可能随规则演进而调整，以 `framework/config/inkflow.yaml` 中 `audit.validation.required_sections` 为权威清单。
 
 ### 通用
 
@@ -53,7 +53,7 @@ dependencies:
 
 ## Format
 
-输出单文件：`articles/{slug}/review/05-audit-report.md`
+输出单文件：`content/articles/{slug}/review/05-audit-report.md`
 
 ```markdown
 # 审校报告: {topic}
@@ -95,9 +95,9 @@ dependencies:
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/04a-draft/merged-draft.md`
+**输入**: `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
 
-**输出**: `articles/{slug}/review/05-audit-report.md`
+**输出**: `content/articles/{slug}/review/05-audit-report.md`
 
 ## Exit Criteria
 

@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/01-brief.md
+    - content/articles/{slug}/intermediate/01-brief.md
   rules:
     - .claude/rules/core/fact-check.md
 ---
@@ -19,9 +19,9 @@ dependencies:
 在 pipeline 的 **research** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/01-brief.md`
+- `content/articles/{slug}/intermediate/01-brief.md`
 - 若 `brief.series_name` 非空且 `series_index > 1`：
-  - 扫描 `articles/*/intermediate/01-brief.md`，找 frontmatter 中相同 series_name 的已完成文章
+  - 扫描 `content/articles/*/intermediate/01-brief.md`，找 frontmatter 中相同 series_name 的已完成文章
   - 读其 `intermediate/02-research-memo.md` 作为背景，聚焦本篇新增方向
 
 ## Constraints
@@ -45,7 +45,7 @@ dependencies:
 
 ## 栏目感知
 
-从 `brief.content_column` 读栏目 ID，调整搜索策略。栏目的 `goal` / `suggested_components` 在 `config/columns.yaml`；本 agent 侧重源优先级和侧重点：
+从 `brief.content_column` 读栏目 ID，调整搜索策略。栏目的 `goal` / `suggested_components` 在 `framework/config/columns.yaml`；本 agent 侧重源优先级和侧重点：
 
 ### academic
 - 来源：arXiv → Semantic Scholar → ACM/IEEE → 顶会官网
@@ -103,9 +103,9 @@ dependencies:
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/01-brief.md`
+**输入**: `content/articles/{slug}/intermediate/01-brief.md`
 
-**输出**: `articles/{slug}/intermediate/02-research-memo.md`
+**输出**: `content/articles/{slug}/intermediate/02-research-memo.md`
 - 必含: 关键事实、代码片段、对比表格、不确定项
 - `brief.skip_seo != true` → 必含 SEO 关键词
 - `brief.content_type != opinion` → 必含竞品分析

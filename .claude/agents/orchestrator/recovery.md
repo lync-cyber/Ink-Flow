@@ -17,7 +17,7 @@
 
 ### 启动恢复检查
 
-1. 扫描 `workspace/pipeline-states/*.json`，找 `status != completed` 的最新记录
+1. 扫描 `runtime/pipeline-states/*.json`，找 `status != completed` 的最新记录
 2. 对每个 completed 前置阶段做 **artifact integrity check**（文件存在且 `size > 0`）
 3. 缺失 → 该阶段重置为 pending；告知用户
 4. `in_progress` 且 `started_at` >30min → stale lock → 问用户（重跑/跳过/取消）
@@ -41,7 +41,7 @@ state.draft.sections 数组中，从第一个非 completed 的 section 继续。
 ```
 用户: "预览 / dry-run / 检查配置"
 不消耗 token：
-  1. 读 config/inkflow.yaml，验证 stages 定义无循环
+  1. 读 framework/config/inkflow.yaml，验证 stages 定义无循环
   2. 检查 agent frontmatter 中 model_allocation 与配置一致
   3. 检查 artifact-layout.yaml 所有路径模板可解析
   4. 列出将按顺序执行的 agent 和预计产物路径

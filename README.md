@@ -19,7 +19,7 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
 .claude/
   ├── agents/                      # Subagent 定义（RCCF 结构）
   ├── skills/                      # Skill 定义（扁平结构，每个 skill 一个目录）
-  │   ├── pipeline-orchestrating/  # 写作流程总入口（含 references/）
+  │   ├── pipeline-orchestrating/  # 写作流程总入口（含 content/references/）
   │   ├── style-learning/          # 风格学习（profile / study 两种模式）
   │   ├── workspace-init/          # 工作区初始化与升级
   │   ├── title-crafting/          # 标题打磨
@@ -34,16 +34,16 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
       ├── domains/                 # 领域特有规则
       └── data/                    # YAML 数据（单一事实来源）
 
-config/                            # 项目配置（纳入版本管理）
+framework/config/                            # 项目配置（纳入版本管理）
   ├── inkflow.yaml                 # 项目配置 + stage 契约
   ├── columns.yaml                 # 栏目统一配置（业务字段：骨架、tone、频率、KPI）
   ├── artifact-layout.yaml         # 产物路径约定
   └── markdown-extensions.md       # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
 
-styles/                            # 个人化风格档案（用户生成，升级不覆盖）
+content/styles/                            # 个人化风格档案（用户生成，升级不覆盖）
   └── {profile}/style-profile.md
 
-tools/                             # 工具链
+framework/tools/                             # 工具链
   ├── lint/                        # 格式校验脚本 + 配置
   ├── render/                      # mermaid / svg-sanitize
   ├── fetch/                       # 外部文章抓取（微信等）+ 正文清洗
@@ -56,14 +56,14 @@ workspace/
 tests/                             # 框架质量门禁
   └── lint-framework.py            # L0 静态校验（schema + 交叉引用）
 
-articles/                          # 内容产物（按文章分组）
+content/articles/                          # 内容产物（按文章分组）
   └── {slug}/
       ├── intermediate/            # brief / research / outline / draft / figure
       ├── review/                  # audit / polish-trace
       └── export/                  # final / wechat / plain / teaser
 
-references/                        # 外部参考材料（风格学习输入）
-workspace/pipeline-states/         # Pipeline 执行状态（.gitignore）
+content/references/                        # 外部参考材料（风格学习输入）
+runtime/pipeline-states/         # Pipeline 执行状态（.gitignore）
 ```
 
 ## 快速开始
@@ -131,7 +131,7 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 | `workspace-init` | 准备 | 工作区初始化与框架升级 |
 | `style-learning` | 准备 | 风格学习（profile：自己文章；study：外部材料/URL） |
 | `title-crafting` | 构思 | 标题打磨 + 质量门禁（由 pipeline 在 CP1 前调用） |
-| `quality-linting` | 发布 | 确定性格式校验（`tools/lint/lint.py`） |
+| `quality-linting` | 发布 | 确定性格式校验（`.claude/skills/quality-linting/scripts/lint.py`） |
 | `publish-preparing` | 发布 | 发布前后运营清单 |
 | `content-planning` | 策划 | 内容排期规划 |
 | `creation-reviewing` | 复盘 | 创作复盘（diff 分析 + 规则提炼） |
@@ -139,12 +139,12 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 | `performance-benchmarking` | 复盘 | 跨文章效果分析 |
 
 > 其他写作期能力（栏目骨架、开头策略、正向替换、视觉主题）不再作为独立 skill，
-> 已整合进 `config/columns.yaml` 作为声明式配置，由 writer / illustrator agent 直接读取。
+> 已整合进 `framework/config/columns.yaml` 作为声明式配置，由 writer / illustrator agent 直接读取。
 
 ### 栏目业务配置与视觉分离
 
-- **业务字段**（骨架、tone、开头策略、KPI）定义在 `config/columns.yaml`，由 writer / illustrator / auditor agent 直接消费。
-- **视觉字段**（主色、字体、标题样式等）不再进入 `columns.yaml`。由 `column-designing` skill 按栏目产出到 `workspace/column-design/{slug}/theme.css` 和 `preview.html`；再由下游 skill 导入到你自部署的 doocs/md 作为可选主题。
+- **业务字段**（骨架、tone、开头策略、KPI）定义在 `framework/config/columns.yaml`，由 writer / illustrator / auditor agent 直接消费。
+- **视觉字段**（主色、字体、标题样式等）不再进入 `columns.yaml`。由 `column-designing` skill 按栏目产出到 `content/styles/{slug}/theme.css` 和 `preview.html`；再由下游 skill 导入到你自部署的 doocs/md 作为可选主题。
 - Writer 输出标准 Markdown + GFM Alerts；publish 阶段产出 `export/08-wechat-publish.md`；用户自行粘贴到兼容 doocs/md 的在线/本地排版器，复制富文本发布。
 
 ### 错误处理

@@ -3,7 +3,7 @@ name: column-designing
 description: >
   栏目视觉设计 — 为 InkFlow 栏目（新建或改版）合成完整视觉系统：从用户真实话题提取意象推导主色，
   生成两套 HTML 对比预览让用户决策，最终输出 doocs/md 可直接消费的主题 CSS 到
-  workspace/column-design/{slug}/theme.css（与 preview.html 同目录）。
+  content/styles/{slug}/theme.css（与 preview.html 同目录）。
   触发条件："新开栏目"、"新栏目视觉"、"给栏目做视觉"、"栏目改版"、"栏目主题"、"栏目配色"、
   "编辑部视觉"、"ink-xxx 主题"、"doocs 主题"、"换一套排版"。
   即使用户只说"我想开个写威士忌品鉴的栏目"或"academic 想换套视觉"，也应立即触发本 skill；
@@ -17,13 +17,13 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash
 
 为 InkFlow 栏目合成完整视觉系统：**用户内容 → 主色推导 → 双方向 HTML 预览 → 主题 CSS 中间产物**。
 
-**边界**：本 skill 只产出**视觉中间产物**（CSS + 预览 HTML），不写入 `config/columns.yaml`——
+**边界**：本 skill 只产出**视觉中间产物**（CSS + 预览 HTML），不写入 `framework/config/columns.yaml`——
 columns.yaml 已剥离视觉字段，只保留业务字段（骨架 / tone / 频率 / KPI）。
 视觉落地由下游 skill 接管（把 `theme.css` 导入你自部署的 doocs/md 实例作为可选主题）。
 
 **产物位置**：
-- `workspace/column-design/{slug}/preview.html` — §4 双方向预览
-- `workspace/column-design/{slug}/theme.css` — §5 最终 doocs/md 主题 CSS
+- `content/styles/{slug}/preview.html` — §4 双方向预览
+- `content/styles/{slug}/theme.css` — §5 最终 doocs/md 主题 CSS
 
 ---
 
@@ -105,14 +105,14 @@ AskUserQuestion:
 ### new 模式
 
 - 问 slug（英文小写 kebab，如 `reviews` / `whisky-notes`）
-- Read `config/columns.yaml`，确认 `columns.{slug}` 不存在（存在则提示冲突，问是否改为 revise）
-- Glob `workspace/column-design/*/theme.css`，读出其他栏目已有的主色，在 §3 的"色相差 ≥ 30°"
+- Read `framework/config/columns.yaml`，确认 `columns.{slug}` 不存在（存在则提示冲突，问是否改为 revise）
+- Glob `content/styles/*/theme.css`，读出其他栏目已有的主色，在 §3 的"色相差 ≥ 30°"
   校验里作为参照
 
 ### revise 模式
 
-- Read `config/columns.yaml` 的 `columns.{slug}`（取 `personality`，作为视觉主张的出发点）
-- Read `workspace/column-design/{slug}/theme.css`（如已存在 — 可能是历史产物；不存在则从零起）
+- Read `framework/config/columns.yaml` 的 `columns.{slug}`（取 `personality`，作为视觉主张的出发点）
+- Read `content/styles/{slug}/theme.css`（如已存在 — 可能是历史产物；不存在则从零起）
 - 问改版范围：
 
 ```
@@ -231,7 +231,7 @@ AskUserQuestion:
 硬编码 inline style）：
 
 - **金句居中段** `.pullquote`（CLAUDE.md 规定每篇需 1 个"截图级金句"）
-- **导语卡 TL;DR** `.lede` / `.lede-tag`
+- **导语卡 摘要引言** `.lede` / `.lede-tag`
 - **文末 CTA 卡** `.cta` / `.cta-head`（关注 / 阅读原文 / 下期预告）
 - **标签行** `.tags`（文章头 `#AI工程` `#机器人控制`）
 - **图注** `.caption`（避免和 inline `em` 冲突）
@@ -241,15 +241,15 @@ AskUserQuestion:
 writer 通过 `<p class="pullquote">...</p>` 等内联 HTML 启用；doocs/md 复制机制会把
 class 样式 inline 化到元素 `style`，粘到微信仍生效。
 
-参数化骨架见 `references/theme.md` §四。
+参数化骨架见 `content/references/theme.md` §四。
 
 ---
 
 ## 4. HTML 双方向预览
 
-**不跳过**。详细骨架和 14 组件清单见 `references/preview.md`。
+**不跳过**。详细骨架和 14 组件清单见 `content/references/preview.md`。
 
-**产物路径**：`workspace/column-design/{slug}/preview.html`（创建目录若不存在）
+**产物路径**：`content/styles/{slug}/preview.html`（创建目录若不存在）
 
 **对比立场，不是参数差异**：两方向在 H1 / H2 / H3 / 引用块 / 分隔线 / 列表 / 粗体 /
 行距 **≥ 5 项**系统性站队到不同立场。挑选原则：基于用户象限，选**有张力的相邻气质**
@@ -266,15 +266,15 @@ H1 / H2 / H3 / H4 / 正文段落 / 粗体 / 行内代码 / 链接
 
 ```
 H5 / em 斜体 / del 删除线 / 表格 / GFM callout（note/tip）/ 脚注区
-金句居中段 / TL;DR 导语卡 / 文末 CTA 卡 / 标签行 / 任务列表
+金句居中段 / 摘要导语卡 / 文末 CTA 卡 / 标签行 / 任务列表
 ```
 
-预览里渲染了哪些扩展，§5 theme.css 就必须提供对应钩子。清单见 `references/preview.md`
+预览里渲染了哪些扩展，§5 theme.css 就必须提供对应钩子。清单见 `content/references/preview.md`
 §扩展组件。
 
 HTML 底部附两方向逐项差异对比表。生成后告诉用户：
 
-> 两套完整排版主张已渲染到 `workspace/column-design/{slug}/preview.html`，用的是你提供的真实内容。
+> 两套完整排版主张已渲染到 `content/styles/{slug}/preview.html`，用的是你提供的真实内容。
 > - **A · [气质词]** — [一句话]
 > - **B · [气质词]** — [一句话]
 >
@@ -289,7 +289,7 @@ HTML 底部附两方向逐项差异对比表。生成后告诉用户：
 
 ## 5. 生成 theme.css
 
-### 5.1 写入 `workspace/column-design/{slug}/theme.css`
+### 5.1 写入 `content/styles/{slug}/theme.css`
 
 **选择器体系：统一使用 doocs 特殊选择器**。产物直接粘进 doocs/md 的"自定义 CSS"框，所以
 选择器命名按 doocs 上游约定：
@@ -318,10 +318,10 @@ HTML 底部附两方向逐项差异对比表。生成后告诉用户：
 
 **主题级辅助组件**（§3.7 列出的金句 / 导语卡 / CTA / 标签 / 图注 / kbd）对应 `.pullquote`
 / `.lede` / `.cta` / `.tags` / `.caption` / `kbd` 等 class 钩子，参数化骨架见
-`references/theme.md` §四。
+`content/references/theme.md` §四。
 
 **Writer 手写 fallback 清单**（伪元素 / counter / checkbox 等微信不稳定能力的替代约定）见
-`references/theme.md` §五，生成 theme.css 时**必须在文件头注释声明本栏目采用的 fallback**。
+`content/references/theme.md` §五，生成 theme.css 时**必须在文件头注释声明本栏目采用的 fallback**。
 
 **上游 CSS 变量**（必须用，让用户色盘/深浅模式生效）：
 - `var(--md-primary-color)` — 主色（用户可覆盖）
@@ -350,12 +350,12 @@ HTML 底部附两方向逐项差异对比表。生成后告诉用户：
  */
 ```
 
-参数化骨架、选择器清单、微信兼容性详表见 `references/theme.md`。
+参数化骨架、选择器清单、微信兼容性详表见 `content/references/theme.md`。
 
-### 5.2 不动 `config/columns.yaml`
+### 5.2 不动 `framework/config/columns.yaml`
 
 columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉产物完全在
-`workspace/column-design/{slug}/` 下。
+`content/styles/{slug}/` 下。
 
 如果 `revise` 模式下用户要求同步调整 `personality` 文本（比如视觉风格从"克制"变"轻快"），
 可以提示用户是否要改 columns.yaml，但 **只改 personality 一项文字**，不碰其他业务字段。
@@ -367,7 +367,7 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 ### 6.1 主色与配色
 
 - [ ] 主色 HSL 饱和度 ≤ 60%、不在宪章 1 黑名单、对正文底对比度 ≥ 4.5
-- [ ] 主色和其他栏目（`workspace/column-design/*/theme.css` 里已有的）色相差 ≥ 30°
+- [ ] 主色和其他栏目（`content/styles/*/theme.css` 里已有的）色相差 ≥ 30°
 - [ ] 主色一句话 why 说得出 context；下次同类账号不会再选它
 - [ ] 辅助色全部 `color-mix()`；除 `--md-primary-color` / 浅深色底板外无硬编码 hex
 
@@ -375,9 +375,9 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 
 - [ ] 有且只有 1 个签名元素；装饰家族一贯（引用 / hr / 列表 / H2 前缀同家）
 - [ ] 字号阶梯最大/最小比 ≥ 1.6；中文行高 ≥ 1.7、段距 ≥ leading（line-height-1）×1.5
-- [ ] 核心 14 组件全覆盖；预览里出现的扩展组件都有对应 CSS（见 `references/preview.md`）
+- [ ] 核心 14 组件全覆盖；预览里出现的扩展组件都有对应 CSS（见 `content/references/preview.md`）
 - [ ] 13 个核心 doocs 选择器写齐；预览里用到的扩展选择器 + 自定义 class 都写齐
-      （完整清单和自检格子见 `references/theme.md` §六）
+      （完整清单和自检格子见 `content/references/theme.md` §六）
 
 ### 6.3 微信兼容（宪章 5）
 
@@ -385,7 +385,7 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 - [ ] 无 `@keyframes` / `animation` / `@media` / `-webkit-` 前缀
 - [ ] 无 `backdrop-filter: blur`
 - [ ] `::before` / `::after` 只承担**非关键**装饰；若承担关键装饰（签名、编号、checkbox、
-      脚注上标方括号），对应项已在 theme.css 文件头注释里按 `references/theme.md` §五
+      脚注上标方括号），对应项已在 theme.css 文件头注释里按 `content/references/theme.md` §五
       声明 Writer 手写 MD fallback
 - [ ] 无 `@font-face` / Google Fonts / Noto Web Font 外链
 - [ ] `border-radius < 24px`；`box-shadow` 至多单层且 rgba alpha ≤ 0.12
@@ -404,16 +404,16 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 1. **设计语言摘要**（2–3 句 DNA 描述 + 签名元素是什么）
 2. **视觉原子表**：字号阶梯 / 间距 / 主辅色 / 字体
 3. **产物清单**：
-   - `workspace/column-design/{slug}/theme.css`（主题 CSS）
-   - `workspace/column-design/{slug}/preview.html`（本地双方向预览 + 对比表）
+   - `content/styles/{slug}/theme.css`（主题 CSS）
+   - `content/styles/{slug}/preview.html`（本地双方向预览 + 对比表）
 4. **使用方式**：
    ```
    # 本地预览
-   在浏览器打开 workspace/column-design/{slug}/preview.html
+   在浏览器打开 content/styles/{slug}/preview.html
 
    # 套进 doocs/md（自部署或在线）
    1. 打开你的 doocs/md 实例 → 主题下拉 → 自定义
-   2. 粘贴 workspace/column-design/{slug}/theme.css 内容
+   2. 粘贴 content/styles/{slug}/theme.css 内容
    3. Alt/Option + Shift + F 格式化
    4. 左侧粘 08-wechat-publish.md → 右侧看效果
    5. 复制富文本 → 微信公众号后台草稿
@@ -426,5 +426,5 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 
 | 文件 | 何时读 |
 |---|---|
-| `references/preview.md` | §4 生成 HTML 预览时——骨架 + 14 组件 + 对比表 |
-| `references/theme.md` | §5 生成 CSS 时——参数化骨架 + 微信兼容排错 |
+| `content/references/preview.md` | §4 生成 HTML 预览时——骨架 + 14 组件 + 对比表 |
+| `content/references/theme.md` | §5 生成 CSS 时——参数化骨架 + 微信兼容排错 |

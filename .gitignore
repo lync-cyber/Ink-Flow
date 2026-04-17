@@ -1,6 +1,6 @@
 # 运行时状态（可重建）
-workspace/pipeline-states/
-!workspace/pipeline-states/.gitkeep
+runtime/pipeline-states/
+!runtime/pipeline-states/.gitkeep
 
 # 用户本地配置
 .claude/settings.local.json
@@ -23,5 +23,8 @@ Thumbs.db
 
 # 日志
 *.log
-retro/runs/*.log.md
-!retro/runs/.gitkeep
+content/retrospectives/runs/*.log.md
+!content/retrospectives/runs/.gitkeep
+
+# 本地排版工具（doocs/md 抽取产物，不进版本库）
+framework/tools/typeset/dist/

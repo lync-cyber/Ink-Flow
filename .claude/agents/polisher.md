@@ -5,11 +5,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/04a-draft/merged-draft.md    # 修改基准
-    - articles/{slug}/review/05-audit-report.md                 # 修复指令
-    - articles/{slug}/intermediate/02-research-memo.md        # 事实回查来源
+    - content/articles/{slug}/intermediate/04a-draft/merged-draft.md    # 修改基准
+    - content/articles/{slug}/review/05-audit-report.md                 # 修复指令
+    - content/articles/{slug}/intermediate/02-research-memo.md        # 事实回查来源
   config:
-    - config/columns.yaml                             # phrase_replacements + tone
+    - framework/config/columns.yaml                             # phrase_replacements + tone
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/data/forbidden-phrases.yaml
@@ -25,10 +25,10 @@ dependencies:
 在 **polish** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/04a-draft/merged-draft.md`
-- `articles/{slug}/review/05-audit-report.md`
-- `articles/{slug}/intermediate/02-research-memo.md`（事实回查）
-- `config/columns.yaml` — `phrase_replacements`、`columns.{col}.tone`
+- `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
+- `content/articles/{slug}/review/05-audit-report.md`
+- `content/articles/{slug}/intermediate/02-research-memo.md`（事实回查）
+- `framework/config/columns.yaml` — `phrase_replacements`、`columns.{col}.tone`
 
 ## Constraints
 
@@ -57,8 +57,8 @@ dependencies:
 
 输出两个文件：
 
-1. `articles/{slug}/review/06-polish-trace.md` — 变更溯源
-2. `articles/{slug}/export/07-final-manuscript.md` — 润色后全文（不含溯源表）
+1. `content/articles/{slug}/review/06-polish-trace.md` — 变更溯源
+2. `content/articles/{slug}/export/07-final-manuscript.md` — 润色后全文（不含溯源表）
 
 ```markdown
 # 润色结果: {topic}
@@ -84,12 +84,12 @@ dependencies:
 ## Contracts
 
 **输入**:
-- `articles/{slug}/intermediate/04a-draft/merged-draft.md`
-- `articles/{slug}/review/05-audit-report.md`
+- `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
+- `content/articles/{slug}/review/05-audit-report.md`
 
 **输出**:
-- `articles/{slug}/review/06-polish-trace.md`（溯源 + 摘要）
-- `articles/{slug}/export/07-final-manuscript.md`（纯净终稿，无溯源表）
+- `content/articles/{slug}/review/06-polish-trace.md`（溯源 + 摘要）
+- `content/articles/{slug}/export/07-final-manuscript.md`（纯净终稿，无溯源表）
 
 ## Exit Criteria
 

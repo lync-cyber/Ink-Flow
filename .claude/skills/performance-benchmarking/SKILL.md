@@ -13,15 +13,15 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 ## 前置条件
 
-需要 `retro/ops-metrics.csv` 存在且包含 3+ 篇数据。若不满足：
+需要 `content/retrospectives/ops-metrics.csv` 存在且包含 3+ 篇数据。若不满足：
 - 文件不存在 → 提示用户先通过 metrics-tracking 录入数据
 - 数据不足 3 篇 → 提示还需 {3-N} 篇才能做有效分析
 
 ## 数据读取
 
-1. `retro/ops-metrics.csv` — 逐行读取运营指标（slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments 等）
-2. `config/columns.yaml` — 各栏目的 kpi_targets 作为基准线
-3. `articles/*/intermediate/01-brief.md` — 补充元数据（如 cta_type、target_length）
+1. `content/retrospectives/ops-metrics.csv` — 逐行读取运营指标（slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments 等）
+2. `framework/config/columns.yaml` — 各栏目的 kpi_targets 作为基准线
+3. `content/articles/*/intermediate/01-brief.md` — 补充元数据（如 cta_type、target_length）
 
 ## 分析维度
 
@@ -81,7 +81,7 @@ AskUserQuestion:
 
 ## 输出
 
-- 分析报告写入 `retro/performance-report.md`
+- 分析报告写入 `content/retrospectives/performance-report.md`
 - 确认的规律保存到 Claude Code memory
 
 结尾询问：

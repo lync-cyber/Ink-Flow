@@ -1,6 +1,6 @@
 ## 排版与视觉约束
 
-数值阈值由 `.claude/rules/data/typography-limits.yaml` 定义（单一事实来源）。
+数值阈值由 `.claude/rules/data/platform-limits.yaml` 定义（单一事实来源）。
 本文说明"为什么"，具体阈值读 YAML。
 
 ### 段落

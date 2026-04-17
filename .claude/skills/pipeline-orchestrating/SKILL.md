@@ -13,15 +13,15 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 
 ## 意图路由
 
-1. 读取 `config/inkflow.yaml` 建立运行环境
+1. 读取 `framework/config/inkflow.yaml` 建立运行环境
 2. 判断用户意图：
 
 | 意图 | 信号 | 动作 |
 |------|------|------|
 | 新建文章 | 用户提供了主题 | 进入 Brief 创建（orchestrator §2） |
-| 继续 pipeline | 存在未完成的 `workspace/pipeline-states/*.json` | 从上次暂停处继续（orchestrator §3） |
-| 重跑阶段 | "重跑 {stage}" | 详见 `references/rerun-and-dryrun.md` |
-| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `references/rerun-and-dryrun.md` |
+| 继续 pipeline | 存在未完成的 `runtime/pipeline-states/*.json` | 从上次暂停处继续（orchestrator §3） |
+| 重跑阶段 | "重跑 {stage}" | 详见 `content/references/rerun-and-dryrun.md` |
+| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `content/references/rerun-and-dryrun.md` |
 | 运营操作 | "排期"、"数据分析"、"发布清单" | 提示触发对应运营 skill（不进入 pipeline） |
 | 学习进修 | "学习"、"进修"、"对标" | 提示触发 style-learning skill（study 模式） |
 
@@ -43,8 +43,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 ## 辅助参考文件（由 orchestrator 按需读取）
 
-- `references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
-- `references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
-- `references/error-handling.md` — 四层错误处理策略（L1-L4）
-- `references/validation-rules.md` — 7 种验证类型参考
-- `references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式
+- `content/references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
+- `content/references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
+- `content/references/error-handling.md` — 四层错误处理策略（L1-L4）
+- `content/references/validation-rules.md` — 7 种验证类型参考
+- `content/references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式

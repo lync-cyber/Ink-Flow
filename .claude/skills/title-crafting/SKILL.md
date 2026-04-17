@@ -53,7 +53,7 @@ disable-model-invocation: true
 
 ## 执行流程
 
-1. 从 `articles/{slug}/intermediate/03-outline-structure.md` 提取文章标题（`# 大纲: {topic}` 行或总览中的标题字段）
+1. 从 `content/articles/{slug}/intermediate/03-outline-structure.md` 提取文章标题（`# 大纲: {topic}` 行或总览中的标题字段）
 2. 执行硬性规则检查
 3. **若全部通过** → 输出 "✓ 标题检查通过: {标题}" → 继续 Checkpoint 1
 4. **若任一规则未通过** → 执行以下流程:
@@ -76,7 +76,7 @@ AskUserQuestion:
     - "我自己修改" — 暂停，等待用户编辑 03-outline-structure.md 后继续
 ```
 
-5. 用户选择后，更新 `articles/{slug}/intermediate/03-outline-structure.md` 中的标题字段
+5. 用户选择后，更新 `content/articles/{slug}/intermediate/03-outline-structure.md` 中的标题字段
 6. 继续 Checkpoint 1
 
 ---

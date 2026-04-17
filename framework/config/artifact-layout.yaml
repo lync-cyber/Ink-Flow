@@ -1,0 +1,56 @@
+# ============================================================
+# 文章产物布局（单一事实来源）
+# 所有 agent 通过此文件获取产物路径，不硬编码
+# ============================================================
+#
+# 命名约定：
+#   {NN}-{stage-semantic}.md — 数字前缀对应 pipeline 阶段，后缀说明语义
+#   参与并行的阶段（draft / figure）用 {N}a / {N}b 区分
+#
+# 目录语义：
+#   intermediate/  — 中间产物，可从 pipeline 重生成
+#   review/        — 审校产物（与 draft 配对，不可丢）
+#   export/        — 最终产物，可直接发布使用
+#
+# 阶段映射：
+#   01 brief          02 research        03 outline  [CP1]
+#   04a draft  ∥  04b figure
+#   05 audit          06 polish  [CP2]   07 final-manuscript
+#   08 publish (wechat/plain/teaser)  [CP3]
+# ============================================================
+
+version: "2.0"
+
+root: "content/articles/{slug}"
+
+paths:
+  # ---- 元数据 ----
+  meta:           "content/articles/{slug}/_meta.yaml"
+
+  # ---- 中间产物 ----
+  brief:          "content/articles/{slug}/intermediate/01-brief.md"
+  research:       "content/articles/{slug}/intermediate/02-research-memo.md"
+  outline:        "content/articles/{slug}/intermediate/03-outline-structure.md"
+  draft_section:  "content/articles/{slug}/intermediate/04a-draft/section-{N}.md"
+  draft_merged:   "content/articles/{slug}/intermediate/04a-draft/merged-draft.md"
+  figure_item:    "content/articles/{slug}/intermediate/04b-figure/fig-{N}.{ext}"
+  figure_index:   "content/articles/{slug}/intermediate/04b-figure/figure-index.md"
+
+  # ---- 审校产物 ----
+  audit:          "content/articles/{slug}/review/05-audit-report.md"
+  polish_trace:   "content/articles/{slug}/review/06-polish-trace.md"
+
+  # ---- 最终产物 ----
+  final:          "content/articles/{slug}/export/07-final-manuscript.md"
+  wechat:         "content/articles/{slug}/export/08-wechat-publish.md"
+  plain:          "content/articles/{slug}/export/08-plain-publish.md"
+  teaser:         "content/articles/{slug}/export/08-teaser-120chars.md"
+
+# ---- 运行状态 ----
+state_file:       "runtime/pipeline-states/{slug}.json"
+
+# ---- 命名规范 ----
+naming:
+  section_number_padding: 2      # section-01, section-02
+  figure_number_padding: 2
+  slug_style: kebab_or_pinyin

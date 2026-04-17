@@ -12,20 +12,20 @@ allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 # 工作区初始化与升级
 
 > **职责分工**:
-> - `tools/bootstrap.sh` — 从远程 GitHub 仓库拉取/同步框架文件（agents、skills、rules、tools）
-> - 本 skill — 初始化项目目录结构（articles/、retro/、references/）、生成配置文件（config/inkflow.yaml、.gitignore）、git init
+> - `framework/tools/bootstrap.sh` — 从远程 GitHub 仓库拉取/同步框架文件（agents、skills、rules、tools）
+> - 本 skill — 初始化项目目录结构（content/articles/、content/retrospectives/、content/references/）、生成配置文件（framework/config/inkflow.yaml、.gitignore）、git init
 
 支持两种操作模式：**初始化**（创建新工作区）和**升级**（更新已有工作区的框架文件）。
 
 > **框架目录 vs 内容工作区**:
-> - 框架目录（`workspace_mode: framework`）：开发 InkFlow 本身，articles/ 被 gitignore
-> - 内容工作区（`workspace_mode: content`）：创作内容，articles/ 纳入版本管理
+> - 框架目录（`workspace_mode: framework`）：开发 InkFlow 本身，content/articles/ 被 gitignore
+> - 内容工作区（`workspace_mode: content`）：创作内容，content/articles/ 纳入版本管理
 
 ---
 
 ## 模式判断
 
-读取当前目录的 `config/inkflow.yaml`：
+读取当前目录的 `framework/config/inkflow.yaml`：
 
 | workspace_mode | 用户意图信号 | 动作 |
 |----------------|-------------|------|
@@ -33,19 +33,19 @@ allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 | `content` | "更新"、"升级"、"sync" | → 升级流程（调用 bootstrap.sh 更新框架文件） |
 | `content` | "初始化" | → 提示已在内容工作区中，问是否要升级 |
 | 不存在 | "部署"、"安装"、仓库 URL | → 引导部署流程（先 bootstrap.sh 拉取，再初始化） |
-| 不存在 | 其他 | → 提示先运行 `bash tools/bootstrap.sh` |
+| 不存在 | 其他 | → 提示先运行 `bash framework/tools/bootstrap.sh` |
 
 ---
 
 ## 用户内容层（永不覆盖）
 
 ```
-articles/
-references/
-retro/
-styles/*/style-profile.md
-styles/*/exemplar-*.md
-workspace/pipeline-states/
+content/articles/
+content/references/
+content/retrospectives/
+content/styles/*/style-profile.md
+content/styles/*/exemplar-*.md
+runtime/pipeline-states/
 .claude/settings.local.json
 ```
 
@@ -75,7 +75,7 @@ AskUserQuestion:
 
 ### Step 2 — 拉取框架文件
 
-调用 `tools/bootstrap.sh` 完成框架文件拉取：
+调用 `framework/tools/bootstrap.sh` 完成框架文件拉取：
 
 **本地来源**（当前在 framework 目录）：
 ```bash
@@ -83,13 +83,13 @@ AskUserQuestion:
 mkdir -p {target_dir}/config
 cp -r .claude/agents .claude/skills .claude/rules tools {target_dir}/
 cp .claude/settings.json {target_dir}/.claude/settings.json
-cp config/inkflow.yaml config/columns.yaml config/artifact-layout.yaml config/markdown-extensions.md {target_dir}/config/
+cp framework/config/inkflow.yaml framework/config/columns.yaml framework/config/artifact-layout.yaml framework/config/markdown-extensions.md {target_dir}/config/
 cp CLAUDE.md {target_dir}/CLAUDE.md
 ```
 
 **远程来源**：
 ```bash
-bash tools/bootstrap.sh {target_dir} {repo_url}
+bash framework/tools/bootstrap.sh {target_dir} {repo_url}
 ```
 
 ### Step 3 — 创建用户内容目录
@@ -97,14 +97,14 @@ bash tools/bootstrap.sh {target_dir} {repo_url}
 本 skill 的核心职责 — 创建项目结构：
 
 ```
-articles/                     ← .gitkeep
-retro/                        ← runs/.gitkeep + study-reports/.gitkeep
-references/                   ← articles/（抓取的外部文章落地处）
-styles/default/               ← style-profile.md 模板（首次 style-learning profile 模式覆盖）
-workspace/pipeline-states/    ← .gitkeep
+content/articles/                     ← .gitkeep
+content/retrospectives/                        ← runs/.gitkeep + study-reports/.gitkeep
+content/references/                   ← content/articles/（抓取的外部文章落地处）
+content/styles/default/               ← style-profile.md 模板（首次 style-learning profile 模式覆盖）
+runtime/pipeline-states/    ← .gitkeep
 ```
 
-`styles/default/style-profile.md` 的初始模板内容（便于用户知道结构）：
+`content/styles/default/style-profile.md` 的初始模板内容（便于用户知道结构）：
 
 ```markdown
 # 风格 DNA: default
@@ -121,9 +121,9 @@ workspace/pipeline-states/    ← .gitkeep
 （待生成）
 ```
 
-### Step 4 — 生成内容模式 config/inkflow.yaml
+### Step 4 — 生成内容模式 framework/config/inkflow.yaml
 
-修改 Step 2 拉取的 `config/inkflow.yaml`：
+修改 Step 2 拉取的 `framework/config/inkflow.yaml`：
 - `workspace_mode: content`
 - 追加 `inkflow_source`: GitHub 仓库 URL 或本地路径
 - 追加 `inkflow_version`: 从 `git describe --tags --always` 获取的版本号（由 bootstrap.sh 写入）
@@ -133,8 +133,8 @@ workspace/pipeline-states/    ← .gitkeep
 
 ```gitignore
 # 运行时状态（可重建）
-workspace/pipeline-states/
-!workspace/pipeline-states/.gitkeep
+runtime/pipeline-states/
+!runtime/pipeline-states/.gitkeep
 
 # 用户本地配置
 .claude/settings.local.json
@@ -157,11 +157,11 @@ Thumbs.db
 
 # 日志
 *.log
-retro/runs/*.log.md
-!retro/runs/.gitkeep
+content/retrospectives/runs/*.log.md
+!content/retrospectives/runs/.gitkeep
 ```
 
-关键区别：**不忽略** `articles/`、`styles/*/style-profile.md`、`retro/ops-metrics.csv`。
+关键区别：**不忽略** `content/articles/`、`content/styles/*/style-profile.md`、`content/retrospectives/ops-metrics.csv`。
 
 ### Step 6 — 初始化 git 仓库
 
@@ -181,13 +181,13 @@ cd {target_dir} && git init && git add -A && git commit -m "初始化 InkFlow �
 
 ### Step 1 — 读取升级源
 
-从当前 `config/inkflow.yaml` 读取 `inkflow_source` 和 `inkflow_version`。
+从当前 `framework/config/inkflow.yaml` 读取 `inkflow_source` 和 `inkflow_version`。
 若 `inkflow_source` 不存在，用 AskUserQuestion 询问仓库 URL。
 
 ### Step 2 — 调用 bootstrap.sh 同步框架文件
 
 ```bash
-bash tools/bootstrap.sh . {inkflow_source}
+bash framework/tools/bootstrap.sh . {inkflow_source}
 ```
 
 bootstrap.sh 自动检测到 `workspace_mode: content`，进入升级模式，同步框架文件并更新版本号。
@@ -210,7 +210,7 @@ AskUserQuestion:
 
 ## 引导部署流程
 
-当 `config/inkflow.yaml` 不存在时（空目录），用户提供了仓库 URL 或表达了部署意图：
+当 `framework/config/inkflow.yaml` 不存在时（空目录），用户提供了仓库 URL 或表达了部署意图：
 
 ### Step 1 — 确认仓库 URL
 
@@ -242,5 +242,5 @@ rm -rf /tmp/inkflow-bootstrap
 
 - 升级流程**永不覆盖**用户内容层文件
 - 初始化流程目标目录必须不存在或为空
-- 框架文件的拉取/同步统一由 `tools/bootstrap.sh` 负责
+- 框架文件的拉取/同步统一由 `framework/tools/bootstrap.sh` 负责
 - 项目结构初始化和配置生成由本 skill 负责

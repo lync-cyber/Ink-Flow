@@ -5,7 +5,7 @@
 展示大纲摘要后，提示审核要点：
 
 ```
-请审核 articles/{slug}/intermediate/03-outline-structure.md，重点关注：
+请审核 content/articles/{slug}/intermediate/03-outline-structure.md，重点关注：
 
 1. 确认或修改每个 section 的论点方向
    - 论点是否有判断力（非"正确但无聊"）？
@@ -26,7 +26,7 @@
 展示审校报告摘要（事实问题数、AI 味问题数、风格偏离数、句式清理数），然后提示：
 
 ```
-请审核 articles/{slug}/export/07-final-manuscript.md，重点关注：
+请审核 content/articles/{slug}/export/07-final-manuscript.md，重点关注：
 
 1. 大声朗读全文
    - 读起来卡顿的地方就是需要改的地方
@@ -45,9 +45,9 @@
 
 ```
 已生成以下文件：
-- articles/{slug}/export/08-wechat-publish.md（标准 Markdown + GFM Alerts，doocs/md 排版器可直接消费）
-- articles/{slug}/export/08-plain-publish.md（纯 Markdown，跨平台可复制）
-- articles/{slug}/export/08-teaser-120chars.md（摘要 + 关键词）
+- content/articles/{slug}/export/08-wechat-publish.md（标准 Markdown + GFM Alerts，doocs/md 排版器可直接消费）
+- content/articles/{slug}/export/08-plain-publish.md（纯 Markdown，跨平台可复制）
+- content/articles/{slug}/export/08-teaser-120chars.md（摘要 + 关键词）
 
 下一步：
 1. 打开任何兼容 doocs/md 的排版器（在线 https://md.doocs.org 或自部署）

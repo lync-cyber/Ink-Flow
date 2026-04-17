@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""test-wechat-fetch.py — 离线验证 tools/fetch/wechat.py 的解析链路
+"""test-wechat-fetch.py — 离线验证 .claude/skills/style-learning/scripts/wechat.py 的解析链路
 
 不依赖网络：读取 tests/fixtures/wechat-sample.html（模拟真实 WeChat DOM），
 直接走 html_to_markdown → save_article 路径，校验：
@@ -13,14 +13,19 @@
 """
 
 from __future__ import annotations
+import io
 import json
 import sys
 import tempfile
 from pathlib import Path
 
-# 允许从 tools/fetch 导入
+# Windows 控制台默认 GBK，强制 UTF-8 以输出 ✓/✗ 等符号
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
+# 允许从 .claude/skills/style-learning/scripts 导入
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "tools" / "fetch"))
+sys.path.insert(0, str(ROOT / ".claude" / "skills" / "style-learning" / "scripts"))
 
 from wechat import html_to_markdown, save_article  # noqa: E402
 

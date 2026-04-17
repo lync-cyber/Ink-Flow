@@ -423,7 +423,7 @@ doocs/md 的复制机制会把 class 规则内联化到元素 `style` 属性，�
   background-position: center top 4px;
 }
 
-/* 导语卡 TL;DR · 文章开头摘要 */
+/* 导语卡 摘要引言 · 文章开头摘要 */
 .lede {
   margin: 0 0 2em;
   padding: 14px 16px;
@@ -531,7 +531,7 @@ theme.css 顶部注释**必须**声明本栏目采用的 fallback 清单（把�
 
 ```
 ☐ .pullquote（有金句则必写）
-☐ .lede / .lede-tag（有 TL;DR 卡则必写）
+☐ .lede / .lede-tag（有 摘要引言 卡则必写）
 ☐ .cta / .cta-head（有文末 CTA 卡则必写）
 ☐ .tags（有标签行则必写）
 ☐ .caption（有图注则必写）
@@ -615,11 +615,11 @@ hr:  height: 0 + margin: 64px 0（纯留白）
 
 ```
 1. 本地预览
-   浏览器打开 workspace/column-design/{slug}/preview.html
+   浏览器打开 content/styles/{slug}/preview.html
 
 2. 粘到 doocs/md（自部署或在线）
    打开你的 doocs/md 实例（或 https://md.doocs.org）
-   右上角主题下拉 → 自定义 → 粘贴 workspace/column-design/{slug}/theme.css 内容
+   右上角主题下拉 → 自定义 → 粘贴 content/styles/{slug}/theme.css 内容
    Alt / Option + Shift + F 格式化
    左侧 MD 编辑，右侧实时预览
 

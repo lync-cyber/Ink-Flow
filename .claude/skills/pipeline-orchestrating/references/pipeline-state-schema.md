@@ -1,6 +1,6 @@
 # Pipeline State Schema
 
-`workspace/pipeline-states/{slug}.json` 的完整结构定义。编排器在各阶段写入状态时遵循此 schema。
+`runtime/pipeline-states/{slug}.json` 的完整结构定义。编排器在各阶段写入状态时遵循此 schema。
 
 ## 设计原则
 

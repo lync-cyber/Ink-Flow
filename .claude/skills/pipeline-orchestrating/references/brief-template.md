@@ -1,6 +1,6 @@
 # Brief Frontmatter 模板
 
-最简用法只需填 topic。默认值从 `config/inkflow.yaml` 的 `defaults` 读取。
+最简用法只需填 topic。默认值从 `framework/config/inkflow.yaml` 的 `defaults` 读取。
 
 ```yaml
 ---
@@ -19,7 +19,7 @@ skip_seo: false
 
 # === 高级参数（通常使用默认值，按需覆盖） ===
 # opening_style: auto               # pain_point | story | contrast | question | blunt | auto
-# style_profile: default            # 对应 styles/{style_profile}/ 目录
+# style_profile: default            # 对应 content/styles/{style_profile}/ 目录
 # tone_override: ""                 # 空=使用 style-profile 默认值
 # publish_timing: evening           # morning | noon | evening | custom
 # series_name: ""                   # 系列名称（空=独立文章）

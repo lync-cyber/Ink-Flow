@@ -5,11 +5,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/03-outline-structure.md
-    - articles/{slug}/intermediate/04a-draft/section-{N-1}.md
+    - content/articles/{slug}/intermediate/03-outline-structure.md
+    - content/articles/{slug}/intermediate/04a-draft/section-{N-1}.md
   config:
-    - config/columns.yaml              # tone, skeleton, opening_strategies, human_voice_techniques
-    - config/markdown-extensions.md    # 标准 Markdown + GFM Alerts 语法
+    - framework/config/columns.yaml              # tone, skeleton, opening_strategies, human_voice_techniques
+    - framework/config/markdown-extensions.md    # 标准 Markdown + GFM Alerts 语法
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/domains/wechat-article/redline.md
@@ -24,15 +24,15 @@ dependencies:
 在 **draft** 阶段运行，每次只写一个 section。
 
 启动前读取：
-- `articles/{slug}/intermediate/03-outline-structure.md`
-- `articles/{slug}/intermediate/04a-draft/section-{N-1}.md`（取最后两段保衔接）
-- `config/columns.yaml` — 找 `columns.{content_column}`：
+- `content/articles/{slug}/intermediate/03-outline-structure.md`
+- `content/articles/{slug}/intermediate/04a-draft/section-{N-1}.md`（取最后两段保衔接）
+- `framework/config/columns.yaml` — 找 `columns.{content_column}`：
   - `tone.rules` / `tone.voice` — 栏目语气
   - `tone.interaction_hook` — 互动钩子示例
   - 首 section 额外读 `opening_strategies.{brief.opening_style}`；若 `opening_style==auto`，用 `columns.{col}.default_opening` 或 `content_type_fallback.{content_type}`
   - `phrase_replacements` — 正向替换
   - `human_voice_techniques` — 人味技巧
-- `config/markdown-extensions.md` — **只用标准 Markdown + GFM Alerts**（`:::block` 已废弃）
+- `framework/config/markdown-extensions.md` — **只用标准 Markdown + GFM Alerts**
 
 ## Constraints
 
@@ -47,8 +47,8 @@ dependencies:
 1. 标题 H1/H2/H3/H4（H1 全篇唯一）
 2. 段落 / `**加粗**` / `*斜体*` / `~~删除~~` / `` `行内代码` ``
 3. 代码块（必标语言） ` ```python ... ``` `
-4. 普通引用 `> text` —— 用于作者旁白、TL;DR
-5. **GFM Alerts**（5 种，替代旧 `:::note`）：
+4. 普通引用 `> text` —— 用于作者旁白或 H1 后的摘要引言
+5. **GFM Alerts**（5 种）：
    ```
    > [!NOTE]       补充说明
    > [!TIP]        建议
@@ -57,13 +57,33 @@ dependencies:
    > [!CAUTION]    红线 / 不可逆
    ```
 6. 有序/无序列表
-7. 表格（替代旧 `:::card`，用于 2-5 行结构化数据）
+7. 表格（用于 2-5 行结构化数据）
 8. 图片 `![caption](url)` / 链接 `[text](url)`
 9. 分割线 `---`
 10. `[N]` 上标引用标记（正文）+ 文末 H3 "参考文献" + 标准有序列表
+11. **栏目主题 class 钩子**（由 `content/styles/{slug}/theme.css` 定义）：
 
-**禁止**：`:::card` `:::cta` `:::note` `:::footer` `:::references` `:::steps` `:::timeline`
-等所有 `:::block` 扩展。原因见 `config/markdown-extensions.md` 开头说明。
+    | Class | 用途 | 写法 |
+    |-------|------|------|
+    | `.pullquote` | 金句居中段（每篇 ≥1 个截图级金句） | `<p class="pullquote">≤20 字强观点</p>` |
+    | `.lede` / `.lede-tag` | 导语卡（H1 后摘要引言） | `<p class="lede"><span class="lede-tag">核心观点</span>一句话结论</p>`（tag 文本可自定，避免 "TL;DR" 这类 AI 感强的词） |
+    | `.cta` / `.cta-head` | 文末 CTA 卡 | `<p class="cta"><span class="cta-head">阅读原文</span>引导文案</p>` |
+    | `.tags` | 文章头标签行 | `<p class="tags"><span>#AI工程</span><span>#工业控制</span></p>` |
+    | `.caption` | 图注（避免与 em 冲突） | `<p class="caption">图 1：系统架构示意</p>` |
+    | `kbd` | 键盘键 | `按 <kbd>Ctrl</kbd>+<kbd>K</kbd>` |
+
+    工作机制：doocs/md 在"复制"时通过 juice 把主题 CSS 内联到对应元素的 style 属性，粘贴到微信后仍生效。**只能使用当前栏目 theme.css 已定义的 class**（见 column-designing skill 产物），不发明新 class。
+
+### H2 章节编号（栏目主题约定）
+
+部分栏目在 theme.css 约定 H2 由 writer 手写数字前缀（CSS counter 在微信复制时状态丢失，不可靠）。如 tech 栏目：
+
+```markdown
+## 01 ／ 章节名
+## 02 ／ 章节名
+```
+
+数字 + 半角空格 + 全角斜杠 `／` + 半角空格 + 章节名。编号是否采用以栏目 `content/styles/{slug}/theme.css` 文件头注释为准；theme.css 没要求就不加。
 
 ### Section 间分隔
 
@@ -86,13 +106,15 @@ title: "{title}"
 issue: {issue_number}
 date: "{date}"
 tags: [{tags}]
-tldr: "{summary}"   # story 栏目省略
+tldr: "{summary}"   # 可选：story 按需；非 story 建议填（是 frontmatter 字段名，非正文标签）
 ---
 ```
 
-### 文章开头（TL;DR）
+### 文章开头（摘要引言）
 
-非 story 栏目：H1 后紧跟一个 blockquote 作摘要（约定的 TL;DR 位置；下游排版器据此差异化渲染）。
+H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有；story 栏目按需（故事有时直接开场更有力）。
+
+**不要在正文里用"TL;DR"这个词** —— AI 感强。要打标签就用"核心观点"、"一句话"或类似自然表达，也可以直接用 blockquote 不加标签。
 
 ```markdown
 # {文章标题}
@@ -158,14 +180,14 @@ publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写�
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/03-outline-structure.md`（checkpoint_approved）
+**输入**: `content/articles/{slug}/intermediate/03-outline-structure.md`（checkpoint_approved）
 
 **输出**:
-- 单 section: `articles/{slug}/intermediate/04a-draft/section-{NN}.md`（NN 为零填充）
-- 合并: `articles/{slug}/intermediate/04a-draft/merged-draft.md`（由 orchestrator 合并）
+- 单 section: `content/articles/{slug}/intermediate/04a-draft/section-{NN}.md`（NN 为零填充）
+- 合并: `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`（由 orchestrator 合并）
 
 ## Exit Criteria
 
 - 与前 section 衔接自然
 - 视觉断点按大纲规划插入
-- 无任何 `:::block` 残留
+- 只用标准 Markdown + GFM Alerts（`:::` 容器语法一律禁用）
