@@ -5,8 +5,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/brief.md
-    - articles/{slug}/intermediate/research.md
+    - articles/{slug}/intermediate/01-brief.md
+    - articles/{slug}/intermediate/02-research-memo.md
   config:
     - config/columns.yaml          # 栏目骨架（skeleton）+ suggested_components
   rules:
@@ -22,8 +22,8 @@ dependencies:
 在 **outline** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/brief.md`
-- `articles/{slug}/intermediate/research.md`（若未 skip）
+- `articles/{slug}/intermediate/01-brief.md`
+- `articles/{slug}/intermediate/02-research-memo.md`（若未 skip）
 - `config/columns.yaml` — 找到 `columns.{brief.content_column}`：
   - `skeleton.goal` 与 `skeleton.sections` 作为结构参考
   - `suggested_components` 作为视觉断点候选
@@ -48,7 +48,7 @@ dependencies:
   - **禁用 `:::block`**：旧扩展语法已退役，全部替换为标准 Markdown + GFM Alerts（详见 `config/markdown-extensions.md` § 10 迁移表）
 - 开头 section 必须 3 秒内抓住注意力（标 opening_style）
 - 结尾 section 含 CTA（从 `brief.cta_type` 读）
-- 从 research.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记
+- 从 02-research-memo.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记
 - 涉及定价/版本号/市场数据的细节，主动加 `[发布前刷新]`
 
 ## Format
@@ -81,9 +81,9 @@ dependencies:
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/brief.md`、`intermediate/research.md`（若未 skip）
+**输入**: `articles/{slug}/intermediate/01-brief.md`、`intermediate/02-research-memo.md`（若未 skip）
 
-**输出**: `articles/{slug}/intermediate/outline.md`
+**输出**: `articles/{slug}/intermediate/03-outline-structure.md`
 
 ## Exit Criteria
 

@@ -11,22 +11,29 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 用途 | 路径 |
 |------|------|
 | 项目配置 | `config/inkflow.yaml` |
-| 栏目配置（视觉+业务） | `config/columns.yaml` |
+| 栏目业务配置 | `config/columns.yaml`（骨架/tone/KPI；视觉已剥离） |
 | 产物布局 | `config/artifact-layout.yaml` |
 | 风格档案（个人化） | `styles/{profile}/style-profile.md` |
 | 外部参考材料 | `references/` |
 | 文章产物 | `articles/{slug}/` |
 | 运行状态 | `workspace/pipeline-states/{slug}.json` |
+| 栏目视觉中间产物 | `workspace/column-design/{slug}/theme.css` + `preview.html` |
 
 ## 工作区结构（单篇文章）
 
 ```
 articles/{slug}/
-  intermediate/   brief.md  research.md  outline.md
-                  draft/section-NN.md  draft/merged.md
-                  figure/fig-NN.svg    figure/index.md
-  review/         audit.md  polish-trace.md
-  export/         final.md  wechat.md  plain.md  teaser.md
+  intermediate/
+    01-brief.md
+    02-research-memo.md
+    03-outline-structure.md
+    04a-draft/section-NN.md   04a-draft/merged-draft.md
+    04b-figure/fig-NN.svg     04b-figure/figure-index.md
+  review/
+    05-audit-report.md        06-polish-trace.md
+  export/
+    07-final-manuscript.md
+    08-wechat-publish.md      08-plain-publish.md    08-teaser-120chars.md
 ```
 
 ## 规则体系（单一事实来源）
@@ -55,6 +62,7 @@ articles/{slug}/
 - **写文章**: 告诉 Claude 主题 → 自动启动 pipeline
 - **分析风格**: "分析风格"、"提取风格 DNA" → profile 模式，从你的文章提取风格
 - **学习进修**: "学习这篇文章"、"参考这个模板" → study 模式，分析外部材料改进规则
+- **栏目视觉**: "新开栏目"、"栏目改版"、"ink-xxx 主题" → 主色推导 + 双方向预览 → 产出 `workspace/column-design/{slug}/theme.css` + `preview.html`（下游 skill 接手导入 doocs/md）
 - **格式校验**: "跑一下 lint"、"检查格式" → 运行 `tools/lint/lint.py`
 - **内容排期**: "排期"、"内容日历" → 生成发布计划
 - **发布准备**: "发布清单"、"运营清单" → 发布前后检查清单
@@ -83,7 +91,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 | 场景 | 文件 |
 |------|------|
-| 新增/调整栏目（色板、骨架、tone） | `config/columns.yaml` |
+| 新增/调整栏目业务字段（骨架、tone、KPI） | `config/columns.yaml` |
+| 新增/改版栏目视觉 | 触发 column-designing skill → `workspace/column-design/` |
 | 调整默认 brief 字段 / 导出格式 | `config/inkflow.yaml` |
 | 微调风格档案 | `styles/default/style-profile.md` |
 | 新增外部参考文章 | `references/articles/` |

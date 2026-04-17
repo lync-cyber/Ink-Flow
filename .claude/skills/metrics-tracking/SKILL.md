@@ -28,7 +28,7 @@ AskUserQuestion (multiSelect questions):
 
 - 追加到 `retro/ops-metrics.csv`（不存在则创建含表头）
 - CSV 字段: slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments
-- 从 `articles/{slug}/brief.md` 补充元数据（content_type、opening_style 等）
+- 从 `articles/{slug}/intermediate/01-brief.md` 补充元数据（content_type、opening_style 等）
 - 从 `config/columns.yaml` 读取栏目 kpi_targets 做基础对标
 
 ## 基础对标

@@ -90,5 +90,5 @@ FOR each stage from current to end:
 ## Exit Criteria
 
 - 所有 stages 状态 = `completed`，或用户在 checkpoint 主动终止
-- `articles/{slug}/export/` 下 `wechat.md` / `plain.md` / `teaser.md` 齐全
+- `articles/{slug}/export/` 下 `08-wechat-publish.md` / `08-plain-publish.md` / `08-teaser-120chars.md` 齐全
 - `workspace/pipeline-states/{slug}.json` 记录终态

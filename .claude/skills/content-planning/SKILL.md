@@ -33,7 +33,7 @@ AskUserQuestion:
    - `frequency`（发布频率目标）
    - `best_time`（推荐发布时间）
    - `content_mix`（月度总量控制）
-2. `articles/*/brief.md` — 扫描所有已发布文章的 frontmatter，提取：
+2. `articles/*/intermediate/01-brief.md` — 扫描所有已发布文章的 frontmatter，提取：
    - 栏目（column）
    - 发布日期（publish_date，若有）
    - 内容类型（content_type）

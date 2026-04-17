@@ -10,7 +10,7 @@
 
 ### b. optional_sections
 - 解析 skip_if 条件（格式: "brief.field == value"）
-- 从 articles/{slug}/brief.md frontmatter 读取对应字段
+- 从 articles/{slug}/intermediate/01-brief.md frontmatter 读取对应字段
 - 条件成立 → 跳过该 section
 - 条件不成立 → 按 required_sections 检查
 

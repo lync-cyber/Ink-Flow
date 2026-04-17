@@ -456,6 +456,6 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 | skip_if 命中 | `status = "skipped"`、`skipped_reason` |
 | Checkpoint 通过 | `checkpoint` 对象（含 decision、modifications） |
 | Draft section | 更新 `sections[]` 对应项的 status/时间/word_count |
-| Audit 完成 | `summary` 对象（从 audit.md 提取统计数字） |
+| Audit 完成 | `summary` 对象（从 05-audit-report.md 提取统计数字） |
 | Polish 完成 | `high_severity_resolved/rejected`（从变更溯源表统计） |
 

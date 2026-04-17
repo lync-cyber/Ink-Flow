@@ -1,6 +1,6 @@
 # Markdown 语法规约（InkFlow × 微信公众号）
 
-> **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出、typesetter 渲染共用一套语法。
+> **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出共用一套语法；下游排版器（兼容 doocs/md 的在线/本地渲染器）消费此语法。
 >
 > **核心原则**：只使用**标准 Markdown + GFM Alerts**。不发明新容器语法。
 > 原因：任何非标准扩展块（如 `:::card`、`:::footer`）粘贴到微信公众号后台都会被剥离样式，
@@ -13,29 +13,29 @@
 
 ## 1. 标准 Markdown 元素
 
-| 元素 | 语法 | 渲染说明 |
+| 元素 | 语法 | 语义说明 |
 |------|------|---------|
-| H1 标题 | `# title` | 全篇唯一；typesetter 所有主题均有差异化渲染（居中/左带线/底线等） |
-| H2 标题 | `## heading` | default=色块，simple=左色条，grace=圆角色块+阴影 |
-| H3 标题 | `### heading` | default=左色条，simple=前缀破折号，grace=左色条+底虚线 |
-| H4 标题 | `#### heading` | 所有主题：主色加粗文字 |
-| 段落 | 自然段落 | story 栏目 line-height=2.0，其余 1.75 |
-| 引用 | `> text` | 各主题边色条，浅底 |
-| 无序列表 | `- item` | 统一实心圆点 |
-| 有序列表 | `1. item` | 统一阿拉伯数字 |
-| 代码块 | ` ```lang ` | 深色主题，语言标记必填（触发高亮） |
-| 行内代码 | `` `code` `` | 浅色背景 + 主色文字 |
-| 表格 | `\| col \| col \|` | 表头主色背景、白字；单元格细边框 |
-| 分割线 | `---` | 虚线或渐变线（主题差异） |
-| 图片 | `![caption](url)` | 居中，`caption` 自动作为图注 |
-| 链接 | `[text](url)` | 主色文字 + 主色下划线 |
-| 强调 | `**bold**` / `*italic*` / `~~del~~` | 加粗文字着主色 |
+| H1 标题 | `# title` | 全篇唯一；作为文章主标题 |
+| H2 标题 | `## heading` | 章节 |
+| H3 标题 | `### heading` | 小节 |
+| H4 标题 | `#### heading` | 子节（尽量不用超过此层级） |
+| 段落 | 自然段落 | 长度限制见 `.claude/rules/data/typography-limits.yaml` |
+| 引用 | `> text` | 非 story 栏目 H1 后紧跟的 blockquote 约定为摘要/TL;DR |
+| 无序列表 | `- item` | |
+| 有序列表 | `1. item` | |
+| 代码块 | ` ```lang ` | 语言标记必填（触发下游高亮） |
+| 行内代码 | `` `code` `` | |
+| 表格 | `\| col \| col \|` | |
+| 分割线 | `---` | |
+| 图片 | `![caption](url)` | `caption` 作为图注 |
+| 链接 | `[text](url)` | |
+| 强调 | `**bold**` / `*italic*` / `~~del~~` | |
 
 ---
 
 ## 2. GFM Alerts（唯一允许的"容器"扩展）
 
-**5 种类型**，由 GitHub 定义，typesetter 基于 [marked-alert](https://github.com/bent10/marked-extensions) 渲染。
+**5 种类型**，由 GitHub 定义。下游排版器（如 doocs/md）通常以 [marked-alert](https://github.com/bent10/marked-extensions) 渲染。
 
 ```markdown
 > [!NOTE]
@@ -74,7 +74,7 @@
 
 ## 3. 摘要区（TL;DR）
 
-**非 story 栏目必须**：H1 之后紧跟一个 blockquote。typesetter 会把它作为文章摘要渲染。
+**非 story 栏目必须**：H1 之后紧跟一个 blockquote 作为文章摘要。下游排版器按此位置差异化渲染。
 
 ```markdown
 # 文章标题
@@ -119,14 +119,14 @@ flowchart LR
 ​```
 ```
 
-typesetter 在预览时渲染为 SVG。发布前由 `tools/render/mermaid.py` 转为内联 SVG，
+发布前由 `tools/render/mermaid.py` 转为内联 SVG（部分下游排版器也支持客户端渲染），
 或者由 illustrator agent 直接产出 SVG。
 
 ### 5.2 内联 SVG（精确图表、循环、数据可视化）
 
 ```html
 <svg viewBox="0 0 640 360" ...>
-  <!-- 内联 SVG，遵守 typography-limits.yaml 的 svg 段硬约束 -->
+  <!-- 内联 SVG，遵守 .claude/rules/data/typography-limits.yaml 的 svg 段硬约束 -->
 </svg>
 ```
 
@@ -181,8 +181,7 @@ typesetter 在预览时渲染为 SVG。发布前由 `tools/render/mermaid.py` �
 
 ## 8. 文末运营区（约定俗成，无特殊语法）
 
-公众号文章末尾固定结构，用**H3 标题 + 正文段落**组织。
-typesetter 不再强制校验；publisher 按模板拼接。
+公众号文章末尾固定结构，用**H3 标题 + 正文段落**组织。publisher 按模板拼接。
 
 ```markdown
 ---

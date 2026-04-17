@@ -41,10 +41,6 @@ rules:
     enabled: true
     severity: warning
 
-  typesetter_compat:
-    enabled: true
-    severity: warning
-
   svg_readability:
     enabled: true
     severity: error

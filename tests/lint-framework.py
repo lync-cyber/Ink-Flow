@@ -381,46 +381,21 @@ def check_domain_completeness(repo: Path):
 
 
 # ============================================================
-# Check 7: Typesetter WeChat CSS 兼容性
-# ============================================================
-
-def check_typesetter_wechat_compat(repo):
-    """检查 typesetter 渲染输出中不使用微信不兼容的 CSS 属性"""
-    section("Check 7: Typesetter WeChat CSS 兼容性")
-    index_path = repo / "tools" / "typesetter" / "index.html"
-    if not index_path.exists():
-        warn("typesetter index.html 未找到，跳过检查")
-        return
-
-    import re
-    content = index_path.read_text(encoding="utf-8")
-
-    # Check for gap: in parts.push() template strings (rendered output)
-    # Match parts.push(`...gap:Npx...`) patterns
-    matches = re.findall(r'parts\.push\(`[^`]*gap:\d+px[^`]*`\)', content)
-    if matches:
-        for m in matches:
-            error(f"typesetter 渲染输出使用了 CSS 'gap'（微信不兼容）: {m[:80]}...")
-    else:
-        ok("typesetter 渲染输出无 CSS 'gap' 属性")
-
-
-# ============================================================
-# Check 8: 文件清理校验
+# Check 7: 典型文件存在性校验
 # ============================================================
 
 def check_file_cleanup(repo):
-    """检查已废弃文件是否已删除"""
-    section("Check 8: 文件清理校验")
+    """检查关键工具文件存在 + 已移除的历史目录未复活"""
+    section("Check 7: 文件清理校验")
 
-    # components.jsx should not exist (removed per refactoring plan)
-    components_path = repo / "tools" / "typesetter" / "components.jsx"
-    if components_path.exists():
-        warn("tools/typesetter/components.jsx 应已删除（与 index.html 功能重复）")
+    # typesetter 模块已废弃，不应再出现
+    typesetter_dir = repo / "tools" / "typesetter"
+    if typesetter_dir.exists():
+        error("tools/typesetter/ 应已移除（视觉交接迁移到 workspace/column-design/）")
     else:
-        ok("components.jsx 已移除")
+        ok("tools/typesetter/ 已移除")
 
-    # mermaid renderer should live at tools/render/mermaid.py
+    # mermaid renderer 必须在位
     mermaid_py = repo / "tools" / "render" / "mermaid.py"
     if mermaid_py.exists():
         ok("tools/render/mermaid.py 存在")
@@ -433,19 +408,16 @@ def check_file_cleanup(repo):
 # ============================================================
 
 # 分区 → 必填字段映射（与 columns.yaml 头部契约保持一致）
+# 视觉字段已移出 columns.yaml，由 column-designing skill 独立产出
 REQUIRED_COLUMN_FIELDS = {
-    "品牌标识": ["name", "icon", "tagline", "personality"],
-    "视觉主题": ["colors"],
+    "品牌标识": ["name", "personality"],
     "写作指导": ["skeleton", "tone", "default_opening", "default_cta"],
     "运营指标": ["frequency", "kpi_targets"],
 }
 
-# colors 子对象中所有栏目必须包含的 key
-REQUIRED_COLOR_KEYS = {"primary", "accent", "text", "textSecondary", "background", "border"}
-
 
 def check_column_completeness(repo):
-    """校验 columns.yaml 中每个栏目包含所有必填字段，且 colors 结构一致"""
+    """校验 columns.yaml 中每个栏目包含所有必填字段（业务字段，视觉字段已移出）"""
     section("Check 9: 栏目必填字段完整性")
 
     columns_path = repo / "config" / "columns.yaml"
@@ -459,11 +431,7 @@ def check_column_completeness(repo):
     lines = text.splitlines()
     in_columns = False
     columns_data: dict[str, dict[str, bool]] = {}  # {col_id: {field: True}}
-    colors_keys: dict[str, set[str]] = {}  # {col_id: {key1, key2, ...}}
     current_col = None
-    in_colors = False
-    in_dark = False
-    indent_stack = 0
 
     for line in lines:
         # 进入 columns: 顶层段
@@ -483,9 +451,6 @@ def check_column_completeness(repo):
         if m:
             current_col = m.group(1)
             columns_data[current_col] = {}
-            colors_keys[current_col] = set()
-            in_colors = False
-            in_dark = False
             continue
 
         if not current_col:
@@ -493,30 +458,8 @@ def check_column_completeness(repo):
 
         # 栏目下的字段（4 空格缩进）
         fm = re.match(r"    (\w[\w-]*):", line)
-        if fm and not in_colors and not in_dark:
-            field = fm.group(1)
-            columns_data[current_col][field] = True
-
-            if field == "colors":
-                in_colors = True
-                continue
-            if field == "dark":
-                in_dark = True
-                continue
-
-        # colors 子字段（6 空格缩进）
-        if in_colors:
-            cm = re.match(r"      (\w+):", line)
-            if cm:
-                colors_keys[current_col].add(cm.group(1))
-            # 退出 colors（回到 4 空格层级）
-            if line.strip() and re.match(r"    \w", line) and not re.match(r"      ", line):
-                in_colors = False
-
-        # dark 段结束检测
-        if in_dark:
-            if line.strip() and re.match(r"    \w", line) and not re.match(r"      ", line):
-                in_dark = False
+        if fm:
+            columns_data[current_col][fm.group(1)] = True
 
     if not columns_data:
         error("columns.yaml 未找到栏目定义")
@@ -536,16 +479,6 @@ def check_column_completeness(repo):
             else:
                 error(f"栏目 {col_id}: 缺少必填字段 '{req_field}'")
 
-    # 校验 colors 子对象的 key 集合一致性
-    col_ids = list(colors_keys.keys())
-    if len(col_ids) >= 2:
-        for col_id in col_ids:
-            missing = REQUIRED_COLOR_KEYS - colors_keys[col_id]
-            if missing:
-                error(f"栏目 {col_id}: colors 缺少 key: {', '.join(sorted(missing))}")
-            else:
-                ok(f"栏目 {col_id}: colors 包含所有必需 key")
-
 
 # ============================================================
 # Check 10: Skill 名称交叉引用
@@ -558,7 +491,7 @@ DEPRECATED_SKILLS = {
     "article-structuring": "已合并进 config/columns.yaml 的 skeleton 段",
     "writing-guiding":     "已合并进 config/columns.yaml 的 phrase_replacements / human_voice_techniques",
     "opening-crafting":    "已合并进 config/columns.yaml 的 opening_strategies",
-    "visual-theming":      "已合并进 config/columns.yaml 的 colors / typesetter 预设",
+    "visual-theming":      "column-designing（产出 workspace/column-design/{slug}/theme.css）",
     "format-linting":      "quality-linting",
     "format-exporting":    "publisher agent（publish 阶段）",
 }
@@ -744,7 +677,6 @@ def main():
     check_skill_frontmatter(repo)
     check_cross_references(repo)
     check_domain_completeness(repo)
-    check_typesetter_wechat_compat(repo)
     check_file_cleanup(repo)
     check_column_completeness(repo)
     check_skill_name_references(repo)

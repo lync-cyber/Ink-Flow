@@ -42,7 +42,7 @@ AskUserQuestion（若命令未显式指定模式）:
 
 优先级：
 1. 用户直接指定路径
-2. 扫描 `articles/*/export/final.md`（兼容老文件名 `_final.md`），让用户选 3-5 篇
+2. 扫描 `articles/*/export/07-final-manuscript.md`（兼容老文件名 `_final.md`），让用户选 3-5 篇
 3. 无可用文章 → 提示用户提供
 
 ### 3. 调用 style-analyzer

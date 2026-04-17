@@ -36,8 +36,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 ### Post-Polish 复核（polish checkpoint 前）
 
 在 polish 阶段的标准 validation 之外，执行以下额外检查：
-1. 读取 `audit.md` 中严重性为"高"的所有条目
-2. 在 `final.md` 的变更溯源表中确认每条高严重性条目有对应记录
+1. 读取 `05-audit-report.md` 中严重性为"高"的所有条目
+2. 在 `07-final-manuscript.md` 的变更溯源表中确认每条高严重性条目有对应记录
 3. 对处理方式为"拒绝"的高严重性条目，提示用户确认
 4. 若有高严重性条目在溯源表中缺失，要求 polisher 补充处理
 

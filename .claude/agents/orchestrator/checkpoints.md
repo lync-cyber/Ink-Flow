@@ -27,7 +27,7 @@ AskUserQuestion:
   options:
     - "通过，准备发布"
     - "处理审校问题后重新润色" — 重跑 polish
-    - "手动编辑" — 暂停等待用户编辑 export/final.md
+    - "手动编辑" — 暂停等待用户编辑 export/07-final-manuscript.md
     - "返回重写" — 重跑 draft
 ```
 
@@ -49,7 +49,7 @@ AskUserQuestion:
 ```
 
 审核要点：
-- export/wechat.md / plain.md / teaser.md 均存在
+- export/08-wechat-publish.md / 08-plain-publish.md / 08-teaser-120chars.md 均存在
 - 摘要 ≤120 字（config.exports.teaser.word_limit）
 - 无残留 `<!-- FIGURE:` `<!-- MEDIA:` `<!-- USER_FILL:` 占位符
 

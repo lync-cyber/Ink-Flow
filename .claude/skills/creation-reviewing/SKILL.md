@@ -31,7 +31,7 @@ AskUserQuestion:
 对 AI 初稿与用户终审版本做 diff：
 
 - AI 初稿: `articles/{slug}/drafts/full.md`
-- 用户终审: `articles/{slug}/output/final.md`
+- 用户终审: `articles/{slug}/export/07-final-manuscript.md`
 
 用 Read tool 分别读取两个文件，直接对比分析：
 - 新增段落数、删除段落数、修改段落数、净字数变化

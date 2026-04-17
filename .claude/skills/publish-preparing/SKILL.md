@@ -26,8 +26,8 @@ AskUserQuestion:
 
 ## 数据读取
 
-1. `articles/{slug}/brief.md` — 栏目、内容类型、CTA 类型
-2. `articles/{slug}/output/article.md` — 文章成品
+1. `articles/{slug}/intermediate/01-brief.md` — 栏目、内容类型、CTA 类型
+2. `articles/{slug}/export/article.md` — 文章成品
 3. `config/columns.yaml` — 栏目 best_time、kpi_targets
 4. Claude Code memory — 历史习得的最佳发布时间（若有）
 
@@ -40,8 +40,8 @@ AskUserQuestion:
 - [ ] **发布时间**: 推荐 {best_time}（来自 columns.yaml 或 orchestrator memory）
 - [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
-- [ ] **封面检查**: 确认封面图已准备（封面背景色从 columns.yaml 读取）
-- [ ] **排版流程**: 打开 `tools/typesetter/index.html` → 粘贴 `export/wechat.md`（栏目预设自动匹配）→ 点击"复制富文本" → 粘贴到公众号后台
+- [ ] **封面检查**: 确认封面图已准备
+- [ ] **排版流程**: 打开兼容 doocs/md 的排版器（在线 https://md.doocs.org 或自部署）→ 粘贴 `export/08-wechat-publish.md` → 如已套入栏目主题（来自 `workspace/column-design/{slug}/theme.css`）则样式自动应用 → 复制富文本 → 粘贴到公众号后台
 - [ ] **话题标签**: 添加 2-3 个精准话题标签（从 output/summary.md 提取）
 
 ### 栏目特化项

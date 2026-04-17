@@ -36,7 +36,7 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
 
 config/                            # 项目配置（纳入版本管理）
   ├── inkflow.yaml                 # 项目配置 + stage 契约
-  ├── columns.yaml                 # 栏目统一配置（视觉+业务+typesetter 预设）
+  ├── columns.yaml                 # 栏目统一配置（业务字段：骨架、tone、频率、KPI）
   ├── artifact-layout.yaml         # 产物路径约定
   └── markdown-extensions.md       # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
 
@@ -44,11 +44,14 @@ styles/                            # 个人化风格档案（用户生成，升�
   └── {profile}/style-profile.md
 
 tools/                             # 工具链
-  ├── typesetter/                  # 轻量级排版器（marked.js + 3 主题 + 栏目预设）
   ├── lint/                        # 格式校验脚本 + 配置
   ├── render/                      # mermaid / svg-sanitize
   ├── fetch/                       # 外部文章抓取（微信等）+ 正文清洗
   └── bootstrap.sh                 # 框架部署/升级脚本
+
+workspace/
+  ├── pipeline-states/             # Pipeline 执行状态（.gitignore）
+  └── column-design/               # 栏目视觉中间产物（theme.css + preview.html）
 
 tests/                             # 框架质量门禁
   └── lint-framework.py            # L0 静态校验（schema + 交叉引用）
@@ -138,9 +141,11 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 > 其他写作期能力（栏目骨架、开头策略、正向替换、视觉主题）不再作为独立 skill，
 > 已整合进 `config/columns.yaml` 作为声明式配置，由 writer / illustrator agent 直接读取。
 
-### 品牌视觉系统
+### 栏目业务配置与视觉分离
 
-栏目配置（视觉+业务+typesetter 预设）统一定义在 `config/columns.yaml`。Writer 输出标准 Markdown + GFM Alerts（`> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]`），publish 阶段导出 `export/wechat.md`；在 `tools/typesetter/index.html` 中粘贴后，栏目预设按 frontmatter 自动匹配（theme + 主色 + 字体），点击"复制富文本"即可贴进公众号后台。
+- **业务字段**（骨架、tone、开头策略、KPI）定义在 `config/columns.yaml`，由 writer / illustrator / auditor agent 直接消费。
+- **视觉字段**（主色、字体、标题样式等）不再进入 `columns.yaml`。由 `column-designing` skill 按栏目产出到 `workspace/column-design/{slug}/theme.css` 和 `preview.html`；再由下游 skill 导入到你自部署的 doocs/md 作为可选主题。
+- Writer 输出标准 Markdown + GFM Alerts；publish 阶段产出 `export/08-wechat-publish.md`；用户自行粘贴到兼容 doocs/md 的在线/本地排版器，复制富文本发布。
 
 ### 错误处理
 

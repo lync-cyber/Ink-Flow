@@ -429,9 +429,9 @@ def rule_typography(lines: list[str], config: dict, result: LintResult):
 
     flush_paragraph()
 
-    # T1: 文章必须有恰好一个 H1（typesetter 依赖 H1 触发栏目标识区）
+    # T1: 文章必须有恰好一个 H1
     if h1_count == 0:
-        result.add("T1", "error", 0, "文章缺少 H1 标题行（typesetter 需要 H1 触发栏目标识区渲染）")
+        result.add("T1", "error", 0, "文章缺少 H1 标题行")
 
 
 def rule_theme_constraints(lines: list[str], column: str, config: dict, result: LintResult):
@@ -526,12 +526,10 @@ def rule_image_references(lines: list[str], _config: dict, result: LintResult):
         if ctx.in_frontmatter or ctx.in_code_block:
             continue
 
-        # E1: 图片缺少 alt 文本
-        # typesetter 的 figureCaption decorator 会把 alt 自动渲染为 <figcaption>，
-        # 缺 alt 就丢失图注，需要警告。
+        # E1: 图片缺少 alt 文本（alt 约定作为图注，下游排版器多渲染为 <figcaption>）
         if re.search(r"!\[\]\(", ctx.text):
             result.add("E1", "warning", ctx.line_num,
-                       "图片缺少 alt 文本（typesetter 会把 alt 自动渲染为图注 figcaption）")
+                       "图片缺少 alt 文本（alt 约定作为图注 figcaption）")
 
         # E3: 绝对路径
         if re.search(r"!\[.*\]\(file://", ctx.text) or re.search(r"!\[.*\]\([A-Z]:\\", ctx.text):
@@ -581,7 +579,7 @@ def rule_article_structure(lines: list[str], column: str, config: dict, result: 
                     break
             if not found_bq:
                 result.add("S3", "warning", h1_idx + 1,
-                            "H1 标题后建议紧跟 > blockquote 作为文章摘要（typesetter 会渲染为摘要区）")
+                            "H1 标题后建议紧跟 > blockquote 作为文章摘要")
 
     # S4: 代码块必须标注语言
     in_code = False
@@ -649,38 +647,6 @@ def rule_svg_readability(lines: list[str], config: dict, result: LintResult):
             _check(float(m.group(1)), ctx.line_num, "内联 font-size")
         if re.search(r"</svg>", text, re.IGNORECASE):
             in_svg = False
-
-
-def rule_typesetter_compat(lines: list[str], column: str, config: dict, result: LintResult):
-    """规则 T: typesetter 兼容性检查"""
-    theme_id = COLUMN_ALIASES.get(column, column) if column else ""
-    full_text = "\n".join(lines)
-
-    # T4: 本地文件路径引用
-    for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block:
-            continue
-        if re.search(r'<img\s[^>]*src=["\']\.\./', ctx.text, re.IGNORECASE):
-            result.add("T4", "error", ctx.line_num,
-                        "检测到本地路径 <img> 引用（typesetter 无法访问本地文件，需内联 SVG）")
-        if re.search(r'!\[.*\]\(\.\./figures/', ctx.text):
-            result.add("T4", "error", ctx.line_num,
-                        "检测到本地 figures 路径引用（需内联 SVG 或使用远程 URL）")
-
-    # T5: 残留占位符
-    for ctx in iter_lines(lines):
-        if ctx.in_frontmatter or ctx.in_code_block:
-            continue
-        if "<!-- FIGURE:" in ctx.text:
-            result.add("T5", "warning", ctx.line_num,
-                        "检测到未替换的图表占位符（publisher 阶段应已替换为内联内容）")
-
-    # T6: 有 [N] 引用标记时应有 H3 "参考文献" 区（标准 Markdown，取代旧 :::references）
-    has_citation = bool(re.search(r"\[\d+\]", full_text))
-    has_ref_heading = bool(re.search(r"^#{2,4}\s*参考文献\s*$", full_text, re.MULTILINE))
-    if has_citation and not has_ref_heading:
-        result.add("T6", "warning", 0,
-                    "文中含 [N] 引用但缺少 H3 '参考文献' 段（publisher 会基于此段生成引用列表）")
 
 
 def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
@@ -751,9 +717,6 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
 
     if rules_cfg.get("article_structure", {}).get("enabled", True):
         rule_article_structure(lines, column, config, result)
-
-    if rules_cfg.get("typesetter_compat", {}).get("enabled", True):
-        rule_typesetter_compat(lines, column, config, result)
 
     if rules_cfg.get("svg_readability", {}).get("enabled", True):
         rule_svg_readability(lines, config, result)

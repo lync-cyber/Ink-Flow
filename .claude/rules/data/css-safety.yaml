@@ -1,6 +1,6 @@
 # ============================================================
 # CSS / HTML 安全清单（单一事实来源）
-# 消费者：tools/typesetter、tools/lint、writer/polisher/auditor agent
+# 消费者：tools/lint、writer/polisher/auditor agent、column-designing skill
 # ============================================================
 
 version: "2.0"

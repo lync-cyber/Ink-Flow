@@ -48,12 +48,12 @@ defaults:
 stages:
   - name: brief
     type: user_input
-    output: "articles/{slug}/intermediate/brief.md"
+    output: "articles/{slug}/intermediate/01-brief.md"
 
   - name: research
     agent: researcher
     skip_if: "brief.skip_research == true"
-    output: "articles/{slug}/intermediate/research.md"
+    output: "articles/{slug}/intermediate/02-research-memo.md"
     validation:
       required_sections: ["关键事实", "代码片段", "对比表格", "不确定项"]
       optional_sections:
@@ -69,7 +69,7 @@ stages:
     agent: outliner
     checkpoint: true
     requires: [brief]
-    output: "articles/{slug}/intermediate/outline.md"
+    output: "articles/{slug}/intermediate/03-outline-structure.md"
     validation:
       required_sections: ["总览"]
       required_per_section: ["论点", "关键细节", "预估字数", "视觉断点"]
@@ -79,8 +79,8 @@ stages:
   - name: draft
     agent: writer
     requires: [outline]
-    output: "articles/{slug}/intermediate/draft/merged.md"
-    section_output: "articles/{slug}/intermediate/draft/section-{N}.md"
+    output: "articles/{slug}/intermediate/04a-draft/merged-draft.md"
+    section_output: "articles/{slug}/intermediate/04a-draft/section-{N}.md"
     validation:
       section_tolerance: 0.20
       merged_word_count: { min: 800, max: 5000 }
@@ -92,15 +92,15 @@ stages:
     skip_if: "brief.no_figures == true"
     requires: [outline]
     parallel_with: [draft]
-    output: "articles/{slug}/intermediate/figure/index.md"
-    individual_output: "articles/{slug}/intermediate/figure/fig-{N}.{md|svg}"
+    output: "articles/{slug}/intermediate/04b-figure/figure-index.md"
+    individual_output: "articles/{slug}/intermediate/04b-figure/fig-{N}.{md|svg}"
     validation:
       required_patterns: ["```mermaid|<svg"]
 
   - name: audit
     agent: auditor
     requires: [draft]
-    output: "articles/{slug}/review/audit.md"
+    output: "articles/{slug}/review/05-audit-report.md"
     validation:
       required_sections: ["审校报告", "事实准确性", "论证完整性", "AI 味检测", "风格偏离", "句式问题", "传播性评估", "审校统计"]
       severity_levels: [高, 中, 低]
@@ -110,8 +110,8 @@ stages:
     agent: polisher
     checkpoint: true
     requires: [audit]
-    output: "articles/{slug}/review/polish-trace.md"
-    final_output: "articles/{slug}/export/final.md"
+    output: "articles/{slug}/review/06-polish-trace.md"
+    final_output: "articles/{slug}/export/07-final-manuscript.md"
     validation:
       required_sections: ["润色结果", "变更溯源表", "润色变更摘要"]
       forbidden_patterns: ["TODO", "待确认"]
@@ -128,10 +128,10 @@ stages:
     agent: publisher
     checkpoint: true
     requires: [polish]
-    output: "articles/{slug}/export/wechat.md"
+    output: "articles/{slug}/export/08-wechat-publish.md"
     additional_outputs:
-      - "articles/{slug}/export/plain.md"
-      - "articles/{slug}/export/teaser.md"
+      - "articles/{slug}/export/08-plain-publish.md"
+      - "articles/{slug}/export/08-teaser-120chars.md"
     validation:
       required_patterns: ["^# "]
       forbidden_patterns:
@@ -147,13 +147,13 @@ stages:
 exports:
   - format: wechat_md
     description: "Markdown Nice 适配格式"
-    output: "articles/{slug}/export/wechat.md"
+    output: "articles/{slug}/export/08-wechat-publish.md"
   - format: plain_md
     description: "纯净 Markdown（知乎/掘金等）"
-    output: "articles/{slug}/export/plain.md"
+    output: "articles/{slug}/export/08-plain-publish.md"
   - format: teaser
     description: "短摘要版（朋友圈/社群分发）"
-    output: "articles/{slug}/export/teaser.md"
+    output: "articles/{slug}/export/08-teaser-120chars.md"
     word_limit: 120
 
 # ============================================================

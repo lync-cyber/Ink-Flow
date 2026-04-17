@@ -1,28 +1,12 @@
 # ============================================================
 # 栏目统一配置（单一事实来源）
-# 合并：视觉主题 + 业务配置 + 骨架结构 + 开头策略 + 语气指南
-# 新增栏目只需在 columns: 下增加一个块
+# 业务定位 + 骨架结构 + 开头策略 + 语气指南
+# 视觉字段（配色/字体/typesetter 预设）已移至独立产物：
+#   workspace/column-design/{slug}/theme.css
+# 由 column-designing skill 产出，下游 skill 导入 doocs/md
 # ============================================================
 
-version: "5.0"
-
-# ---- 排版基础参数 ----
-# 精细阈值参考 .claude/rules/data/typography-limits.yaml
-# typesetter 渲染通过 tools/typesetter/presets/*.json 承接，主色与字族由预设决定
-typography:
-  fontSize: 15
-  lineHeight: 1.75
-  letterSpacing: 1
-  pageMargin: 12
-  paragraphGap: 16
-  sectionGap: 28
-  imageGap: 20
-  textAlign: justify
-  fontStack: "-apple-system,'PingFang SC','Microsoft YaHei',sans-serif"
-  titleFontSize:
-    h1: 22
-    h2: 18
-    h3: 15
+version: "6.0"
 
 # ---- 栏目名映射（brief.content_column 兼容别名）----
 column_aliases:
@@ -41,33 +25,7 @@ columns:
   academic:
     name: "学术前沿"
     nameEn: "Academic Frontier"
-    icon: "📐"
-    tagline: "深度 · 前瞻 · 严谨"
-    personality: "学术期刊般的克制与精确，大量留白，强调数据与逻辑层级"
-    lineHeightOverride: null
-    typesetter:
-      # typesetter 预设 — 权威来源 tools/typesetter/presets/academic.json
-      theme: default       # doocs/md 经典主题
-      primaryColor: "#1a5276"
-      fontFamily: sans
-      fontSize: "15px"
-    colors:
-      primary: "#1a5276"
-      accent: "#c0782b"
-      text: "#3f3f3f"
-      textSecondary: "#595959"
-      textTertiary: "#888888"
-      background: "#e4edf4"
-      backgroundDeep: "#c5d9e8"
-      border: "#bfc5cb"
-    dark:
-      background: "#191919"
-      surface: "#222222"
-      text: "#c3c3c3"
-      textSecondary: "#8a8a8a"
-      border: "#3a3a3a"
-      accent: "#c0782b"
-      primary: "#4a9fd4"
+    personality: "克制严谨、数据与逻辑层级优先、适合大量留白"
     default_opening: blunt
     default_cta: bookmark
     suggested_components: [data_chart]
@@ -100,32 +58,7 @@ columns:
   industry:
     name: "行业趋势"
     nameEn: "Industry Pulse"
-    icon: "📡"
-    tagline: "洞察 · 趋势 · 时效"
-    personality: "简报式紧凑排布，信息密度高，卡片化，节奏明快"
-    lineHeightOverride: null
-    typesetter:
-      theme: simple        # doocs/md 简洁主题
-      primaryColor: "#0e6655"
-      fontFamily: sans
-      fontSize: "15px"
-    colors:
-      primary: "#0e6655"
-      accent: "#b9770e"
-      text: "#3f3f3f"
-      textSecondary: "#595959"
-      textTertiary: "#888888"
-      background: "#dceee8"
-      backgroundDeep: "#b8ddd3"
-      border: "#b5bfba"
-    dark:
-      background: "#191919"
-      surface: "#222222"
-      text: "#c3c3c3"
-      textSecondary: "#8a8a8a"
-      border: "#3a3a3a"
-      accent: "#b9770e"
-      primary: "#2ecc9a"
+    personality: "简报式紧凑、信息密度高、节奏明快、适合卡片化"
     default_opening: contrast
     default_cta: share
     suggested_components: [comparison_table]
@@ -157,32 +90,7 @@ columns:
   tech:
     name: "技术专题"
     nameEn: "Tech Deep Dive"
-    icon: "⚙️"
-    tagline: "实践 · 原理 · 工具"
-    personality: "工具化，装饰最少，功能性最强，代码友好，Markdown 兼容"
-    lineHeightOverride: null
-    typesetter:
-      theme: default       # doocs/md 经典主题（代码块友好）
-      primaryColor: "#4a235a"
-      fontFamily: sans
-      fontSize: "15px"
-    colors:
-      primary: "#4a235a"
-      accent: "#1a5276"
-      text: "#3f3f3f"
-      textSecondary: "#595959"
-      textTertiary: "#888888"
-      background: "#ece3f0"
-      backgroundDeep: "#d4c2dd"
-      border: "#b5b5bf"
-    dark:
-      background: "#191919"
-      surface: "#222222"
-      text: "#c3c3c3"
-      textSecondary: "#8a8a8a"
-      border: "#3a3a3a"
-      accent: "#5dade2"
-      primary: "#bb8fce"
+    personality: "工具化、装饰最少、功能性最强、代码友好"
     default_opening: pain_point
     default_cta: bookmark_try
     suggested_components: [flow_chart]
@@ -214,32 +122,7 @@ columns:
   story:
     name: "人物故事"
     nameEn: "Profiles & Stories"
-    icon: "✍️"
-    tagline: "温度 · 叙事 · 人文"
-    personality: "温暖有机，大图呼吸，引言突出，段落宽松"
-    lineHeightOverride: 2.0
-    typesetter:
-      theme: grace         # doocs/md 优雅主题（阴影+衬线）
-      primaryColor: "#784212"
-      fontFamily: serif
-      fontSize: "16px"
-    colors:
-      primary: "#784212"
-      accent: "#1a5276"
-      text: "#3f3f3f"
-      textSecondary: "#6e5c50"
-      textTertiary: "#888888"
-      background: "#f0e0d0"
-      backgroundDeep: "#e8cdb3"
-      border: "#c4b5a5"
-    dark:
-      background: "#191919"
-      surface: "#222222"
-      text: "#c3c3c3"
-      textSecondary: "#8a8a8a"
-      border: "#3a3a3a"
-      accent: "#5dade2"
-      primary: "#e8b87a"
+    personality: "温暖有机、引言突出、段落宽松、叙事优先"
     default_opening: story
     default_cta: comment
     suggested_components: []
@@ -346,24 +229,8 @@ human_voice_techniques:
     position: "文章前 1/3 处"
 
 # ============================================================
-# 语法高亮 / 封面 / 总量控制
+# 总量控制
 # ============================================================
-syntax_highlighting:
-  keyword: "#c792ea"
-  function: "#82aaff"
-  class: "#ffcb6b"
-  constant: "#f78c6c"
-  comment: "#7c8ba1"
-  string: "#c3e88d"
-  background: "#1a1d23"
-  text: "#e2e8f0"
-
-cover_backgrounds:
-  academic: "#1a5276"
-  industry: "#0e6655"
-  tech: "#4a235a"
-  story: "#784212"
-
 content_mix:
   monthly_target: "7-10"
   max_per_day: 1

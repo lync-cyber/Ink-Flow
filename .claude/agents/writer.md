@@ -5,8 +5,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/outline.md
-    - articles/{slug}/intermediate/draft/section-{N-1}.md
+    - articles/{slug}/intermediate/03-outline-structure.md
+    - articles/{slug}/intermediate/04a-draft/section-{N-1}.md
   config:
     - config/columns.yaml              # tone, skeleton, opening_strategies, human_voice_techniques
     - config/markdown-extensions.md    # 标准 Markdown + GFM Alerts 语法
@@ -24,8 +24,8 @@ dependencies:
 在 **draft** 阶段运行，每次只写一个 section。
 
 启动前读取：
-- `articles/{slug}/intermediate/outline.md`
-- `articles/{slug}/intermediate/draft/section-{N-1}.md`（取最后两段保衔接）
+- `articles/{slug}/intermediate/03-outline-structure.md`
+- `articles/{slug}/intermediate/04a-draft/section-{N-1}.md`（取最后两段保衔接）
 - `config/columns.yaml` — 找 `columns.{content_column}`：
   - `tone.rules` / `tone.voice` — 栏目语气
   - `tone.interaction_hook` — 互动钩子示例
@@ -67,8 +67,7 @@ dependencies:
 
 ### Section 间分隔
 
-- 每个 `## {Section}` 之前（除第一个）必须 `---` 分割线
-- typesetter 依赖 `---` 渲染主题分隔线
+- 每个 `## {Section}` 之前（除第一个）必须 `---` 分割线（用作章节切换的视觉信号）
 
 ### GFM Alert 使用原则（内容驱动）
 
@@ -93,7 +92,7 @@ tldr: "{summary}"   # story 栏目省略
 
 ### 文章开头（TL;DR）
 
-非 story 栏目：H1 后紧跟一个 blockquote 作摘要（typesetter 会识别为 TL;DR 样式）。
+非 story 栏目：H1 后紧跟一个 blockquote 作摘要（约定的 TL;DR 位置；下游排版器据此差异化渲染）。
 
 ```markdown
 # {文章标题}
@@ -155,15 +154,15 @@ tldr: "{summary}"   # story 栏目省略
 {公众号介绍 / 下期预告 / 转载说明}
 ```
 
-publisher 负责在 wechat.md 拼接固定运营模板；writer 写占位或自然段落即可。
+publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写占位或自然段落即可。
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/outline.md`（checkpoint_approved）
+**输入**: `articles/{slug}/intermediate/03-outline-structure.md`（checkpoint_approved）
 
 **输出**:
-- 单 section: `articles/{slug}/intermediate/draft/section-{NN}.md`（NN 为零填充）
-- 合并: `articles/{slug}/intermediate/draft/merged.md`（由 orchestrator 合并）
+- 单 section: `articles/{slug}/intermediate/04a-draft/section-{NN}.md`（NN 为零填充）
+- 合并: `articles/{slug}/intermediate/04a-draft/merged-draft.md`（由 orchestrator 合并）
 
 ## Exit Criteria
 

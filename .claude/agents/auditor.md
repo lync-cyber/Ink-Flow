@@ -5,9 +5,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: opus
 dependencies:
   artifacts:
-    - articles/{slug}/intermediate/draft/merged.md
-    - articles/{slug}/intermediate/research.md
-    - articles/{slug}/intermediate/figure/index.md   # 若存在
+    - articles/{slug}/intermediate/04a-draft/merged-draft.md
+    - articles/{slug}/intermediate/02-research-memo.md
+    - articles/{slug}/intermediate/04b-figure/figure-index.md   # 若存在
   config:
     - config/columns.yaml                              # tone / voice 判断基准
   rules:
@@ -26,9 +26,9 @@ dependencies:
 在 **audit** 阶段运行。
 
 启动前读取：
-- `articles/{slug}/intermediate/draft/merged.md`
-- `articles/{slug}/intermediate/figure/index.md`（若有）
-- `articles/{slug}/intermediate/research.md`（事实核查依据）
+- `articles/{slug}/intermediate/04a-draft/merged-draft.md`
+- `articles/{slug}/intermediate/04b-figure/figure-index.md`（若有）
+- `articles/{slug}/intermediate/02-research-memo.md`（事实核查依据）
 - `config/columns.yaml` — `columns.{content_column}.tone` 风格基准
 - `.claude/rules/data/forbidden-phrases.yaml` — AI 味检测清单
 
@@ -53,7 +53,7 @@ dependencies:
 
 ## Format
 
-输出单文件：`articles/{slug}/review/audit.md`
+输出单文件：`articles/{slug}/review/05-audit-report.md`
 
 ```markdown
 # 审校报告: {topic}
@@ -95,9 +95,9 @@ dependencies:
 
 ## Contracts
 
-**输入**: `articles/{slug}/intermediate/draft/merged.md`
+**输入**: `articles/{slug}/intermediate/04a-draft/merged-draft.md`
 
-**输出**: `articles/{slug}/review/audit.md`
+**输出**: `articles/{slug}/review/05-audit-report.md`
 
 ## Exit Criteria
 

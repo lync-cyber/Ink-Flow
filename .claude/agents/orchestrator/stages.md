@@ -8,7 +8,7 @@
 FOR each stage from current_stage to end:
 
   1. SKIP CHECK
-     读 stage.skip_if；从 articles/{slug}/intermediate/brief.md frontmatter 取值。
+     读 stage.skip_if；从 articles/{slug}/intermediate/01-brief.md frontmatter 取值。
      条件成立 → status=skipped，记录 reason，NEXT。
 
   2. DEPENDENCY CHECK
@@ -27,7 +27,7 @@ FOR each stage from current_stage to end:
      若 stage.parallel_with 存在，同时 dispatch 当前阶段和并行阶段。
 
   4. CONTEXT ASSEMBLY（从 artifact-layout 读路径）
-     收集已完成前置阶段的 output 文件（brief.md 始终包含）。
+     收集已完成前置阶段的 output 文件（01-brief.md 始终包含）。
      Skill/rules 由 agent 自行读取，编排器不拼装。
 
   5. MARK IN_PROGRESS + SPAWN AGENT
@@ -52,7 +52,7 @@ FOR each stage from current_stage to end:
 
 ```
 INIT:
-  - 读 outline.md，计算 section 总数
+  - 读 03-outline-structure.md，计算 section 总数
   - state.draft.sections = [{index:1,status:pending},...]
 
 FOR each section:
@@ -62,18 +62,18 @@ FOR each section:
   - status=in_progress，started_at
   - 调用 writer（writer 自行读 columns.yaml 对应栏目的 skeleton/tone；
     首 section 再读 opening_strategies 对应策略）
-  - 输出 → articles/{slug}/intermediate/draft/section-{NN}.md
+  - 输出 → articles/{slug}/intermediate/04a-draft/section-{NN}.md
   - 校验（字数 ±20%、无 forbidden_patterns）
   - status=completed
 
-所有 section 完成 → 合并为 articles/{slug}/intermediate/draft/merged.md
+所有 section 完成 → 合并为 articles/{slug}/intermediate/04a-draft/merged-draft.md
 ```
 
 ## Audit + Polish 子步骤
 
 ```
-auditor → review/audit.md（只审不改）
-polisher → review/polish-trace.md + export/final.md（按 audit 修复）
+auditor → review/05-audit-report.md（只审不改）
+polisher → review/06-polish-trace.md + export/07-final-manuscript.md（按 audit 修复）
 ```
 
 ## Publish 子步骤
