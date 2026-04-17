@@ -225,6 +225,24 @@ AskUserQuestion:
 
 **一套一个**。每组件都加戏 = AI slop（宪章 4）。
 
+### 3.7 主题级辅助组件（不是签名，是钩子）
+
+公众号写作会频繁用到、但 MD 原生没有的结构，由**主题 CSS 提供样式钩子**（不归 writer
+硬编码 inline style）：
+
+- **金句居中段** `.pullquote`（CLAUDE.md 规定每篇需 1 个"截图级金句"）
+- **导语卡 TL;DR** `.lede` / `.lede-tag`
+- **文末 CTA 卡** `.cta` / `.cta-head`（关注 / 阅读原文 / 下期预告）
+- **标签行** `.tags`（文章头 `#AI工程` `#机器人控制`）
+- **图注** `.caption`（避免和 inline `em` 冲突）
+- **键盘键** `kbd`（技术栏目偶尔用）
+
+设计参数（字号 / 字距 / 颜色）按栏目气质调整，但**装饰家族必须和主文同家**（宪章 3）。
+writer 通过 `<p class="pullquote">...</p>` 等内联 HTML 启用；doocs/md 复制机制会把
+class 样式 inline 化到元素 `style`，粘到微信仍生效。
+
+参数化骨架见 `references/theme.md` §四。
+
 ---
 
 ## 4. HTML 双方向预览
@@ -237,12 +255,22 @@ AskUserQuestion:
 行距 **≥ 5 项**系统性站队到不同立场。挑选原则：基于用户象限，选**有张力的相邻气质**
 （不跨象限，也不同象限微调）。
 
-**必须覆盖 14 种组件**（少一个返工）：
+**必须覆盖核心 14 种组件**（少一个返工）：
 
 ```
 H1 / H2 / H3 / H4 / 正文段落 / 粗体 / 行内代码 / 链接
 引用块（含出处 cite）/ 无序列表 / 有序列表 / 代码块 / 图片+图注 / 分隔线
 ```
+
+**扩展组件按栏目取用**（tech / academic 建议全上，story / industry 按需）：
+
+```
+H5 / em 斜体 / del 删除线 / 表格 / GFM callout（note/tip）/ 脚注区
+金句居中段 / TL;DR 导语卡 / 文末 CTA 卡 / 标签行 / 任务列表
+```
+
+预览里渲染了哪些扩展，§5 theme.css 就必须提供对应钩子。清单见 `references/preview.md`
+§扩展组件。
 
 HTML 底部附两方向逐项差异对比表。生成后告诉用户：
 
@@ -282,8 +310,18 @@ HTML 底部附两方向逐项差异对比表。生成后告诉用户：
 | `hr` | 分隔线 | |
 | `ul` / `ol` / `li` | 列表 | |
 
-缺任一项 → doocs 会回退到默认样式 → 风格断裂。**13 个选择器必写齐**（`link` / `wx_link`
+缺任一项 → doocs 会回退到默认样式 → 风格断裂。**13 个核心选择器必写齐**（`link` / `wx_link`
 可合并成一个选择器）。
+
+**扩展选择器按文章需求写**（预览里用到了就必须给出样式）：`h5` / `em` / `del` / `code_pre` /
+`blockquote_note` / `blockquote_tip` / `table` / `thead` / `td` / `footnote` / `listitem`。
+
+**主题级辅助组件**（§3.7 列出的金句 / 导语卡 / CTA / 标签 / 图注 / kbd）对应 `.pullquote`
+/ `.lede` / `.cta` / `.tags` / `.caption` / `kbd` 等 class 钩子，参数化骨架见
+`references/theme.md` §四。
+
+**Writer 手写 fallback 清单**（伪元素 / counter / checkbox 等微信不稳定能力的替代约定）见
+`references/theme.md` §五，生成 theme.css 时**必须在文件头注释声明本栏目采用的 fallback**。
 
 **上游 CSS 变量**（必须用，让用户色盘/深浅模式生效）：
 - `var(--md-primary-color)` — 主色（用户可覆盖）
@@ -336,17 +374,19 @@ columns.yaml 已剥离视觉字段，本 skill **不写** columns.yaml。视觉�
 ### 6.2 装饰与排版
 
 - [ ] 有且只有 1 个签名元素；装饰家族一贯（引用 / hr / 列表 / H2 前缀同家）
-- [ ] 字号阶梯最大/最小比 ≥ 1.6；中文行高 ≥ 1.7、段距 ≥ 行距 ×1.5
-- [ ] 14 种组件全覆盖（见 `references/preview.md` 清单）
-- [ ] 13 个 doocs 选择器写齐（`container / h1-h4 / p / strong / codespan / code / link / wx_link /
-      blockquote / blockquote_p / hr / image / ul / ol / li`）
+- [ ] 字号阶梯最大/最小比 ≥ 1.6；中文行高 ≥ 1.7、段距 ≥ leading（line-height-1）×1.5
+- [ ] 核心 14 组件全覆盖；预览里出现的扩展组件都有对应 CSS（见 `references/preview.md`）
+- [ ] 13 个核心 doocs 选择器写齐；预览里用到的扩展选择器 + 自定义 class 都写齐
+      （完整清单和自检格子见 `references/theme.md` §六）
 
 ### 6.3 微信兼容（宪章 5）
 
 - [ ] 无 `position: fixed/absolute/sticky/relative`
 - [ ] 无 `@keyframes` / `animation` / `@media` / `-webkit-` 前缀
 - [ ] 无 `backdrop-filter: blur`
-- [ ] `::before` / `::after` 只承担**非关键**装饰，且有 fallback（MD 手写字符前缀）
+- [ ] `::before` / `::after` 只承担**非关键**装饰；若承担关键装饰（签名、编号、checkbox、
+      脚注上标方括号），对应项已在 theme.css 文件头注释里按 `references/theme.md` §五
+      声明 Writer 手写 MD fallback
 - [ ] 无 `@font-face` / Google Fonts / Noto Web Font 外链
 - [ ] `border-radius < 24px`；`box-shadow` 至多单层且 rgba alpha ≤ 0.12
 

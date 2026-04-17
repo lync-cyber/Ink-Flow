@@ -20,7 +20,7 @@ SKILL.md §4 触发后读此文件。生成 `workspace/column-design/{slug}/prev
 
 这些只是起点——最终方向按 SKILL.md §3 从用户真实话题合成，不是查表。
 
-## 14 组件全覆盖清单
+## 核心 14 组件（必覆盖）
 
 每个方向必须渲染（缺一项算失败，回去补）：
 
@@ -33,6 +33,25 @@ SKILL.md §4 触发后读此文件。生成 `workspace/column-design/{slug}/prev
 ⑥ 粗体 strong             ⑬ 图片 + 图注（占位图即可）
 ⑦ 行内代码 code           ⑭ 分隔线 hr（章节间出现 2 次）
 ```
+
+## 扩展组件（按栏目需求渲染）
+
+根据 §2 用户内容类型选择；预览里渲染了哪些，§5 theme.css 就要提供对应样式钩子。
+
+```
+⑮ H5 更细分层                ⑳ 脚注区（底部 ordered list）
+⑯ em 斜体（英文术语 / 论文名）㉑ 金句居中段 .pullquote（CLAUDE.md 规定每篇 1 个）
+⑰ del 删除线（对比 / 废弃）   ㉒ TL;DR 导语卡 .lede
+⑱ 表格 table / thead / td     ㉓ 文末 CTA 卡 .cta
+⑲ GFM callout（note / tip）   ㉔ 标签行 .tags（文章头 #tag）
+```
+
+**栏目默认扩展组合**（起点，可调）：
+- **tech / academic**：核心 14 + 全部扩展（技术文表格和 callout 高频）
+- **industry**：核心 14 + 表格 + TL;DR + 标签
+- **story**：核心 14 + 金句 + em（论文/书名）
+
+扩展组件对应的 CSS 钩子和 writer MD 写法见 `theme.md` §四 + §五。
 
 ## 签名元素
 
