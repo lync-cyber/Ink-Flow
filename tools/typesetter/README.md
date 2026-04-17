@@ -38,19 +38,25 @@ tools/typesetter/
 ## 快速开始
 
 ```bash
-# 1. 初次拉取：初始化 submodule
-git submodule update --init --recursive
-
-# 2. 把 InkFlow 4 栏目主题注入 upstream
-node tools/typesetter/scripts/apply-overlay.mjs
-
-# 3. 启动 upstream 开发服务器（需 Node ≥ 22.16 + pnpm）
-cd tools/typesetter/upstream
-pnpm install
-pnpm dev
+# 一键启动：初始化 submodule → 注入 overlay → pnpm install → 启动 dev
+node tools/typesetter/scripts/dev.mjs
 # → 浏览器访问 http://127.0.0.1:5173
 # → 顶栏主题下拉选择：学术前沿 / 行业趋势 / 技术专题 / 人物故事
 ```
+
+需 Node ≥ 22.16 + pnpm。脚本是**幂等**的：第二次运行会跳过已完成的步骤，直接 `pnpm start`。
+
+如需手动分步：
+
+```bash
+git submodule update --init --recursive            # 初次拉取
+node tools/typesetter/scripts/apply-overlay.mjs    # 注入栏目
+cd tools/typesetter/upstream
+pnpm install
+pnpm start                                         # 注意：是 start，不是 dev
+```
+
+> upstream 的 root `package.json` 用 `start` 而非 `dev`（`pnpm start` 内部转发到 `pnpm web dev`）。
 
 ## 日常工作流
 
@@ -104,7 +110,7 @@ pnpm dev
 
 - **Node ≥ 22.16**（upstream 要求），不再支持 file:// 直接使用
 - **pnpm 必需**（upstream workspace 依赖）
-- 启动命令多一步（`pnpm install && pnpm dev`），相比原 InkFlow zero-build 实现更重
+- 启动命令多一步（`pnpm install && pnpm start`），相比原 InkFlow zero-build 实现更重
 
 这是"依赖 doocs/md"的明确代价，对应 DESIGN-MANIFESTO 第 1 节的价值主张。
 

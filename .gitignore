@@ -1,6 +1,7 @@
 # 运行时状态（可重建）
 workspace/pipeline-states/
 !workspace/pipeline-states/.gitkeep
+tools/typesetter/.dev-state/
 
 # 用户本地配置
 .claude/settings.local.json
