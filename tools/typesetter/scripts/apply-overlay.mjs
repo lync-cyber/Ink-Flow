@@ -21,7 +21,7 @@
  * 依赖：node >= 18
  * ============================================================
  */
-import { readFile, writeFile, copyFile, mkdir, access, rm, readdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, access, rm } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve, join } from 'node:path'
@@ -87,20 +87,30 @@ async function readManifest() {
 
 async function copyThemes(columns) {
   await mkdir(UPSTREAM_THEME_DIR, { recursive: true })
+  // 预读 reset.css —— 每个 ink-* 主题写入 upstream 时自动 prepend，
+  // 用于覆盖 default.css 的视觉污染（h2 彩色条 / li display:block / hr scale 等）
+  const resetPath = join(OVERLAY_DIR, 'theme-css', '_reset.css')
+  if (!(await exists(resetPath))) {
+    throw new Error(`缺少 _reset.css：${resetPath}`)
+  }
+  const resetCSS = await readFile(resetPath, 'utf8')
+
   for (const col of columns) {
     const src = join(OVERLAY_DIR, 'theme-css', col.css)
     const dst = join(UPSTREAM_THEME_DIR, col.css)
     if (!(await exists(src))) {
       throw new Error(`覆盖层 CSS 不存在: ${src}`)
     }
+    const themeCSS = await readFile(src, 'utf8')
+    // 拼接：_reset.css + 空行 + 主题
+    const merged = `${resetCSS.trimEnd()}\n\n${themeCSS}`
     if (CHECK) {
-      const a = await readFile(src, 'utf8')
       const dstExists = await exists(dst)
-      const b = dstExists ? await readFile(dst, 'utf8') : ''
-      if (a !== b) return drift(`theme CSS drift: ${col.css} (${dstExists ? 'content diff' : 'missing in upstream'})`)
+      const cur = dstExists ? await readFile(dst, 'utf8') : ''
+      if (cur !== merged) return drift(`theme CSS drift: ${col.css} (${dstExists ? 'content diff' : 'missing in upstream'})`)
     } else {
-      await copyFile(src, dst)
-      console.log(`  · copied theme-css/${col.css}`)
+      await writeFile(dst, merged, 'utf8')
+      console.log(`  · wrote theme-css/${col.css} (reset + theme)`)
     }
   }
 }

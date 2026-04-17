@@ -110,13 +110,21 @@ blockquote p:first-child::before {
   opacity: 0.35;
 }
 
-/* ==================== 列表 ==================== */
+/* ==================== 列表（list-style-type 字符串，WeChat-safe） ==================== */
 ul,
 ol {
   margin: 1.1em 0;
-  padding-left: 1.8em;
+  padding-left: 1.7em;
   color: hsl(var(--foreground));
   font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
+}
+
+ul {
+  list-style-type: "◦  ";
+}
+
+ol {
+  list-style-type: decimal;
 }
 
 li {
@@ -124,15 +132,8 @@ li {
   line-height: 1.9;
 }
 
-ul > li::marker {
-  content: "◦ ";
+li::marker {
   color: var(--md-primary-color);
-}
-
-ol > li::marker {
-  color: var(--md-primary-color);
-  font-style: italic;
-  font-weight: 600;
 }
 
 /* ==================== 分割线 ==================== */

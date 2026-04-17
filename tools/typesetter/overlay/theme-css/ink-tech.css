@@ -3,30 +3,36 @@
  * 午夜蓝 · 暗绿 · 工程精确感
  *
  * 设计立场（见 DESIGN-MANIFESTO.md）：
- *   - 等宽字体承担"工程感"，不靠霓虹或发光
- *   - 标题前缀用 ASCII 字符（›, //, #），不用 emoji / 图标
+ *   - 等宽字体只承担"信号"角色：code、标题前缀、行内 marker
+ *   - 正文坚持 sans-serif，避免长文阅读疲劳
+ *   - 标题前缀用 ASCII 字符（›, //），不用 emoji / 图标
  *   - 代码块依赖 upstream 的 highlight.js + isMacCodeBlock 选项
  */
 
+/* 局部变量 */
+:where(h1, h2, h3, h4, p, blockquote p, li, a, table, figcaption) {
+  font-family: var(--md-font-family);
+}
+
 /* ==================== 一级标题 ==================== */
 h1 {
-  margin: 1.3em 0 0.75em;
+  margin: 1.4em 0 0.8em;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--md-primary-color);
   color: hsl(var(--foreground));
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
-  font-size: calc(var(--md-font-size) * 1.45);
+  font-size: calc(var(--md-font-size) * 1.5);
   font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
+  letter-spacing: -0.005em;
+  line-height: 1.4;
   text-align: left;
 }
 
 /* ==================== 二级标题 ==================== */
 h2 {
-  margin: 1.9em 0 0.8em;
+  margin: 1.9em 0 0.85em;
   padding-left: 12px;
   border-left: 4px solid var(--md-primary-color);
   color: hsl(var(--foreground));
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
   font-size: calc(var(--md-font-size) * 1.18);
   font-weight: 700;
   letter-spacing: 0;
@@ -36,24 +42,23 @@ h2 {
 /* ==================== 三级标题 ==================== */
 h3 {
   margin: 1.5em 0 0.6em;
-  color: var(--md-primary-color);
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  color: hsl(var(--foreground));
   font-size: calc(var(--md-font-size) * 1.05);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.5;
 }
 
 h3::before {
   content: "› ";
   color: var(--md-primary-color);
-  opacity: 0.7;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-weight: 700;
 }
 
 /* ==================== 四级标题 ==================== */
 h4 {
   margin: 1.2em 0 0.4em;
   color: var(--md-primary-color);
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
   font-size: var(--md-font-size);
   font-weight: 600;
 }
@@ -61,6 +66,7 @@ h4 {
 h4::before {
   content: "// ";
   color: var(--md-primary-color);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
   opacity: 0.6;
 }
 
@@ -68,7 +74,7 @@ h4::before {
 p {
   margin: 0 0 1em;
   color: hsl(var(--foreground));
-  line-height: 1.75;
+  line-height: 1.8;
   letter-spacing: 0.02em;
   text-align: left;
 }
@@ -84,19 +90,16 @@ blockquote {
 }
 
 blockquote p {
-  margin: 0;
-  font-size: 0.94em;
+  margin: 0 0 0.4em;
+  font-size: 0.95em;
   line-height: 1.75;
 }
 
-blockquote p::before {
-  content: "// ";
-  color: var(--md-primary-color);
-  opacity: 0.6;
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+blockquote p:last-child {
+  margin-bottom: 0;
 }
 
-/* ==================== 列表 ==================== */
+/* ==================== 列表（list-style-type 字符串，WeChat-safe） ==================== */
 ul,
 ol {
   margin: 0.9em 0;
@@ -104,20 +107,21 @@ ol {
   color: hsl(var(--foreground));
 }
 
+ul {
+  list-style-type: "▸  ";
+}
+
+ol {
+  list-style-type: decimal;
+}
+
 li {
   margin: 0.3em 0;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
-ul > li::marker {
-  content: "▶ ";
+li::marker {
   color: var(--md-primary-color);
-  font-size: 0.7em;
-}
-
-ol > li::marker {
-  color: var(--md-primary-color);
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
   font-weight: 700;
 }
 
@@ -127,12 +131,13 @@ hr {
   border: none;
   text-align: center;
   color: var(--md-primary-color);
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 hr::before {
   content: "· · ·";
   letter-spacing: 0.5em;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
   font-size: 0.9em;
 }
 
@@ -151,8 +156,6 @@ a {
   color: var(--md-primary-color);
   border-bottom: 1px dashed var(--md-primary-color);
   text-decoration: none;
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
-  font-size: 0.95em;
 }
 
 code {
@@ -169,27 +172,23 @@ table {
   width: 100%;
   margin: 1.3em 0;
   border-collapse: collapse;
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
-  font-size: 0.88em;
+  font-size: 0.92em;
 }
 
 th {
-  padding: 0.5em 0.7em;
-  border: 1px solid var(--md-primary-color);
-  background: var(--md-primary-color);
-  color: #fff;
+  padding: 0.55em 0.7em;
+  border-bottom: 2px solid var(--md-primary-color);
+  background: transparent;
+  color: var(--md-primary-color);
   font-weight: 700;
+  letter-spacing: 0.03em;
   text-align: left;
 }
 
 td {
-  padding: 0.45em 0.7em;
-  border: 1px solid var(--blockquote-background);
+  padding: 0.5em 0.7em;
+  border-bottom: 1px solid var(--blockquote-background);
   color: hsl(var(--foreground));
-}
-
-tbody tr:nth-child(2n) td {
-  background: var(--blockquote-background);
 }
 
 /* ==================== 图片 ==================== */
@@ -204,8 +203,7 @@ img {
 figcaption {
   margin-top: 0.4em;
   color: hsl(var(--foreground));
-  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
-  font-size: 0.82em;
+  font-size: 0.85em;
   opacity: 0.7;
   text-align: center;
 }
