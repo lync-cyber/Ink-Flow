@@ -55,14 +55,21 @@ function fail(msg) { console.error(`\n✗ ${msg}\n`); process.exit(1) }
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolveFn, rejectFn) => {
+    // shell 默认开启（Windows 上的 pnpm/git/where 可能是 .cmd 需要 shell 解析）
+    // 但调用 node.exe 时禁用 shell —— 否则 "C:\Program Files\nodejs\node.exe"
+    // 的空格会被 cmd.exe 误拆成 "C:\Program"
+    const useShell = opts.shell !== undefined
+      ? opts.shell
+      : (IS_WINDOWS && cmd !== process.execPath)
+    const { shell: _omit, captureOutput, ...rest } = opts
     const child = spawn(cmd, args, {
-      stdio: opts.captureOutput ? ['inherit', 'pipe', 'pipe'] : 'inherit',
-      shell: IS_WINDOWS,
-      ...opts,
+      stdio: captureOutput ? ['inherit', 'pipe', 'pipe'] : 'inherit',
+      shell: useShell,
+      ...rest,
     })
     let out = ''
     let err = ''
-    if (opts.captureOutput) {
+    if (captureOutput) {
       child.stdout?.on('data', (d) => { out += d })
       child.stderr?.on('data', (d) => { err += d })
     }
