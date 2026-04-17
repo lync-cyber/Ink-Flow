@@ -1,0 +1,211 @@
+/**
+ * InkFlow · 技术专题（ink-tech）
+ * 午夜蓝 · 暗绿 · 工程精确感
+ *
+ * 设计立场（见 DESIGN-MANIFESTO.md）：
+ *   - 等宽字体承担"工程感"，不靠霓虹或发光
+ *   - 标题前缀用 ASCII 字符（›, //, #），不用 emoji / 图标
+ *   - 代码块依赖 upstream 的 highlight.js + isMacCodeBlock 选项
+ */
+
+/* ==================== 一级标题 ==================== */
+h1 {
+  margin: 1.3em 0 0.75em;
+  color: hsl(var(--foreground));
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: calc(var(--md-font-size) * 1.45);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  text-align: left;
+}
+
+/* ==================== 二级标题 ==================== */
+h2 {
+  margin: 1.9em 0 0.8em;
+  padding-left: 12px;
+  border-left: 4px solid var(--md-primary-color);
+  color: hsl(var(--foreground));
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: calc(var(--md-font-size) * 1.18);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+/* ==================== 三级标题 ==================== */
+h3 {
+  margin: 1.5em 0 0.6em;
+  color: var(--md-primary-color);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: calc(var(--md-font-size) * 1.05);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+h3::before {
+  content: "› ";
+  color: var(--md-primary-color);
+  opacity: 0.7;
+}
+
+/* ==================== 四级标题 ==================== */
+h4 {
+  margin: 1.2em 0 0.4em;
+  color: var(--md-primary-color);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: var(--md-font-size);
+  font-weight: 600;
+}
+
+h4::before {
+  content: "// ";
+  color: var(--md-primary-color);
+  opacity: 0.6;
+}
+
+/* ==================== 段落 ==================== */
+p {
+  margin: 0 0 1em;
+  color: hsl(var(--foreground));
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+/* ==================== 引用块 ==================== */
+blockquote {
+  margin: 1.3em 0;
+  padding: 0.8em 1em;
+  border-left: 3px solid var(--md-primary-color);
+  background: var(--blockquote-background);
+  color: hsl(var(--foreground));
+  font-style: normal;
+}
+
+blockquote p {
+  margin: 0;
+  font-size: 0.94em;
+  line-height: 1.75;
+}
+
+blockquote p::before {
+  content: "// ";
+  color: var(--md-primary-color);
+  opacity: 0.6;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+}
+
+/* ==================== 列表 ==================== */
+ul,
+ol {
+  margin: 0.9em 0;
+  padding-left: 1.6em;
+  color: hsl(var(--foreground));
+}
+
+li {
+  margin: 0.3em 0;
+  line-height: 1.75;
+}
+
+ul > li::marker {
+  content: "▶ ";
+  color: var(--md-primary-color);
+  font-size: 0.7em;
+}
+
+ol > li::marker {
+  color: var(--md-primary-color);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-weight: 700;
+}
+
+/* ==================== 分割线 ==================== */
+hr {
+  margin: 2em 0;
+  border: none;
+  text-align: center;
+  color: var(--md-primary-color);
+  opacity: 0.5;
+}
+
+hr::before {
+  content: "· · ·";
+  letter-spacing: 0.5em;
+  font-size: 0.9em;
+}
+
+/* ==================== 行内 ==================== */
+strong {
+  color: var(--md-primary-color);
+  font-weight: 700;
+}
+
+em {
+  color: hsl(var(--foreground));
+  font-style: italic;
+}
+
+a {
+  color: var(--md-primary-color);
+  border-bottom: 1px dashed var(--md-primary-color);
+  text-decoration: none;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: 0.95em;
+}
+
+code {
+  padding: 0.1em 0.4em;
+  background: var(--blockquote-background);
+  color: var(--md-primary-color);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: 0.9em;
+  border-radius: 2px;
+}
+
+/* ==================== 表格 ==================== */
+table {
+  width: 100%;
+  margin: 1.3em 0;
+  border-collapse: collapse;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: 0.88em;
+}
+
+th {
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--md-primary-color);
+  background: var(--md-primary-color);
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+}
+
+td {
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--blockquote-background);
+  color: hsl(var(--foreground));
+}
+
+tbody tr:nth-child(2n) td {
+  background: var(--blockquote-background);
+}
+
+/* ==================== 图片 ==================== */
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.3em auto;
+  border: 1px solid var(--blockquote-background);
+  border-radius: 2px;
+}
+
+figcaption {
+  margin-top: 0.4em;
+  color: hsl(var(--foreground));
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+  font-size: 0.82em;
+  opacity: 0.7;
+  text-align: center;
+}

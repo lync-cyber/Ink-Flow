@@ -1,0 +1,4 @@
+[submodule "tools/typesetter/upstream"]
+	path = tools/typesetter/upstream
+	url = https://github.com/doocs/md.git
+	ignore = dirty
