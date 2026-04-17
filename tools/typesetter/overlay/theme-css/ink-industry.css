@@ -78,7 +78,7 @@ blockquote p {
   line-height: 1.7;
 }
 
-/* ==================== 列表 ==================== */
+/* ==================== 列表（list-style-type 字符串，WeChat-safe） ==================== */
 ul,
 ol {
   margin: 0.9em 0;
@@ -86,25 +86,22 @@ ol {
   color: hsl(var(--foreground));
 }
 
+ul {
+  list-style-type: "→  ";
+}
+
+ol {
+  list-style-type: decimal;
+}
+
 li {
   margin: 0.3em 0;
   line-height: 1.7;
 }
 
-ul > li::marker {
-  content: "→ ";
-  color: var(--md-primary-color);
-}
-
-ol > li::marker {
+li::marker {
   color: var(--md-primary-color);
   font-weight: 700;
-}
-
-/* 奇数条纹：速览节奏 */
-ul > li:nth-child(odd),
-ol > li:nth-child(odd) {
-  background: transparent;
 }
 
 /* ==================== 分割线 ==================== */
