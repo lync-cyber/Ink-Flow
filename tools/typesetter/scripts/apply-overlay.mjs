@@ -296,8 +296,10 @@ async function clean(columns) {
   if (!CHECK && !CLEAN) {
     console.log('\n下一步：')
     console.log('  cd tools/typesetter/upstream')
-    console.log('  pnpm install && pnpm dev')
-    console.log('  → 浏览器打开 → 主题下拉选 学术/行业/技术/故事')
+    console.log('  pnpm install && pnpm start    # 注意：upstream 是 start，不是 dev')
+    console.log('  → 浏览器打开 http://127.0.0.1:5173 → 主题下拉选 学术/行业/技术/故事')
+    console.log('\n或一键启动（自动完成上述步骤）：')
+    console.log('  node tools/typesetter/scripts/dev.mjs')
   }
 })().catch((err) => {
   console.error('✗', err.message)
