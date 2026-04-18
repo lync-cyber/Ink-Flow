@@ -29,7 +29,7 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 外部参考材料 | `content/references/` |
 | 文章产物 | `content/articles/{slug}/` |
 | 运行状态 | `runtime/pipeline-states/{slug}.json` |
-| 本地排版工具 | `framework/tools/typeset/`（doocs/md 底座）+ `framework/tools/typeset.bat` / `framework/tools/typeset.command` |
+| 本地排版工具 | `framework/tools/typeset/app/`（自研 wx-md · Vite + Vue 3）+ `framework/tools/typeset/launcher.bat` / `framework/tools/typeset/launcher.command` |
 
 ## 工作区结构（单篇文章）
 
@@ -74,7 +74,7 @@ content/articles/{slug}/
 - **分析风格**: "分析风格"、"提取风格 DNA" → profile 模式，从你的文章提取风格
 - **学习进修**: "学习这篇文章"、"参考这个模板" → study 模式，分析外部材料改进规则
 - **栏目视觉**: "新开栏目"、"栏目改版"、"ink-xxx 主题" → 主色推导 + 双方向预览 → 产出 `content/styles/{slug}/theme.css` + `preview.html`（下游由本地排版工具接手）
-- **本地排版**: 双击 `framework/tools/typeset.bat`（Win）或 `framework/tools/typeset.command`（Mac/Linux）→ 启 127.0.0.1:7788 → 选栏目 + 选文章 → doocs/md 编辑并一键复制到公众号。首次使用自动跑 `node framework/tools/typeset/setup.mjs`（clone + build，约 3-5 分钟）。详见 `framework/tools/typeset/README.md`
+- **本地排版**: 双击 `framework/tools/typeset/launcher.bat`（Win）或 `framework/tools/typeset/launcher.command`（Mac/Linux）→ 启 127.0.0.1:7788 → 编辑器左右分栏（左 Markdown / 右 375px 移动端预览）→ 一键复制富文本到公众号后台。首次运行自动 `npm install + npm run build`（约 2-3 分钟）。详见 `framework/tools/typeset/README.md`。工具完全独立，草稿存 localStorage；如需粘贴 InkFlow 产物文章，手动复制 `content/articles/{slug}/export/08-wechat-publish.md` 内容到编辑器即可。
 - **格式校验**: "跑一下 lint"、"检查格式" → 运行 `.claude/skills/quality-linting/scripts/lint.py`
 - **内容排期**: "排期"、"内容日历" → 生成发布计划
 - **发布准备**: "发布清单"、"运营清单" → 发布前后检查清单
@@ -127,7 +127,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 | Skill 定义 | `.claude/skills/` |
 | 工具 | `framework/tools/` |
 | 启动脚本 | `framework/tools/bootstrap.sh` |
-| 排版工具（vendor/dist 本地生成，已 gitignore） | `framework/tools/typeset/` |
+| 排版工具源码（自研 wx-md） | `framework/tools/typeset/app/` |
+| 排版工具构建产物（本地生成，已 gitignore） | `framework/tools/typeset/app/dist/` + `framework/tools/typeset/app/node_modules/` |
 
 ## 注意事项
 

@@ -1,121 +1,150 @@
-# InkFlow 本地排版工具
+# wx-md · 微信公众号 Markdown 排版工具
 
-基于 [doocs/md](https://github.com/doocs/md) v2.1.0 的本地化封装。把 `content/styles/{slug}/theme.css` 和 `content/articles/{slug}/export/08-wechat-publish.md` 自动注入 doocs/md，在浏览器里预览并一键复制到微信公众号。
+**InkFlow 自研的纯前端 Markdown → 微信公众号富文本编辑器。**
 
-**做法**：从 Docker Hub 拉 `doocs/md:2.1.0-assets` 镜像（官方专门抽产物用的单层镜像），通过 Registry HTTP API 拿 layer blob + 系统 `tar` 解压。无需本机 Docker daemon。
+- 左编辑（CodeMirror 6）· 右 375px 移动端实时预览
+- 一键复制富文本到公众号后台（Clipboard API + execCommand 降级）
+- 内置主题 + 容器扩展语法（`::: tip` / `::: quote-card` / ...）
+- 所有样式自动 juice 内联化 + 兼容性补丁后处理
+- 预览与剪贴板共享同一份 HTML（原则 1：保真）
+
+## 当前开发进度
+
+实现了 **Step 1**（端到端最小链路）：
+
+- [x] Vite + Vue 3 + TS 骨架
+- [x] Markdown 管线：markdown-it → themeCSS → highlight.js → juice/client
+- [x] 375px iframe 预览
+- [x] Clipboard API + execCommand 降级
+- [x] localStorage 自动保存
+- [ ] Step 3 · 兼容性补丁层（wxPatch）
+- [ ] Step 4 · 容器扩展语法
+- [ ] Step 5 · 主题设计系统升级
+- [ ] Step 6 · 4 套内置风格包
+- [ ] Step 7 · 配色生成器 + 自定义面板
+- [ ] Step 8 · 草稿管理 + 模板市场 + 导出
 
 ## 快速开始
 
-```bash
-# 双击即用（首次自动跑 setup，约 3-5 分钟；之后秒启）
-framework/tools/typeset.bat       # Windows
-framework/tools/typeset.command   # macOS / Linux
+### 双击启动（推荐）
 
-# 或手动分步
-node framework/tools/typeset/setup.mjs   # 首次初始化
-node framework/tools/typeset/serve.mjs   # 启动服务
+```bash
+# Windows
+framework/tools/typeset/launcher.bat
+
+# macOS / Linux
+framework/tools/typeset/launcher.command
 ```
 
-## 为什么必须跑 localhost 而非 file://
+首次双击会自动：
 
-`navigator.clipboard.write(ClipboardItem)` 要求 secure context。`file://` 下 `window.isSecureContext === false`，doocs 会降级到 `document.execCommand('copy')`，**HTML 富文本丢失**，粘贴到公众号只剩纯文本。`127.0.0.1` / `localhost` 被视为 secure，Clipboard API 完整可用。这是浏览器规范，不是 doocs 的限制。
+1. 检测 Node.js（需要 Node 18+）
+2. `cd app && npm install`（~1-2 分钟）
+3. `npm run build`（~30-60 秒）
+4. 启 `127.0.0.1:7788`，自动打开浏览器
+
+之后双击直接启动服务。
+
+### 手动开发
+
+```bash
+cd framework/tools/typeset/app
+
+# 开发模式（热更新，端口 5173）
+npm install
+npm run dev
+
+# 生产构建 + 本地 serve
+npm run build
+node ../serve.mjs         # 端口 7788
+```
+
+## 为什么必须跑 `127.0.0.1` 而不是 `file://`
+
+`navigator.clipboard.write(ClipboardItem)` 要求 secure context。
+`file://` 协议下 `window.isSecureContext === false`，Clipboard API 不可用，
+会降级到 `document.execCommand('copy')`——这个路径在某些浏览器上会丢失富文本、
+粘贴到公众号只剩纯文本。`127.0.0.1` / `localhost` 被浏览器视为 secure，
+Clipboard API 完整可用。这是浏览器规范，不是工具的限制。
 
 ## 架构
 
 ```
 framework/tools/typeset/
-├── dist/doocs/                 # 抽取出来的 doocs 预构建 SPA（.gitignore）
-│   ├── index.html              # 已 rewrite /md/→./ + 注入 3 行 bootstrap <script>
-│   ├── inkflow-bootstrap.js    # 读 URL query → 写 localStorage
-│   ├── inkflow-themes.js       # serve 启动时重建（window.__INKFLOW_THEMES__）
-│   ├── inkflow-articles.js    # serve 启动时重建（window.__INKFLOW_ARTICLES__）
-│   └── assets/...              # doocs 原生 JS/CSS/静态资源
-├── launcher/index.html         # 栏目/文章选择器（首页）
-├── bootstrap.js                # 注入脚本源（setup 时拷到 dist）
-├── pull-doocs-assets.mjs       # Docker Registry API 拉镜像 + tar 解压
-├── setup.mjs                   # 一次性：拉镜像 + patch index.html + 拷 bootstrap
-├── serve.mjs                   # 静态服务 + 路由 + 自动开浏览器
-├── build-themes.mjs            # 扫 content/styles/*/theme.css
-├── build-articles.mjs          # 扫 content/articles/*/export/08-wechat-publish.md
-└── preflight.mjs               # lint 汇总（不阻塞）
+├── app/                       # Vite + Vue 3 + TS 工程
+│   ├── src/
+│   │   ├── App.vue            # 三栏布局：Toolbar / Editor / Preview
+│   │   ├── components/
+│   │   │   ├── Editor.vue     # CodeMirror 6 包装
+│   │   │   ├── Preview.vue    # iframe srcdoc, viewport 锁 375px
+│   │   │   └── Toolbar.vue
+│   │   ├── pipeline/
+│   │   │   ├── index.ts       # render(md, theme) -> html
+│   │   │   ├── markdown.ts    # markdown-it + 容器 + 内联插件
+│   │   │   ├── themeCSS.ts    # Theme → <style> 字符串（含 font-family 守卫）
+│   │   │   ├── highlight.ts   # highlight.js（已剔除 font-family）
+│   │   │   ├── juiceInline.ts # juice/client 封装
+│   │   │   └── wxPatch/       # (Step 3) 兼容性补丁层
+│   │   ├── themes/
+│   │   │   ├── types.ts       # Theme 接口 + ThemeAuthoringError
+│   │   │   ├── default/       # 默认主题（Step 1 占位）
+│   │   │   └── index.ts       # 主题注册表
+│   │   ├── clipboard/copyHtml.ts
+│   │   └── storage/drafts.ts
+│   ├── tests/                 # (Step 3+) vitest 单测
+│   ├── vite.config.ts         # node-polyfills + alias juice → juice/client
+│   ├── tsconfig.json          # strict: true
+│   └── package.json
+├── serve.mjs                  # 零依赖静态服务器（Node 内置 http）
+├── launcher.bat               # Windows 双击启动
+├── launcher.command           # macOS / Linux 双击启动
+├── docs/
+│   ├── theme-authoring.md     # 第三方主题开发指南
+│   └── container-syntax.md    # 容器语法使用文档
+└── README.md
 ```
 
-**装配式设计 · 单一原则**：Ink-Flow 只做"选栏目 + 选文章 + 写 localStorage"，渲染/juice/剪贴板全交给 doocs。升级 doocs 只需改 `setup.mjs` 顶部的 `TAG`，重跑一次即可。
+## 渲染管线（单向数据流）
 
-### 升级到新版本
+```
+md 源文本
+  └─► [1] markdown-it（容器 / mark / ins / footnote / task-lists）
+        └─► [2] 容器渲染器：容器节点 → 带 SVG 装饰的 section 结构  (Step 4)
+              └─► [3] 包 <section class="markdown-body"> + 注入主题 <style>
+                    └─► [4] highlight.js 处理 <pre><code>
+                          └─► [5] juice/client 内联化：<style> → 元素 style
+                                └─► [6] wxPatch 兼容性补丁层        (Step 3)
+                                      └─► [7] 最终 HTML
+                                            ├─► 预览 iframe srcdoc
+                                            └─► 剪贴板 text/html + text/plain
+```
+
+**关键不变量**：
+1. 预览与剪贴板共享同一份 html（保真）
+2. 视觉质感载体是内联 SVG 资产 + 设计令牌（美学）
+3. 容器扩展语法是一等公民（表达力）
+
+## 开发文档
+
+- [容器语法使用文档](docs/container-syntax.md)
+- [第三方主题开发指南](docs/theme-authoring.md)
+
+## 已知限制
+
+- **微信语音 `<mpvoice>`**：只能在公众号后台编辑器内从素材库插入，用户粘贴富文本无法保留。`::: mpvoice` 容器渲染为占位提示卡。
+- **微信视频 `<mpvideo>`**：官方视频同上；腾讯视频（`qqvid`）可渲染为 `v.qq.com` iframe。
+- **外链 `<a>`**：公众号对外链有限制，不作为视觉关键元素。
+- **Safari 剪贴板**：必须在用户手势同步路径内构造 `ClipboardItem`，异步路径会失败。
+- **`file://` 协议**：Clipboard API 不可用，必须走 `127.0.0.1`。
+- **自定义字体**：微信客户端会用系统字体覆盖 `font-family`，主题声明 font-family 会被 themeCSS 生成器直接 throw。
+
+## 升级 / 清理
 
 ```bash
-# 设环境变量或改 setup.mjs 默认值
-DOOCS_MD_TAG=2.2.0-assets node framework/tools/typeset/setup.mjs
+# 清构建产物
+rm -rf framework/tools/typeset/app/dist
+rm -rf framework/tools/typeset/app/node_modules
+
+# 重新构建
+cd framework/tools/typeset/app && npm install && npm run build
 ```
-
-### serve.mjs 路由
-
-```
-GET /             → launcher/index.html
-GET /launcher/*   → launcher 静态
-GET /doocs/*      → dist/doocs/*（InkFlow 使用的入口）
-GET /md/*         → dist/doocs/*（兜底：doocs 产物里可能残留的绝对路径）
-GET /api/themes   → 可用栏目清单（调试）
-GET /api/articles → 可用文章清单（调试）
-```
-
-## 数据流
-
-```
-content/styles/tech/theme.css ──┐
-                                          ├─> build-*.mjs ─> inkflow-{themes,articles}.js
-content/articles/my-slug/export/08-wechat-publish.md ─┘                           │
-                                                                          ▼
-用户点击 launcher → /doocs/index.html?column=tech&article=my-slug        │
-                             │                                            │
-                             ▼                                            │
-              <head> 里 3 个 <script> 按序执行 ────────────────────────────┘
-              1. inkflow-themes.js     → window.__INKFLOW_THEMES__
-              2. inkflow-articles.js   → window.__INKFLOW_ARTICLES__
-              3. inkflow-bootstrap.js  → 读 URL query，写 localStorage
-                                        MD__css_content_config (主题)
-                                        MD__posts, MD__current_post_id (文章)
-                             │
-                             ▼
-              doocs main.ts 启动 → useStorage 首次读取即拿到预载值
-```
-
-## 使用流程
-
-1. **双击启动**：`framework/tools/typeset.bat` / `framework/tools/typeset.command`（首次自动 setup，需 node ≥18、pnpm ≥9、git）
-2. **浏览器自动打开** `http://127.0.0.1:7788/`，显示栏目 + 文章选择器
-3. **点击文章** → 跳转到 doocs，主题和正文已预填
-4. **编辑/调整** → 点 doocs 的"复制"按钮 → 粘贴到公众号后台
-
-> **运行依赖**：Node ≥ 18（内置 `fetch` 和 `Readable.fromWeb`）+ 系统 `tar`（Windows 10+/macOS/Linux 原生自带）。不需要 pnpm、git、docker。
-
-## 升级 doocs/md
-
-```bash
-rm -rf framework/tools/typeset/dist
-DOOCS_MD_TAG=2.2.0-assets node framework/tools/typeset/setup.mjs
-```
-
-Docker Hub 上的 tag 形如 `<version>-assets`。视觉/排版问题优先改 `content/styles/{slug}/theme.css`，下游改动不要落到 `dist/doocs/`（每次重跑 setup 会被清掉）。
-
-## 故障排查
-
-| 现象 | 原因 / 处理 |
-|------|-------------|
-| setup 时 `获取 token 失败 403/404` | Docker Hub 可能限流；稍后重试。国内网络可设 `DOOCS_MD_IMAGE` 指向镜像仓库 |
-| setup 时 `tar --version` 报错 | Windows 10 以下系统不带 tar。装 Git for Windows 或 Windows 10+ |
-| 端口占用 | `INKFLOW_TYPESET_PORT=8899 node framework/tools/typeset/serve.mjs` |
-| 浏览器没自动开 | 手动访问终端打印的 URL |
-| 栏目/文章为空 | 确认 `content/styles/*/theme.css` 或 `content/articles/*/export/08-wechat-publish.md` 存在 |
-| 复制后粘贴到公众号只有纯文本 | 确认你在 `127.0.0.1` 而非 `file://`；DevTools Console 看 `isSecureContext` |
-| doocs 页面某些 chunk 404 | 产物里残留 `/md/` 绝对路径而 serve.mjs 的 `/md/*` 兜底未匹配；贴 URL 过来 |
-| mermaid/mathjax 渲染失败 | doocs 这些是 CDN 加载，需要网络；离线场景不支持 |
-| 刷新 doocs 页面后主题被重置 | bootstrap 已主动清 URL query，不会二次注入。要切换栏目请回 launcher |
-
-## 设计约束（给维护者）
-
-1. **不改 doocs 的 TS/Vue 源码**。只接触 `dist/doocs/index.html`：(a) base 路径 `/md/` → `./`；(b) `<head>` 插入 3 行 `<script>` 引用，用 `<!-- InkFlow bootstrap BEGIN/END -->` 标记。
-2. **不做 HTML 清洗或 inline 化**。这是 doocs juice 胶水层的职责（见 commit de3b580 删除 typesetter 的决策）。
-3. **数据注入走 localStorage，不走 API/pinia**。pinia store 在 build 后路径被 hash 化，无法 import。
-4. **theme.css 里保留 `color-mix()` / 伪元素的原始形态**。doocs 会在复制时通过 juice 处理。
