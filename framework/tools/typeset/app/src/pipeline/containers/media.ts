@@ -7,14 +7,18 @@
  *   1. attrs.qqvid：腾讯视频，渲染为允许的 iframe（v.qq.com 白名单，wxPatch 保留）
  *   2. 其他场景：占位卡，提示用户在公众号后台手动补视频组件
  *
- * 两者都没有有意义的正文；info 作为标题。
+ * 两者都没有有意义的正文；info 作为标题。所有色值从 ctx.tokens 读取。
  */
 
-import type { ContainerRenderer } from './types'
+import type { ContainerRenderer, ContainerRenderContext } from './types'
 import { escAttr, escText } from './types'
 
-const PLACEHOLDER_STYLE =
-  'text-align:center;padding:16px;background-color:#f7f8fa;border-radius:6px;color:#6a737d'
+function placeholderStyle(ctx: ContainerRenderContext): string {
+  const bg = ctx.tokens.colors.bgSoft
+  const color = ctx.tokens.colors.textMuted
+  const radius = ctx.tokens.radius.md
+  return `text-align:center;padding:16px;background-color:${bg};border-radius:${radius}px;color:${color}`
+}
 
 export const mpvoiceContainer: ContainerRenderer = {
   open: (ctx) => {
@@ -23,9 +27,10 @@ export const mpvoiceContainer: ContainerRenderer = {
     const hint = fileid
       ? `已携带 fileid=${escText(fileid)}，粘贴到公众号后自动展开`
       : '粘贴到公众号后请手动选择"插入音频"'
+    const label = ctx.tokens.colors.primary
     return (
-      `<section class="container-mpvoice" style="${PLACEHOLDER_STYLE}">\n` +
-      `<section style="font-size:12px;letter-spacing:1px;color:#1a73e8;margin-bottom:6px">[ 音频 ]</section>\n` +
+      `<section class="container-mpvoice" style="${placeholderStyle(ctx)}">\n` +
+      `<section style="font-size:12px;letter-spacing:1px;color:${label};margin-bottom:6px">[ 音频 ]</section>\n` +
       `<section style="font-weight:700;margin-bottom:6px">${escText(title)}</section>\n` +
       `<section style="font-size:13px">${hint}</section>\n`
     )
@@ -48,9 +53,10 @@ export const mpvideoContainer: ContainerRenderer = {
         `title="${escAttr(title)}"></iframe>\n`
       )
     }
+    const label = ctx.tokens.colors.primary
     return (
-      `<section class="container-mpvideo" style="${PLACEHOLDER_STYLE}">\n` +
-      `<section style="font-size:12px;letter-spacing:1px;color:#1a73e8;margin-bottom:6px">[ 视频 ]</section>\n` +
+      `<section class="container-mpvideo" style="${placeholderStyle(ctx)}">\n` +
+      `<section style="font-size:12px;letter-spacing:1px;color:${label};margin-bottom:6px">[ 视频 ]</section>\n` +
       `<section style="font-weight:700;margin-bottom:6px">${escText(title)}</section>\n` +
       `<section style="font-size:13px">粘贴到公众号后请手动选择"插入视频"</section>\n`
     )

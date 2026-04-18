@@ -26,7 +26,7 @@ export const quoteCardContainer: ContainerRenderer = {
     // 使用资产时无需镜像收尾（大多数 SVG 自成对）；回退字符模式用闭合直角引号
     const closeMark = ctx.assets.quoteMark ? '' : FALLBACK_CLOSE_MARK
     const sig = byline
-      ? `<section class="container-quote-card__byline" style="text-align:center;color:#6a737d;margin-top:8px">— ${escText(byline)}</section>`
+      ? `<section class="container-quote-card__byline" style="text-align:center;color:${ctx.tokens.colors.textMuted};margin-top:8px">— ${escText(byline)}</section>`
       : ''
     return `${closeMark}\n</section>\n${sig}</section>\n`
   },

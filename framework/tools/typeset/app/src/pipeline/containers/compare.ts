@@ -9,13 +9,26 @@
  *   `:::: compare` 包 `::: pros` / `::: cons`。用户必须写 4 个冒号外层、
  *   3 个冒号内层，否则 compare 的 4-colon fence 不会把 3-colon 当子级。
  *   这是 markdown-it-container 的原生行为，不是我们定的规则。
+ *
+ * 配色：全部从 ctx.tokens 读取——
+ *   列背景用 tokens.colors.bgSoft
+ *   pros 标题 = tokens.colors.status.tip.accent
+ *   cons 标题 = tokens.colors.status.danger.accent
+ *   圆角 / 内边距用 tokens.radius / tokens.spacing，让 4 套主题自然呈现差异
  */
 
-import type { ContainerRenderer } from './types'
+import type { ContainerRenderer, ContainerRenderContext } from './types'
 
-const COL_STYLE =
-  'display:inline-block;vertical-align:top;width:48%;box-sizing:border-box;' +
-  'padding:12px;background-color:#f7f8fa;border-radius:6px'
+function colStyle(ctx: ContainerRenderContext): string {
+  const bg = ctx.tokens.colors.bgSoft
+  const radius = ctx.tokens.radius.md
+  const pad = ctx.tokens.spacing.containerPadding
+  return (
+    'display:inline-block;vertical-align:top;width:48%;box-sizing:border-box;' +
+    `padding:${pad - 4 < 10 ? 10 : pad - 4}px ${pad - 4 < 10 ? 10 : pad - 4}px;` +
+    `background-color:${bg};border-radius:${radius}px`
+  )
+}
 
 const GUTTER_STYLE = 'display:inline-block;width:4%;'
 
@@ -28,9 +41,11 @@ export const compareContainer: ContainerRenderer = {
 export const prosContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '优点'
+    const baseSize = ctx.tokens.typography.baseSize
+    const color = ctx.tokens.colors.status.tip.accent
     return (
-      `<section class="container-pros" style="${COL_STYLE};font-size:15px">` +
-      `<section class="container-pros__title" style="font-weight:700;color:#1a8450;margin-bottom:8px">${escapeInner(title)}</section>\n`
+      `<section class="container-pros" style="${colStyle(ctx)};font-size:${baseSize}px">` +
+      `<section class="container-pros__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
     )
   },
   // 在 cons 之前插入 gutter：通过 close 追加尾部 gutter；pros 之后紧跟 cons 时会产生一个 gutter
@@ -40,9 +55,11 @@ export const prosContainer: ContainerRenderer = {
 export const consContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '缺点'
+    const baseSize = ctx.tokens.typography.baseSize
+    const color = ctx.tokens.colors.status.danger.accent
     return (
-      `<section class="container-cons" style="${COL_STYLE};font-size:15px">` +
-      `<section class="container-cons__title" style="font-weight:700;color:#b42318;margin-bottom:8px">${escapeInner(title)}</section>\n`
+      `<section class="container-cons" style="${colStyle(ctx)};font-size:${baseSize}px">` +
+      `<section class="container-cons__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
     )
   },
   close: '</section>\n',

@@ -30,13 +30,16 @@ const ICON_KEYS: Record<AdmonitionKind, 'tipIcon' | 'warningIcon' | 'infoIcon' |
 
 function openTag(kind: AdmonitionKind, ctx: ContainerRenderContext): string {
   const pair = ctx.tokens.colors.status[kind]
+  const radius = ctx.tokens.radius.sm
+  const padY = Math.max(10, Math.round(ctx.tokens.spacing.containerPadding * 0.75))
+  const padX = ctx.tokens.spacing.containerPadding
   const title = ctx.info.trim() || DEFAULT_TITLES[kind]
   const icon = ctx.assets[ICON_KEYS[kind]] ?? ''
   const frame =
     `background-color:${pair.soft};` +
     `border-left:3px solid ${pair.accent};` +
-    'padding:12px 14px;' +
-    'border-radius:0 4px 4px 0;' +
+    `padding:${padY}px ${padX}px;` +
+    `border-radius:0 ${radius}px ${radius}px 0;` +
     'margin:16px 0'
   const titleCss = `font-weight:700;color:${pair.accent};margin-bottom:6px;letter-spacing:0.3px`
   return (

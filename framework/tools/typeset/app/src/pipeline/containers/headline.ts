@@ -36,7 +36,9 @@ export const coverContainer: ContainerRenderer = {
 export const authorContainer: ContainerRenderer = {
   open: (ctx) => {
     const name = ctx.info.trim() || '作者'
-    const role = ctx.attrs.role ? `<span style="color:#6a737d;margin-left:8px">${escText(ctx.attrs.role)}</span>` : ''
+    const role = ctx.attrs.role
+      ? `<span style="color:${ctx.tokens.colors.textMuted};margin-left:8px">${escText(ctx.attrs.role)}</span>`
+      : ''
     return (
       `<section class="container-author">\n` +
       `<section class="container-author__header" style="margin-bottom:8px">` +

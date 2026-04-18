@@ -42,7 +42,7 @@ function svgForVariant(v: string, ctx: ContainerRenderContext): string {
     case 'flower':
       return ctx.assets.dividerFlower ?? FALLBACK_FLOWER
     default:
-      return '<hr style="border:none;height:1px;background-color:#e1e4e8;margin:12px 0"/>'
+      return `<hr style="border:none;height:1px;background-color:${ctx.tokens.colors.border};margin:12px 0"/>`
   }
 }
 
