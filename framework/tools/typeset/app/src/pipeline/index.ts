@@ -30,28 +30,30 @@ export interface RenderOutput {
 const ROOT_CLASS = 'markdown-body'
 
 /**
- * 模块级缓存的 MarkdownIt 实例。
- * 构造一次（插件注册、规则链路建立），render 时复用——避免每次击键都重建。
- * fence highlight 钩子与 Markdown 状态无关，可一次性绑定。
+ * 按 theme.id 缓存 MarkdownIt 实例。
+ *
+ * 容器渲染器在 createMarkdown 的闭包里绑定了 theme 引用，
+ * 因此主题切换必须换新实例。同 theme 复用——避免每次击键重建插件链。
  */
-let mdSingleton: MarkdownIt | null = null
+const mdCache = new Map<string, MarkdownIt>()
 
-function getMarkdown(): MarkdownIt {
-  if (mdSingleton) return mdSingleton
-  const md = createMarkdown()
+function getMarkdown(theme: Theme): MarkdownIt {
+  const cached = mdCache.get(theme.id)
+  if (cached) return cached
+  const md = createMarkdown({ theme })
   md.options.highlight = (code: string, lang: string) => {
     const { html, language } = highlightCode(code, lang)
     const langClass = language ? ` class="language-${language} hljs"` : ' class="hljs"'
     return `<pre><code${langClass}>${html}</code></pre>`
   }
-  mdSingleton = md
+  mdCache.set(theme.id, md)
   return md
 }
 
 export function render(input: RenderInput): RenderOutput {
   const { md: source, theme } = input
 
-  const mdInstance = getMarkdown()
+  const mdInstance = getMarkdown(theme)
 
   const bodyHtml = mdInstance.render(source)
   const themeCss = generateThemeCSS(theme)

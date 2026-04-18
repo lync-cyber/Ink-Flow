@@ -37,8 +37,6 @@ const tokens = {
   radius: { sm: 4, md: 8, lg: 12 },
 }
 
-const empty: CSSObject = {}
-
 const elements = {
   h1: {
     'font-size': '24px',
@@ -171,22 +169,69 @@ const inline = {
   },
 }
 
+// 容器样式（默认主题 · 中性白底）
+// 只承担"容器外框"的留白/边框，内部结构色（标题色条）由渲染器写在 inline style。
+// Step 5 起，高质感主题会在这里叠加更多视觉。
 const containers = {
-  intro: empty,
-  author: empty,
-  cover: empty,
-  tip: empty,
-  warning: empty,
-  info: empty,
-  danger: empty,
-  quoteCard: empty,
-  highlight: empty,
-  compare: empty,
-  steps: empty,
-  sectionTitle: empty,
-  footerCTA: empty,
-  recommend: empty,
-  qrcode: empty,
+  intro: {
+    'background-color': tokens.colors.bgSoft,
+    'border-radius': '6px',
+    padding: '14px 16px',
+    margin: '16px 0',
+    color: tokens.colors.textMuted,
+  },
+  author: {
+    'background-color': tokens.colors.bgSoft,
+    'border-radius': '6px',
+    padding: '12px 14px',
+    margin: '16px 0',
+  },
+  cover: {
+    margin: '16px 0',
+  },
+  tip: { /* 渲染器内 inline 色调；保留空以便主题扩展 */ } as CSSObject,
+  warning: {} as CSSObject,
+  info: {} as CSSObject,
+  danger: {} as CSSObject,
+  quoteCard: {
+    'background-color': tokens.colors.bgSoft,
+    padding: '18px 16px',
+    margin: '20px 0',
+    'border-radius': '8px',
+  },
+  highlight: {
+    'background-color': '#fff8e1',
+    padding: '12px 14px',
+    margin: '16px 0',
+    'border-radius': '6px',
+  },
+  compare: {
+    margin: '16px 0',
+  },
+  steps: {
+    margin: '16px 0',
+  },
+  sectionTitle: {
+    margin: '24px 0 12px',
+    'border-bottom': `2px solid ${tokens.colors.primary}`,
+    'padding-bottom': '6px',
+  },
+  footerCTA: {
+    margin: '24px 0',
+    padding: '16px',
+    'background-color': tokens.colors.bgSoft,
+    'border-radius': '8px',
+  },
+  recommend: {
+    margin: '20px 0',
+    padding: '14px 16px',
+    'background-color': tokens.colors.bgSoft,
+    'border-radius': '6px',
+  },
+  qrcode: {
+    margin: '20px 0',
+    padding: '14px 16px',
+  },
 }
 
 export const defaultTheme: Theme = {
