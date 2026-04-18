@@ -93,9 +93,14 @@ stages:
     requires: [outline]
     parallel_with: [draft]
     output: "content/articles/{slug}/intermediate/04b-figure/figure-index.md"
-    individual_output: "content/articles/{slug}/intermediate/04b-figure/fig-{N}.{md|svg}"
+    individual_output:
+      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.svg"   # SVG 源
+      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.html"  # HTML 源
+      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.md"    # 文生图建议
+      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.png"   # 转换产物
     validation:
-      required_patterns: ["```mermaid|<svg"]
+      required_patterns: ["image: fig-|image: pending-user"]
+      forbidden_patterns: ["```mermaid"]
 
   - name: audit
     agent: auditor

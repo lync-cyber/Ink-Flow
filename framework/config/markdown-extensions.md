@@ -110,28 +110,26 @@ H1 之后可跟一个 blockquote 作摘要引言，下游排版器按此位置�
 
 ## 5. 图表
 
-### 5.1 Mermaid（线性流程、简单树）
+所有图表由 **illustrator agent** 生成 SVG / HTML 源码，再经 `.claude/scripts/fig2img.py`
+统一转为 PNG（产物在 `content/articles/{slug}/intermediate/04b-figure/fig-NN.png`）。
+writer 在正文中**只插占位符**：
 
 ```markdown
-​```mermaid
-flowchart LR
-  A[输入] --> B[处理] --> C[输出]
-​```
+<!-- FIGURE: fig-01 -->
 ```
 
-发布前由 `.claude/scripts/mermaid.py` 转为内联 SVG（部分下游排版器也支持客户端渲染），
-或者由 illustrator agent 直接产出 SVG。
+publisher 在发布阶段把占位符替换为标准 Markdown 图片语法：
 
-### 5.2 内联 SVG（精确图表、循环、数据可视化）
-
-```html
-<svg viewBox="0 0 640 360" ...>
-  <!-- 内联 SVG，遵守 .claude/rules/data/platform-limits.yaml 的 svg 段硬约束 -->
-</svg>
+```markdown
+![图注一句话](../intermediate/04b-figure/fig-01.png)
 ```
 
-微信特有约束（禁 id 属性、禁 `<style>/<script>/<a>`）详见
-`.claude/rules/data/platform-limits.yaml` 的 `svg_wechat:` 段。
+**禁止的写法**：
+- ` ```mermaid ` 代码块（Mermaid 已从 pipeline 移除）
+- 在正文中手写 `<svg>…</svg>`（精确视觉由 illustrator 用 SVG 源 + 转 PNG 实现）
+
+图表视觉质量基准（字号 / 字体栈）见 `.claude/rules/data/platform-limits.yaml` 的 `svg:` 段，
+由 illustrator agent 在生成源码时遵守。
 
 ---
 

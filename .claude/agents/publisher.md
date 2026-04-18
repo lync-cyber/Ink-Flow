@@ -17,8 +17,6 @@ dependencies:
     - .claude/rules/domains/wechat-article/platform.md
   tools:
     - .claude/skills/quality-linting/scripts/lint.py
-    - .claude/scripts/mermaid.py
-    - .claude/scripts/svg-sanitize.py
 ---
 
 ## Role
@@ -39,8 +37,6 @@ dependencies:
 ## 可用工具
 
 - `.claude/skills/quality-linting/scripts/lint.py` — 确定性格式校验
-- `.claude/scripts/mermaid.py` — Mermaid → 内联 SVG
-- `.claude/scripts/svg-sanitize.py` — SVG 微信兼容净化
 
 ## 流程
 
@@ -48,14 +44,13 @@ dependencies:
    - error → 停止，返回 violations 给编排器
    - warning → 记录，继续
 
-2. **图表预渲染**（必须在语法标准化之前跑完；doocs/md 本地预览能渲染 mermaid 动态 SVG，但粘贴到微信会因 id/`<style>` 被剥而失效，所以必须提前渲染+清洗）：
-   - **Mermaid → sanitized SVG**：
-     `python .claude/scripts/mermaid.py content/articles/{slug}/export/07-final-manuscript.md content/articles/{slug}/export/07-final-manuscript.md`
-     （in-place；脚本内部 mmdc 渲染后自动调 svg-sanitize 清洗 id / `<style>` / `<a>` / 带引号 url）
-     - mmdc 不可用时脚本会保留原 mermaid 块并打 warning，publisher 记录后继续
-   - **`<!-- FIGURE: fig-NN -->` 占位符替换**：读 `content/articles/{slug}/intermediate/04b-figure/fig-NN.svg` 内联到占位位置
-   - **内联 SVG 清洗**：对终稿内所有 `<svg>…</svg>`（含上一步刚内联进来的和 writer 手写的）跑
-     `python .claude/scripts/svg-sanitize.py <path>` 做最终兜底
+2. **图片占位符替换**：
+   - 读 `content/articles/{slug}/intermediate/04b-figure/figure-index.md`，按 `source` / `image` 字段建立 `fig-NN → PNG 路径 + 图注` 映射
+   - 将终稿中的 `<!-- FIGURE: fig-NN -->` 替换为 Markdown 图片语法：
+     `![{一行说明，取自 figure-index}](../intermediate/04b-figure/fig-NN.png)`
+   - alt 文本约定作为图注，下游 doocs/md 会渲染为 `<figcaption>`
+   - `image: pending-user` 条目（文生图未生成）保留占位符并在 Exit 报告中列出，供用户手动处理
+   - 终稿中**不应出现** ` ```mermaid ` 代码块或裸 `<svg>` / `<div>` 内联图（illustrator 已全部转为 PNG）；若发现则报错回滚
 
 3. **语法标准化**：
    - frontmatter.title → `# {title}`（正文首行）
@@ -69,7 +64,7 @@ dependencies:
 4. **语义检查**（栏目感知）：academic 引用可信、industry 时效标注、tech 代码可运行、story 场景具体
 
 5. **多格式导出**（按 `framework/config/inkflow.yaml` `exports` 执行）：
-   - `export/08-wechat-publish.md` — 微信排版器直接可消费（标准 Markdown + GFM Alerts + 内联 sanitized SVG）；**保留 frontmatter**，typeset 工具的 build-articles 在装入 doocs 时会自动剥除
+   - `export/08-wechat-publish.md` — 微信排版器直接可消费（标准 Markdown + GFM Alerts + PNG 图片引用）；**保留 frontmatter**，typeset 工具的 build-articles 在装入 doocs 时会自动剥除
    - `export/08-plain-publish.md` — 纯 Markdown（剥除运营区的"阅读原文""关于作者" H3 段落）
    - `export/08-teaser-120chars.md` — ≤120 字摘要 + 3-5 长尾关键词 + 封面变量
 
@@ -92,7 +87,7 @@ export/08-wechat-publish.md
 ## Constraints
 
 - 正文 HTML 仅依赖 inline style 和**主题提供的 class 钩子**（`.pullquote` / `.lede` / `.cta` / `.tags` / `.caption` / `kbd` 等由栏目 theme.css 定义）—— doocs juice 在复制时把主题 CSS 烘焙到 class 对应的元素 style 上
-- SVG 禁止 id 属性、`<style>/<script>/<a>`（由 svg-sanitize.py 保证）
+- 图表一律以 PNG 引用出现；终稿不得含 ` ```mermaid `、裸 `<svg>` 或 illustrator 的 HTML 容器源码
 - CSS 属性遵守 `.claude/rules/data/platform-limits.yaml`
 - **`:::` 容器语法一律拒绝**（若发现于终稿，返回给 polisher 重写）
 

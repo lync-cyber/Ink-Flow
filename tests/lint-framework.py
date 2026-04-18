@@ -395,12 +395,20 @@ def check_file_cleanup(repo):
     else:
         ok("framework/tools/typesetter/ 已移除")
 
-    # mermaid renderer 必须在位
-    mermaid_py = repo / ".claude" / "scripts" / "mermaid.py"
-    if mermaid_py.exists():
-        ok(".claude/scripts/mermaid.py 存在")
+    # fig2img 转换脚本必须在位（SVG/HTML → PNG）
+    fig2img_py = repo / ".claude" / "scripts" / "fig2img.py"
+    if fig2img_py.exists():
+        ok(".claude/scripts/fig2img.py 存在")
     else:
-        error(".claude/scripts/mermaid.py 缺失")
+        error(".claude/scripts/fig2img.py 缺失")
+
+    # 旧 mermaid / svg-sanitize 工具链已废弃，不应复活
+    for legacy in ("mermaid.py", "svg-sanitize.py"):
+        legacy_path = repo / ".claude" / "scripts" / legacy
+        if legacy_path.exists():
+            error(f".claude/scripts/{legacy} 应已移除（Mermaid/SVG 兼容层已废弃）")
+        else:
+            ok(f".claude/scripts/{legacy} 已移除")
 
 
 # ============================================================

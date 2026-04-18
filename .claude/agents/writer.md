@@ -147,7 +147,8 @@ H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有�
 - `(writer:table)` — Markdown 表格
 - `(writer:alert)` — GFM Alert
 - `(writer:quote)` — 普通引用
-- `(illustrator:svg)` / `(illustrator:mermaid)` — illustrator 生成；writer 仅插占位 `<!-- FIGURE: fig-{NN} -->`
+- `(illustrator:svg-flow)` / `(illustrator:svg-chart)` / `(illustrator:html-table)` / `(illustrator:html-card)` — illustrator 生成（最终都输出 PNG）；writer 仅插占位 `<!-- FIGURE: fig-{NN} -->`
+- `(illustrator:image-prompt)` — illustrator 产出文生图英文提示词，由用户手动生成；writer 仍插 `<!-- FIGURE: fig-{NN} -->`，publisher 会标为 `pending-user` 提醒人工处理
 
 ### 参考文献（academic 必须）
 

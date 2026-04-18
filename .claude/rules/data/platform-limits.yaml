@@ -41,7 +41,7 @@ svg:
   max_font_variants: 4
   font_stack: '"Microsoft YaHei","PingFang SC",sans-serif'
 
-# SVG 微信特有约束（svg-sanitize.py 实际硬编码处理，此处仅为规范声明）
+# SVG 微信特有约束（保留作为规范声明；illustrator 现以 SVG→PNG 转换规避，此段已无运行时消费者）
 svg_wechat:
   forbid_id_attribute: true
   forbid_style_tag: true

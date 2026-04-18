@@ -42,10 +42,13 @@ dependencies:
   - `(writer:alert)` — GFM Alert `> [!NOTE/TIP/IMPORTANT/WARNING/CAUTION]`（提示、警示）
   - `(writer:quote)` — 普通 blockquote（引言、作者旁白、摘要引言）
   - `(writer:list)` — 有序/无序列表（时间轴、步骤、要点）
-  - `(illustrator:svg)` — 数据图表、双列对比、循环/闭环结构
-  - `(illustrator:mermaid)` — 线性流程、简单树状结构
-  - 判断原则：标准 Markdown 或 GFM Alert 可表达 → writer；需精确视觉布局 → illustrator；循环/闭环 → 必用 SVG
-  - 只用标准 Markdown + GFM Alerts，`:::` 容器语法禁止（详见 `framework/config/markdown-extensions.md`）
+  - `(illustrator:svg-flow)` — 流程图、架构图、网络拓扑（手写 SVG → 转 PNG）
+  - `(illustrator:svg-chart)` — 数据图表：柱/折/饼/散点（手写 SVG → 转 PNG）
+  - `(illustrator:html-table)` — HTML/CSS 对比表（需色块/图标强调，→ 转 PNG）
+  - `(illustrator:html-card)` — HTML/CSS 卡片组、步骤卡、金句卡、时间线（→ 转 PNG）
+  - `(illustrator:image-prompt)` — 文生图提示词（真实照片/场景插画，用户手动处理）
+  - 判断原则：标准 Markdown 或 GFM Alert 可表达 → writer；需连线/精确几何 → illustrator:svg-*；文字密集的盒模型布局 → illustrator:html-*；需真实感图像 → illustrator:image-prompt
+  - 禁止任何 `mermaid` 标注；只用标准 Markdown + GFM Alerts，`:::` 容器语法禁止（详见 `framework/config/markdown-extensions.md`）
 - 开头 section 必须 3 秒内抓住注意力（标 opening_style）
 - 结尾 section 含 CTA（从 `brief.cta_type` 读）
 - 从 02-research-memo.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记

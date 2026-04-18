@@ -35,8 +35,8 @@ python .claude/skills/quality-linting/scripts/lint.py {target_file_or_dir}
 
 ### 4. 修复建议（可选）
 
-若用户选择"自动修复"，针对安全可修项（如 `<svg>` 中 id 属性）调用 `.claude/scripts/svg-sanitize.py`；
-涉及语义的修改（如禁用词替换）不自动执行，引导用户进入 style-learning 或手动修改。
+lint 不提供自动修复。安全可修项（如段落超长、CSS 白名单违规）列出定位信息后由用户手动修改；
+涉及语义的修改（如禁用词替换）引导用户进入 style-learning 或手动改写。
 
 ## 规则来源
 
