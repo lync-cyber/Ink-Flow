@@ -7,6 +7,7 @@
  * Step 3 会插入 wxPatch DOM 后处理层；Step 4 接入容器渲染器。
  */
 
+import type MarkdownIt from 'markdown-it'
 import type { Theme } from '../themes/types'
 import { createMarkdown } from './markdown'
 import { generateThemeCSS } from './themeCSS'
@@ -26,16 +27,29 @@ export interface RenderOutput {
 
 const ROOT_CLASS = 'markdown-body'
 
-export function render(input: RenderInput): RenderOutput {
-  const { md: source, theme } = input
+/**
+ * 模块级缓存的 MarkdownIt 实例。
+ * 构造一次（插件注册、规则链路建立），render 时复用——避免每次击键都重建。
+ * fence highlight 钩子与 Markdown 状态无关，可一次性绑定。
+ */
+let mdSingleton: MarkdownIt | null = null
 
-  const mdInstance = createMarkdown()
-  // 在 fence 渲染时接入 highlight.js
-  mdInstance.options.highlight = (code: string, lang: string) => {
+function getMarkdown(): MarkdownIt {
+  if (mdSingleton) return mdSingleton
+  const md = createMarkdown()
+  md.options.highlight = (code: string, lang: string) => {
     const { html, language } = highlightCode(code, lang)
     const langClass = language ? ` class="language-${language} hljs"` : ' class="hljs"'
     return `<pre><code${langClass}>${html}</code></pre>`
   }
+  mdSingleton = md
+  return md
+}
+
+export function render(input: RenderInput): RenderOutput {
+  const { md: source, theme } = input
+
+  const mdInstance = getMarkdown()
 
   const bodyHtml = mdInstance.render(source)
   const themeCss = generateThemeCSS(theme)

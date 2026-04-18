@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import Editor from './components/Editor.vue'
 import Preview from './components/Preview.vue'
 import Toolbar from './components/Toolbar.vue'
-import { render } from './pipeline'
+import { useDebouncedRender } from './composables/useDebouncedRender'
 import { defaultTheme } from './themes/default'
 import { copyHtmlToClipboard } from './clipboard/copyHtml'
 import { loadDraft, saveDraft } from './storage/drafts'
@@ -56,17 +56,13 @@ watch(md, (val) => {
   saveDraft(val)
 })
 
-const rendered = computed(() => {
-  try {
-    return render({ md: md.value, theme: defaultTheme })
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[render] failed:', err)
-    return { html: `<pre style="color:#c00;padding:16px">渲染失败：${String(err)}</pre>`, wordCount: 0, readingTime: 1 }
-  }
-})
+// 管线入参用 computed 保证 watch 能感知到 md / theme 任一变化
+const pipelineInput = computed(() => ({ md: md.value, theme: defaultTheme }))
+const { rendered, flush } = useDebouncedRender(pipelineInput, { delayMs: 80 })
 
 async function handleCopy() {
+  // 复制前强制 flush：避免"用户刚键入立刻点复制"时拿到上一轮的旧 HTML
+  flush()
   const html = rendered.value.html
   const plain = md.value
   const result = await copyHtmlToClipboard(html, plain)
