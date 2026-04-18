@@ -19,6 +19,12 @@ const tokens = {
     textInverse: '#ffffff',
     border: '#e1e4e8',
     code: '#d63384',
+    status: {
+      tip: { accent: '#1a8450', soft: '#eef7f0' },
+      warning: { accent: '#b7791f', soft: '#fdf6e3' },
+      info: { accent: '#1a73e8', soft: '#eef4ff' },
+      danger: { accent: '#b42318', soft: '#fdecea' },
+    },
   },
   typography: {
     baseSize: 15,
@@ -234,16 +240,125 @@ const containers = {
   },
 }
 
+/**
+ * SVG 资产 · 中性白底主题
+ *
+ * 设计原则：
+ *   - 全部 inline SVG 字符串（无 id、无 url() 引号、无 <style> / <script>）
+ *   - 尺寸小（< 2KB 单条），加载零成本
+ *   - 颜色用主色 / 辅助灰，不引入额外强色；由容器渲染器注入位置
+ *   - 粘贴后公众号会光栅化为 PNG，笔画避免过细（stroke-width ≥ 1）
+ */
+
+const SVG = (s: string) => s.replace(/\s+/g, ' ').trim()
+
+const svgH2Prefix = SVG(`
+  <svg viewBox="0 0 14 22" width="12" height="18" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
+    <rect x="0" y="0" width="4" height="22" fill="${tokens.colors.primary}"/>
+    <rect x="7" y="4" width="3" height="14" fill="${tokens.colors.primary}" opacity="0.6"/>
+  </svg>
+`)
+
+const svgDividerWave = SVG(`
+  <svg viewBox="0 0 240 14" width="220" height="14" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,7 Q15,0 30,7 T60,7 T90,7 T120,7 T150,7 T180,7 T210,7 T240,7"
+          fill="none" stroke="${tokens.colors.border}" stroke-width="1.5"/>
+  </svg>
+`)
+
+const svgDividerDots = SVG(`
+  <svg viewBox="0 0 240 8" width="220" height="8" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="4" r="2" fill="${tokens.colors.border}"/>
+    <circle cx="100" cy="4" r="2" fill="${tokens.colors.border}"/>
+    <circle cx="140" cy="4" r="2" fill="${tokens.colors.border}"/>
+    <circle cx="180" cy="4" r="2" fill="${tokens.colors.border}"/>
+  </svg>
+`)
+
+const svgDividerFlower = SVG(`
+  <svg viewBox="0 0 240 18" width="220" height="18" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="9" x2="100" y2="9" stroke="${tokens.colors.border}" stroke-width="1"/>
+    <line x1="140" y1="9" x2="240" y2="9" stroke="${tokens.colors.border}" stroke-width="1"/>
+    <path d="M120,2 L124,9 L120,16 L116,9 Z" fill="${tokens.colors.primary}"/>
+    <circle cx="105" cy="9" r="1.5" fill="${tokens.colors.border}"/>
+    <circle cx="135" cy="9" r="1.5" fill="${tokens.colors.border}"/>
+  </svg>
+`)
+
+const svgQuoteMark = SVG(`
+  <svg viewBox="0 0 40 32" width="34" height="28" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:top;margin-right:4px">
+    <path d="M4,26 L4,16 C4,10 8,6 14,4 L14,8 C10,9 8,12 8,16 L12,16 L12,26 Z
+             M22,26 L22,16 C22,10 26,6 32,4 L32,8 C28,9 26,12 26,16 L30,16 L30,26 Z"
+          fill="${tokens.colors.primary}" opacity="0.3"/>
+  </svg>
+`)
+
+const svgSectionCorner = SVG(`
+  <svg viewBox="0 0 18 18" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
+    <path d="M0,0 L18,0 L18,4 L4,4 L4,18 L0,18 Z" fill="${tokens.colors.primary}"/>
+  </svg>
+`)
+
+const svgTipIcon = SVG(`
+  <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
+    <circle cx="8" cy="8" r="6" fill="none" stroke="${tokens.colors.status.tip.accent}" stroke-width="1.5"/>
+    <rect x="7" y="4" width="2" height="5" fill="${tokens.colors.status.tip.accent}"/>
+    <rect x="7" y="10" width="2" height="2" fill="${tokens.colors.status.tip.accent}"/>
+  </svg>
+`)
+
+const svgWarningIcon = SVG(`
+  <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
+    <path d="M8,1 L15,14 L1,14 Z" fill="none" stroke="${tokens.colors.status.warning.accent}" stroke-width="1.5"/>
+    <rect x="7" y="5" width="2" height="5" fill="${tokens.colors.status.warning.accent}"/>
+    <rect x="7" y="11" width="2" height="2" fill="${tokens.colors.status.warning.accent}"/>
+  </svg>
+`)
+
+const svgInfoIcon = SVG(`
+  <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
+    <circle cx="8" cy="8" r="6" fill="none" stroke="${tokens.colors.status.info.accent}" stroke-width="1.5"/>
+    <rect x="7" y="3" width="2" height="2" fill="${tokens.colors.status.info.accent}"/>
+    <rect x="7" y="6" width="2" height="7" fill="${tokens.colors.status.info.accent}"/>
+  </svg>
+`)
+
+const svgDangerIcon = SVG(`
+  <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
+    <circle cx="8" cy="8" r="6" fill="${tokens.colors.status.danger.accent}"/>
+    <rect x="3" y="7" width="10" height="2" fill="#ffffff"/>
+  </svg>
+`)
+
+const svgStepBadge = (n: number) => SVG(`
+  <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
+    <circle cx="12" cy="12" r="11" fill="${tokens.colors.primary}"/>
+    <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">${n}</text>
+  </svg>
+`)
+
 export const defaultTheme: Theme = {
   id: 'default',
   name: '默认主题',
-  description: '中性白底，Step 1 端到端验证用',
+  description: '中性白底，语义色 + 几何装饰 SVG',
   author: 'InkFlow',
   preview: '',
   tokens,
   elements,
   containers,
-  assets: {},
+  assets: {
+    h2Prefix: svgH2Prefix,
+    dividerWave: svgDividerWave,
+    dividerDots: svgDividerDots,
+    dividerFlower: svgDividerFlower,
+    quoteMark: svgQuoteMark,
+    sectionCorner: svgSectionCorner,
+    tipIcon: svgTipIcon,
+    warningIcon: svgWarningIcon,
+    infoIcon: svgInfoIcon,
+    dangerIcon: svgDangerIcon,
+    stepBadge: svgStepBadge,
+  },
   templates: {},
   inline,
 }

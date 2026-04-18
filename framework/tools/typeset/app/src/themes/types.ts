@@ -9,6 +9,12 @@
 export type CSSObject = Record<string, string | number>
 export type SVGString = string
 
+/** 语义化状态色：提示容器与后续可能的徽章使用 */
+export interface StatusPair {
+  accent: string
+  soft: string
+}
+
 export interface ThemeTokens {
   colors: {
     primary: string
@@ -22,6 +28,13 @@ export interface ThemeTokens {
     textInverse: string
     border: string
     code: string
+    /** 语义色：tip / warning / info / danger，容器外框与标题色从此取 */
+    status: {
+      tip: StatusPair
+      warning: StatusPair
+      info: StatusPair
+      danger: StatusPair
+    }
   }
   typography: {
     baseSize: number

@@ -50,8 +50,9 @@ export const authorContainer: ContainerRenderer = {
 export const sectionTitleContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim()
+    const corner = ctx.assets.sectionCorner ?? ''
     const head = title
-      ? `<section class="container-section-title__label" style="font-weight:700;font-size:20px;margin-bottom:8px">${escText(title)}</section>`
+      ? `<section class="container-section-title__label" style="font-weight:700;font-size:20px;margin-bottom:8px">${corner}${escText(title)}</section>`
       : ''
     return `<section class="container-section-title">\n${head}`
   },

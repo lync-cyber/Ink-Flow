@@ -102,6 +102,23 @@ export function createMarkdown(options: CreateMarkdownOptions = {}): MarkdownIt 
 
   registerInlineExtensions(md)
 
+  // h2Prefix：theme.assets.h2Prefix 注入到 <h2> 开头。
+  // 为什么不用 CSS ::before：公众号后台剥离 ::before/::after；
+  // 唯一稳妥的路径是在 DOM 里真实插入一个 inline-block 元素。
+  if (theme.assets.h2Prefix) {
+    const prefix = theme.assets.h2Prefix
+    md.renderer.rules.heading_open = (tokens, idx, opts, _env, self) => {
+      const t = tokens[idx]
+      if (t.tag === 'h2') {
+        return `<h2>${prefix}`
+      }
+      return self.renderToken(tokens, idx, opts)
+    }
+  }
+
+  // stepBadge：theme.assets.stepBadge(n) 是扩展点；默认不自动注入，
+  // 避免污染全局 <ol>。后续主题如需自动编号，可在此处加限定路径的 DOM pass。
+
   return md
 }
 
