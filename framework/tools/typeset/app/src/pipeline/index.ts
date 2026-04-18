@@ -4,7 +4,7 @@
  * pipeline(md, theme, codeTheme) -> html
  *
  * Step 1 实现：markdown-it → themeCSS → highlight → juice → 最终 HTML
- * Step 3 会插入 wxPatch DOM 后处理层；Step 4 接入容器渲染器。
+ * Step 3 起：juice 之后插入 wxPatch DOM 后处理层；Step 4 接入容器渲染器。
  */
 
 import type MarkdownIt from 'markdown-it'
@@ -13,10 +13,12 @@ import { createMarkdown } from './markdown'
 import { generateThemeCSS } from './themeCSS'
 import { atomOneDarkCss, highlightCode } from './highlight'
 import { inlineHtml } from './juiceInline'
+import { applyWxPatches, type WxPatchOptions } from './wxPatch'
 
 export interface RenderInput {
   md: string
   theme: Theme
+  wxPatch?: WxPatchOptions
 }
 
 export interface RenderOutput {
@@ -63,8 +65,8 @@ export function render(input: RenderInput): RenderOutput {
 
   const inlined = inlineHtml(htmlWithStyle)
 
-  // Step 3 在这里插入 wxPatch；Step 1 直接返回
-  const finalHtml = inlined
+  // Step 3：DOM 后处理层，抹平公众号粘贴的诸多坑
+  const finalHtml = applyWxPatches(inlined, input.wxPatch)
 
   const wordCount = countWords(source)
   const readingTime = Math.max(1, Math.ceil(wordCount / 300))
