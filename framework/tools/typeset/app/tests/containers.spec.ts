@@ -102,6 +102,20 @@ describe('compare · pros · cons 嵌套', () => {
     expect(out).toMatch(/container-cons[^>]*display:\s*table-cell/)
     expect(out).not.toMatch(/display:\s*flex/)
   })
+
+  it('两列内部的 p / li 被压到 13px 且 letter-spacing:0（窄栏预算）', () => {
+    const src =
+      ':::: compare\n' +
+      '::: pros 方案 A\n方案 A 的正文。\n\n- 要点一二三四\n:::\n' +
+      '::: cons 方案 B\n- 要点一二三四\n:::\n' +
+      '::::\n'
+    const out = run(src)
+    // juice 内联后栏内 p/li 必须落到 13px（否则 CJK 文字在 ~150px 栏里阶梯式换行）
+    expect(out).toMatch(/container-pros[\s\S]*?<p[^>]*font-size:\s*13px/)
+    expect(out).toMatch(/container-pros[\s\S]*?<li[^>]*font-size:\s*13px/)
+    // letter-spacing 必须被覆盖为 0（全局是 1px，窄栏里会多出 ~10% 占宽）
+    expect(out).toMatch(/container-pros[\s\S]*?<p[^>]*letter-spacing:\s*0/)
+  })
 })
 
 describe('steps / divider', () => {

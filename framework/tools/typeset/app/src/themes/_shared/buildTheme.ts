@@ -113,14 +113,19 @@ export function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObj
       'padding-bottom': '14px',
       'padding-left': '16px',
       'border-radius': '6px',
-      // 移动端公众号对 <pre> 不提供独立横滚容器：
-      // pre 会被强制全宽，overflow-x:auto 实际不生效，长行被版心挤压。
-      // 用 pre-wrap + break-all 保证换行可控；overflow-x:auto 保留给桌面预览的保底。
+      // 代码块走"横向滚动"而非"强制换行"：
+      //   - white-space:pre 保留原始换行，长行不折
+      //   - max-width:100% + overflow-x:auto → 超宽时出现横向滑条
+      //   WeChat 移动端实测 <pre> 的 overflow-x:auto 会启用原生触摸横滑（同 doocs/md 等）
+      //   避免 break-all 把标识符 / 模板字符串在任意字符处剖开
       'overflow-x': 'auto',
-      'white-space': 'pre-wrap',
-      'word-break': 'break-all',
+      'white-space': 'pre',
       'max-width': '100%',
       'box-sizing': 'border-box',
+      // 右侧内阴影：微信移动端 <pre> 横滑没有可见滚动条，用户不知道能滑；
+      // inset box-shadow 在暗/亮底色上都能看见，被 border-radius 自然裁圆，
+      // 相比 `background-attachment: local` 技巧在微信端稳定得多。
+      'box-shadow': 'inset -14px 0 10px -10px rgba(0,0,0,0.28)',
       'margin-top': '0',
       'margin-bottom': '20px',
       'font-size': '13px',

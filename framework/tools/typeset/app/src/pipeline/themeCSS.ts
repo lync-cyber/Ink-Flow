@@ -115,9 +115,16 @@ export function generateThemeCSS(theme: Theme): string {
     ['ul', theme.elements.ul],
     ['ol', theme.elements.ol],
     ['li', theme.elements.li],
-    ['code', theme.elements.code],
+    // inline code 容易塞超长 token（UUID / 长 URL / 模块路径），不加 word-break 会撑宽段落。
+    // 只针对 inline 场景打破；紧跟的 `pre code` 会显式复位成 normal，保留代码块的保真排版。
+    ['code', { ...theme.elements.code, 'word-break': 'break-all' }],
     ['pre', theme.elements.pre],
-    ['pre code', { 'background-color': 'transparent', color: 'inherit', padding: '0' }],
+    ['pre code', {
+      'background-color': 'transparent',
+      color: 'inherit',
+      padding: '0',
+      'word-break': 'normal',
+    }],
     ['img', theme.elements.img],
     ['a', theme.elements.a],
     ['hr', theme.elements.hr],
@@ -167,6 +174,63 @@ export function generateThemeCSS(theme: Theme): string {
     const r = rule(containerSelector(name), obj, `containers.${name}`)
     if (r) chunks.push(r)
   }
+
+  // compare 两栏专属收敛：
+  //   - .markdown-body p { font-size: 15px; letter-spacing: 1px } 的选择器比行内 style 继承强；
+  //     窄栏里 15px + 1px letter-spacing 只能容 6~7 个 CJK 字，必然阶梯换行。
+  //   - 这里用等同长度的后代选择器一次把栏内 p/li/h3 的字号、字距、段距压到窄栏预算内。
+  //   这不是主题作者可调参数——所有主题都共享这组"两栏最小可读版式"。
+  const compareColSel =
+    `.${ROOT_CLASS} .container-pros, .${ROOT_CLASS} .container-cons`
+  const compareColDescendant = (suffix: string) =>
+    `.${ROOT_CLASS} .container-pros ${suffix}, .${ROOT_CLASS} .container-cons ${suffix}`
+  chunks.push(rule(compareColSel, { 'letter-spacing': '0' }, 'compare.col'))
+  chunks.push(
+    rule(
+      compareColDescendant('p'),
+      {
+        'font-size': '13px',
+        'letter-spacing': '0',
+        'line-height': '1.6',
+        'margin-bottom': '6px',
+      },
+      'compare.col p',
+    ),
+  )
+  chunks.push(
+    rule(
+      compareColDescendant('li'),
+      {
+        'font-size': '13px',
+        'letter-spacing': '0',
+        'line-height': '1.55',
+        'margin-bottom': '4px',
+      },
+      'compare.col li',
+    ),
+  )
+  chunks.push(
+    rule(
+      compareColDescendant('ul') + `, ${compareColDescendant('ol')}`,
+      { 'padding-left': '18px', 'margin-bottom': '8px' },
+      'compare.col ul',
+    ),
+  )
+  chunks.push(
+    rule(
+      compareColDescendant('h3'),
+      { 'font-size': '14px', 'margin-top': '8px', 'margin-bottom': '6px', 'line-height': '1.4' },
+      'compare.col h3',
+    ),
+  )
+  // 栏内行内 code 也缩一号，避免继承自全局 14px 仍然撑开
+  chunks.push(
+    rule(
+      compareColDescendant('code'),
+      { 'font-size': '12px', padding: '1px 4px' },
+      'compare.col code',
+    ),
+  )
 
   return chunks.filter(Boolean).join('\n\n')
 }

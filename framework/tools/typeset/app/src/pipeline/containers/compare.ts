@@ -26,34 +26,41 @@
 
 import type { ContainerRenderer, ContainerRenderContext } from './types'
 
+/**
+ * 栏宽算账（375px 手机壳）：
+ *   .markdown-body 内宽 ≈ 343px；table border-spacing 横向 4px → 每侧 2 条 4px 空挡
+ *   占 12-16px；两栏内容区 ≈ 160px / 栏。去掉列内 padding (10px×2) 与 ul
+ *   padding-left (18px) 后，正文可用宽 ≈ 120px，在 13px 字号下每行容 7~8 个 CJK 字。
+ *   这是"两栏对比"能看的下限，再密就影响可读性。
+ */
+const COL_FONT_SIZE = 13
+const COL_INNER_PAD = 10
+
 function colStyle(ctx: ContainerRenderContext): string {
   const bg = ctx.tokens.colors.bgSoft
   const radius = ctx.tokens.radius.md
-  const pad = ctx.tokens.spacing.containerPadding
-  const innerPad = pad - 4 < 10 ? 10 : pad - 4
   return (
     'display:table-cell;vertical-align:top;width:50%;box-sizing:border-box;' +
-    `padding:${innerPad}px ${innerPad}px;` +
+    `padding:${COL_INNER_PAD}px ${COL_INNER_PAD}px;` +
     `background-color:${bg};border-radius:${radius}px`
   )
 }
 
 export const compareContainer: ContainerRenderer = {
-  // border-spacing 给两列之间留缝，比 inline-block 的 4% gutter 稳定得多。
+  // border-spacing 从 8px 收到 4px，给两栏各多 4px 可用宽度（窄栏每像素都贵）。
   // data-wx-keep-flex 不需要——table 布局本身不会被 patchFlexToFallback 动到。
   open: () =>
-    `<section class="container-compare" style="display:table;width:100%;table-layout:fixed;border-spacing:8px 0;border-collapse:separate">\n`,
+    `<section class="container-compare" style="display:table;width:100%;table-layout:fixed;border-spacing:4px 0;border-collapse:separate">\n`,
   close: '</section>\n',
 }
 
 export const prosContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '优点'
-    const baseSize = ctx.tokens.typography.baseSize
     const color = ctx.tokens.colors.status.tip.accent
     return (
-      `<section class="container-pros" style="${colStyle(ctx)};font-size:${baseSize}px">` +
-      `<section class="container-pros__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
+      `<section class="container-pros" style="${colStyle(ctx)};font-size:${COL_FONT_SIZE}px;letter-spacing:0">` +
+      `<section class="container-pros__title" style="font-size:${COL_FONT_SIZE + 1}px;font-weight:700;color:${color};margin-bottom:8px;letter-spacing:0;line-height:1.4">${escapeInner(title)}</section>\n`
     )
   },
   close: '</section>\n',
@@ -62,11 +69,10 @@ export const prosContainer: ContainerRenderer = {
 export const consContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '缺点'
-    const baseSize = ctx.tokens.typography.baseSize
     const color = ctx.tokens.colors.status.danger.accent
     return (
-      `<section class="container-cons" style="${colStyle(ctx)};font-size:${baseSize}px">` +
-      `<section class="container-cons__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
+      `<section class="container-cons" style="${colStyle(ctx)};font-size:${COL_FONT_SIZE}px;letter-spacing:0">` +
+      `<section class="container-cons__title" style="font-size:${COL_FONT_SIZE + 1}px;font-weight:700;color:${color};margin-bottom:8px;letter-spacing:0;line-height:1.4">${escapeInner(title)}</section>\n`
     )
   },
   close: '</section>\n',
