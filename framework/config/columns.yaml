@@ -1,9 +1,9 @@
 # ============================================================
 # 栏目统一配置（单一事实来源）
 # 业务定位 + 骨架结构 + 开头策略 + 语气指南
-# 视觉字段（配色/字体/typesetter 预设）已移至独立产物：
-#   content/styles/{slug}/theme.css
-# 由 column-designing skill 产出，下游 skill 导入 doocs/md
+# 视觉字段（配色/字体/variant 选择）不在此文件；排版决策按文章粒度在 pipeline 产出：
+#   content/articles/{slug}/intermediate/09-typeset-plan.md（由 typeset-authoring skill 生成）
+# 真正渲染由 wx-md 本地工具（framework/tools/typeset/）承担
 # ============================================================
 
 version: "6.0"

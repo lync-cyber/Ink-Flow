@@ -408,7 +408,7 @@ def check_file_cleanup(repo):
 # ============================================================
 
 # 分区 → 必填字段映射（与 columns.yaml 头部契约保持一致）
-# 视觉字段已移出 columns.yaml，由 column-designing skill 独立产出
+# 视觉字段不在 columns.yaml；排版决策由 typeset-authoring skill 按文章产出
 REQUIRED_COLUMN_FIELDS = {
     "品牌标识": ["name", "personality"],
     "写作指导": ["skeleton", "tone", "default_opening", "default_cta"],
@@ -491,7 +491,8 @@ DEPRECATED_SKILLS = {
     "article-structuring": "已合并进 framework/config/columns.yaml 的 skeleton 段",
     "writing-guiding":     "已合并进 framework/config/columns.yaml 的 phrase_replacements / human_voice_techniques",
     "opening-crafting":    "已合并进 framework/config/columns.yaml 的 opening_strategies",
-    "visual-theming":      "column-designing（产出 content/styles/{slug}/theme.css）",
+    "visual-theming":      "typeset-authoring（wx-md 文章级排版方案）",
+    "column-designing":    "typeset-authoring（wx-md 文章级排版方案；doocs/md 主题 CSS 已不再消费）",
     "format-linting":      "quality-linting",
     "format-exporting":    "publisher agent（publish 阶段）",
 }

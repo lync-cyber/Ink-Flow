@@ -26,5 +26,6 @@ Thumbs.db
 content/retrospectives/runs/*.log.md
 !content/retrospectives/runs/.gitkeep
 
-# 本地排版工具（doocs/md 抽取产物，不进版本库）
-framework/tools/typeset/dist/
+# 本地排版工具（自研 wx-md 构建产物，不进版本库）
+framework/tools/typeset/app/node_modules/
+framework/tools/typeset/app/dist/
