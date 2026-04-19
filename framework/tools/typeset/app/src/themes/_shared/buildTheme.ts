@@ -15,7 +15,9 @@ import type {
   ThemeInline,
   ThemeTemplates,
   ThemeTokens,
+  ThemeVariants,
 } from '../types'
+import { DEFAULT_VARIANTS } from '../types'
 import { buildAssets, type SvgVariant } from './svgAssets'
 
 export interface BuildThemeOptions {
@@ -40,6 +42,11 @@ export interface BuildThemeOptions {
   /** 代码块样式覆盖（部分主题需要浅色代码块） */
   pre?: CSSObject
   code?: CSSObject
+  /**
+   * v2 骨架变体。未声明时用 DEFAULT_VARIANTS（对齐 v1 视觉行为，零破坏兼容）。
+   * Partial 支持"只换一项骨架" —— 比如某主题想 admonition 走 terminal、其余默认。
+   */
+  variants?: Partial<ThemeVariants>
 }
 
 export function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObject): ThemeElements {
@@ -240,6 +247,7 @@ export function buildTheme(opts: BuildThemeOptions): Theme {
   const containers = { ...baseContainers(opts.tokens), ...(opts.containerOverrides ?? {}) }
   const inline = { ...baseInline(opts.tokens), ...(opts.inlineOverrides ?? {}) }
   const assets = opts.assets ?? buildAssets({ tokens: opts.tokens, variant: opts.variant ?? 'geometric' })
+  const variants: ThemeVariants = { ...DEFAULT_VARIANTS, ...(opts.variants ?? {}) }
   return {
     id: opts.id,
     name: opts.name,
@@ -252,5 +260,6 @@ export function buildTheme(opts: BuildThemeOptions): Theme {
     assets,
     templates: opts.templates ?? {},
     inline,
+    variants,
   }
 }

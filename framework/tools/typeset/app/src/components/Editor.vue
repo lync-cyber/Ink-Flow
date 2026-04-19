@@ -25,7 +25,15 @@ function insertAtCursor(text: string): void {
   view.focus()
 }
 
-defineExpose({ insertAtCursor })
+/** 读取当前选区文本；无选区返回空串 */
+function getSelectedText(): string {
+  if (!view) return ''
+  const { from, to } = view.state.selection.main
+  if (from === to) return ''
+  return view.state.doc.sliceString(from, to)
+}
+
+defineExpose({ insertAtCursor, getSelectedText })
 
 function createView(doc: string) {
   if (!host.value) return

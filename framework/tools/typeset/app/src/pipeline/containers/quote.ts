@@ -1,34 +1,42 @@
 /**
- * 引用类容器：quote-card / highlight
+ * quote-card / highlight 容器
  *
- * - quote-card：金句卡。theme.assets.quoteMark 可提供大号装饰引号 SVG；
- *   未提供时回退为中文直角引号字符，降级不失美。
- *   info 作为署名（"— 作者"）。
- * - highlight：整体高亮块，用主色浅底。内部保持普通段落节奏。
+ * v2 变更：quote-card 走 variant registry（classic / magazine-dropcap / column-rule / frame-brackets）。
+ * highlight 保持 v1 行为（简单高亮块，无骨架切换需求）。
+ *
+ * byline（ctx.info）作为署名，在 close 时用 textMuted 色加一行"— 作者"。
+ * 所有 variant 共享这个收尾逻辑，避免每个 variant 重写。
  */
 
-import type { ContainerRenderer } from './types'
+import type { QuoteVariantId } from '../../themes/types'
+import type { ContainerRenderer, ContainerRenderContext } from './types'
 import { escText } from './types'
+import { QUOTE_VARIANTS } from './variants'
 
-const FALLBACK_OPEN_MARK = `<span style="display:inline-block;font-size:28px;line-height:1;opacity:0.35;margin-right:4px">「</span>`
-const FALLBACK_CLOSE_MARK = `<span style="display:inline-block;font-size:28px;line-height:1;opacity:0.35;margin-left:4px">」</span>`
+function resolveVariantId(ctx: ContainerRenderContext): QuoteVariantId {
+  const override = ctx.attrs.variant
+  if (override && override in QUOTE_VARIANTS) {
+    return override as QuoteVariantId
+  }
+  return ctx.variants.quote ?? 'classic'
+}
 
 export const quoteCardContainer: ContainerRenderer = {
   open: (ctx) => {
-    const mark = ctx.assets.quoteMark ?? FALLBACK_OPEN_MARK
-    return (
-      `<section class="container-quote-card">\n` +
-      `<section class="container-quote-card__body" style="font-size:16px;line-height:1.7;text-align:center">${mark}\n`
-    )
+    const id = resolveVariantId(ctx)
+    const result = QUOTE_VARIANTS[id].render(ctx)
+    const parts: string[] = []
+    parts.push(`<section class="container-quote-card container-quote-card--${id}" style="${result.wrapperCSS}">`)
+    if (result.svgSlot) parts.push(result.svgSlot)
+    parts.push(`<section class="container-quote-card__body" style="${result.bodyCSS ?? ''}">`)
+    return parts.join('\n') + '\n'
   },
   close: (ctx) => {
     const byline = ctx.info.trim()
-    // 使用资产时无需镜像收尾（大多数 SVG 自成对）；回退字符模式用闭合直角引号
-    const closeMark = ctx.assets.quoteMark ? '' : FALLBACK_CLOSE_MARK
     const sig = byline
-      ? `<section class="container-quote-card__byline" style="text-align:center;color:${ctx.tokens.colors.textMuted};margin-top:8px">— ${escText(byline)}</section>`
+      ? `<section class="container-quote-card__byline" style="text-align:center;color:${ctx.tokens.colors.textMuted};margin-top:10px;font-size:13px">— ${escText(byline)}</section>`
       : ''
-    return `${closeMark}\n</section>\n${sig}</section>\n`
+    return `</section>\n${sig}</section>\n`
   },
 }
 

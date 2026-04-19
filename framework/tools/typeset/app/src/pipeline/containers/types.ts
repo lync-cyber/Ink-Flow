@@ -18,6 +18,7 @@ import type {
   ThemeContainers,
   ThemeInline,
   ThemeTokens,
+  ThemeVariants,
 } from '../../themes/types'
 
 export interface ContainerRenderContext {
@@ -25,6 +26,11 @@ export interface ContainerRenderContext {
   assets: ThemeAssets
   containers: ThemeContainers
   inline: ThemeInline
+  /**
+   * v2 骨架选择。renderer 按 ctx.variants.{kind} 分派到 variants/{kind}/{id}.ts。
+   * attrs.variant 可按容器级覆盖主题级选择（比如 `::: tip variant=terminal`）。
+   */
+  variants: ThemeVariants
   /** `::: tip 小贴士 type=positive` → info = "小贴士" */
   info: string
   /** 从 info 里剥出来的 YAML 风格 key=value（value 支持空格用引号包） */

@@ -8,8 +8,10 @@
  *   由 theme.assets.sectionCorner 装饰（Step 5）。此处先出标题行。
  */
 
-import type { ContainerRenderer } from './types'
+import type { SectionTitleVariantId } from '../../themes/types'
+import type { ContainerRenderer, ContainerRenderContext } from './types'
 import { escText } from './types'
+import { SECTION_TITLE_VARIANTS } from './variants'
 
 export const introContainer: ContainerRenderer = {
   open: (ctx) => {
@@ -49,14 +51,27 @@ export const authorContainer: ContainerRenderer = {
   close: '</section>\n',
 }
 
+function resolveSectionTitleVariantId(ctx: ContainerRenderContext): SectionTitleVariantId {
+  const override = ctx.attrs.variant
+  if (override && override in SECTION_TITLE_VARIANTS) {
+    return override as SectionTitleVariantId
+  }
+  return ctx.variants.sectionTitle ?? 'bordered'
+}
+
 export const sectionTitleContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim()
-    const corner = ctx.assets.sectionCorner ?? ''
-    const head = title
-      ? `<section class="container-section-title__label" style="font-weight:700;font-size:20px;margin-bottom:8px">${corner}${escText(title)}</section>`
-      : ''
-    return `<section class="container-section-title">\n${head}`
+    const id = resolveSectionTitleVariantId(ctx)
+    const result = SECTION_TITLE_VARIANTS[id].render(ctx)
+    const parts: string[] = []
+    parts.push(`<section class="container-section-title container-section-title--${id}" style="${result.wrapperCSS}">`)
+    if (title) {
+      const corner = result.svgSlot ?? ''
+      const ts = result.titleCSS ?? 'font-weight:700;font-size:20px'
+      parts.push(`<section class="container-section-title__label" style="${ts}">${corner}${escText(title)}</section>`)
+    }
+    return parts.join('\n') + '\n'
   },
   close: '</section>\n',
 }

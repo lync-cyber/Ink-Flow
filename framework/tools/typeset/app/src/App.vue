@@ -5,6 +5,7 @@ import Preview from './components/Preview.vue'
 import Toolbar from './components/Toolbar.vue'
 import DraftDrawer from './components/DraftDrawer.vue'
 import ColorCustomizer from './components/ColorCustomizer.vue'
+import ComponentPalette from './components/ComponentPalette.vue'
 import TemplateMarket from './components/TemplateMarket.vue'
 import { useDebouncedRender } from './composables/useDebouncedRender'
 import { getTheme } from './themes'
@@ -31,11 +32,13 @@ const baseThemeId = ref<string>('default')
 const customTheme = ref<Theme | null>(null) // 自定义配色时覆盖 baseThemeId
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
 const previewRef = ref<InstanceType<typeof Preview> | null>(null)
+const paletteRef = ref<InstanceType<typeof ComponentPalette> | null>(null)
 
 const ui = reactive({
   draftsOpen: false,
   customizerOpen: false,
   templatesOpen: false,
+  componentsOpen: false,
 })
 
 const activeTheme = computed<Theme>(() => customTheme.value ?? getTheme(baseThemeId.value))
@@ -194,6 +197,23 @@ function handleInsertTemplate(snippet: string) {
   pingStatus(1200)
 }
 
+function handleInsertComponent(snippet: string) {
+  handleInsertTemplate(snippet)
+}
+
+function handleSaveSelection() {
+  const inst = editorRef.value
+  const text = inst?.getSelectedText?.() ?? ''
+  if (!text.trim()) {
+    status.value = '请先在编辑器中选中一段 markdown'
+    pingStatus(2000)
+    return
+  }
+  if (!ui.componentsOpen) ui.componentsOpen = true
+  // 等抽屉挂载后再打弹窗
+  requestAnimationFrame(() => paletteRef.value?.openSaveDialog?.(text))
+}
+
 function pingStatus(timeoutMs = 2500) {
   setTimeout(() => {
     status.value = ''
@@ -276,6 +296,12 @@ function onShortcut(e: KeyboardEvent) {
     ui.draftsOpen = !ui.draftsOpen
     return
   }
+  // Ctrl/⌘ + Shift + P：打开组件库抽屉
+  if (e.key.toLowerCase() === 'p' && e.shiftKey) {
+    e.preventDefault()
+    ui.componentsOpen = !ui.componentsOpen
+    return
+  }
   // Ctrl/⌘ + Shift + H / M：导出
   if (e.key.toLowerCase() === 'h' && e.shiftKey) {
     e.preventDefault()
@@ -303,6 +329,8 @@ function onShortcut(e: KeyboardEvent) {
       @load-sample="handleLoadSample"
       @toggle-drafts="ui.draftsOpen = !ui.draftsOpen"
       @toggle-templates="ui.templatesOpen = !ui.templatesOpen"
+      @toggle-components="ui.componentsOpen = !ui.componentsOpen"
+      @save-selection="handleSaveSelection"
       @toggle-customizer="ui.customizerOpen = !ui.customizerOpen"
       @export-html="doExportHtml"
       @export-md="doExportMd"
@@ -326,6 +354,12 @@ function onShortcut(e: KeyboardEvent) {
         :theme="activeTheme"
         @insert="handleInsertTemplate"
         @close="ui.templatesOpen = false"
+      />
+      <ComponentPalette
+        v-if="ui.componentsOpen"
+        ref="paletteRef"
+        @insert="handleInsertComponent"
+        @close="ui.componentsOpen = false"
       />
       <ColorCustomizer
         v-if="ui.customizerOpen"

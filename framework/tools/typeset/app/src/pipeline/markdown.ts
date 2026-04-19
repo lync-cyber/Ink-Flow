@@ -88,6 +88,7 @@ export function createMarkdown(options: CreateMarkdownOptions = {}): MarkdownIt 
             assets: theme.assets,
             containers: theme.containers,
             inline: theme.inline,
+            variants: theme.variants,
             info: title,
             attrs,
           }
@@ -128,6 +129,7 @@ function emptyCtx(theme: Theme): ContainerRenderContext {
     assets: theme.assets,
     containers: theme.containers,
     inline: theme.inline,
+    variants: theme.variants,
     info: '',
     attrs: {},
   }

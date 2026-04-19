@@ -5,6 +5,7 @@
  */
 
 import type { Theme, CSSObject } from '../types'
+import { DEFAULT_VARIANTS } from '../types'
 import { commonTemplates } from '../_shared/defaultTemplates'
 
 const tokens = {
@@ -367,4 +368,5 @@ export const defaultTheme: Theme = {
   },
   templates: commonTemplates,
   inline,
+  variants: DEFAULT_VARIANTS,
 }

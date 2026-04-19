@@ -1,16 +1,25 @@
 /**
- * 四色提示类容器：tip / warning / info / danger
+ * 四色提示容器：tip / warning / info / danger
  *
- * 设计：无 emoji。主题 tokens.colors.status[kind] 决定外框色（accent + soft bg），
- * theme.assets.{tip,warning,info,danger}Icon 可选提供一个 SVG 前缀。
- * 整体靠"左侧 3px 色条 + 浅底"的典型 admonition 视觉，不依赖 flex。
+ * v2 变更：把"视觉骨架"从本文件硬编码里拆出，改为 registry 分派。
+ *   - 主题层：theme.variants.admonition 指定默认骨架（accent-bar / pill-tag / ticket-notch / ...）
+ *   - 容器层：`::: tip variant=terminal` 的 attrs.variant 可临时覆盖主题选择
+ *   - variant 模块：variants/admonition/{id}.ts 返回 { wrapperCSS, titleCSS?, bodyCSS?, svgSlot? }
  *
- * 作者层面：要改色，换 theme.tokens.colors.status 即可，无需碰渲染器。
- * 要换图标，换 theme.assets.tipIcon 即可。
+ * 本文件只做三件事：
+ *   1. 决定用哪个 variant（attrs.variant > theme.variants.admonition > 'accent-bar' 兜底）
+ *   2. 组装 open/close HTML：wrapper + svgSlot + title? + body?
+ *   3. 处理 title 显示约定（titleCSS==='' 跳过默认 title 行，由 svgSlot 承担）
  */
 
+import type {
+  AdmonitionVariantId,
+  ThemeAssets,
+} from '../../themes/types'
 import type { ContainerRenderer, ContainerRenderContext } from './types'
 import { escText } from './types'
+import { ADMONITION_VARIANTS } from './variants'
+import type { AdmonitionKind } from './variants'
 
 const DEFAULT_TITLES: Record<AdmonitionKind, string> = {
   tip: '小贴士',
@@ -19,39 +28,56 @@ const DEFAULT_TITLES: Record<AdmonitionKind, string> = {
   danger: '警告',
 }
 
-export type AdmonitionKind = 'tip' | 'warning' | 'info' | 'danger'
-
-const ICON_KEYS: Record<AdmonitionKind, 'tipIcon' | 'warningIcon' | 'infoIcon' | 'dangerIcon'> = {
+const ICON_KEYS: Record<AdmonitionKind, keyof ThemeAssets> = {
   tip: 'tipIcon',
   warning: 'warningIcon',
   info: 'infoIcon',
   danger: 'dangerIcon',
 }
 
-function openTag(kind: AdmonitionKind, ctx: ContainerRenderContext): string {
-  const pair = ctx.tokens.colors.status[kind]
-  const radius = ctx.tokens.radius.sm
-  const padY = Math.max(10, Math.round(ctx.tokens.spacing.containerPadding * 0.75))
-  const padX = ctx.tokens.spacing.containerPadding
-  const title = ctx.info.trim() || DEFAULT_TITLES[kind]
-  const icon = ctx.assets[ICON_KEYS[kind]] ?? ''
-  const frame =
-    `background-color:${pair.soft};` +
-    `border-left:3px solid ${pair.accent};` +
-    `padding:${padY}px ${padX}px;` +
-    `border-radius:0 ${radius}px ${radius}px 0;` +
-    'margin:16px 0'
-  const titleCss = `font-weight:700;color:${pair.accent};margin-bottom:6px;letter-spacing:0.3px`
-  return (
-    `<section class="container-${kind}" style="${frame}">\n` +
-    `<section class="container-${kind}__title" style="${titleCss}">${icon}${escText(title)}</section>\n`
-  )
+function resolveVariantId(ctx: ContainerRenderContext): AdmonitionVariantId {
+  const override = ctx.attrs.variant
+  if (override && override in ADMONITION_VARIANTS) {
+    return override as AdmonitionVariantId
+  }
+  return ctx.variants.admonition ?? 'accent-bar'
 }
 
 function makeAdmonition(kind: AdmonitionKind): ContainerRenderer {
   return {
-    open: (ctx) => openTag(kind, ctx),
-    close: '</section>\n',
+    open: (ctx) => {
+      const variantId = resolveVariantId(ctx)
+      const variant = ADMONITION_VARIANTS[variantId]
+      const result = variant.render(ctx, { kind })
+      const title = ctx.info.trim() || DEFAULT_TITLES[kind]
+      const iconKey = ICON_KEYS[kind]
+      const icon = (ctx.assets[iconKey] as string | undefined) ?? ''
+
+      const parts: string[] = []
+      // 双 class：第一项保持 v1 兼容名，第二项带 variant 后缀方便组件库 UI 抓取
+      parts.push(
+        `<section class="container-${kind} container-${kind}--${variantId}" style="${result.wrapperCSS}">`,
+      )
+      if (result.svgSlot) parts.push(result.svgSlot)
+      // titleCSS === '' 约定：variant 自己在 svgSlot 内渲染了标题，renderer 跳过默认 title
+      if (result.titleCSS !== '') {
+        const titleStyle =
+          result.titleCSS ??
+          `font-weight:700;color:${ctx.tokens.colors.status[kind].accent};margin-bottom:6px;letter-spacing:0.3px`
+        parts.push(
+          `<section class="container-${kind}__title" style="${titleStyle}">${icon}${escText(title)}</section>`,
+        )
+      }
+      if (result.bodyCSS) {
+        parts.push(`<section class="container-${kind}__body" style="${result.bodyCSS}">`)
+      }
+      return parts.join('\n') + '\n'
+    },
+    close: (ctx) => {
+      const variantId = resolveVariantId(ctx)
+      const result = ADMONITION_VARIANTS[variantId].render(ctx, { kind })
+      return (result.bodyCSS ? '</section>\n' : '') + '</section>\n'
+    },
   }
 }
 

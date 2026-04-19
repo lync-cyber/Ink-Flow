@@ -18,7 +18,7 @@ function run(md: string): string {
 describe('admonitions', () => {
   it('tip：识别 fence，注入标题', () => {
     const out = run('::: tip 小贴士\n正文内容\n:::\n')
-    expect(out).toMatch(/class="container-tip"/)
+    expect(out).toMatch(/class="container-tip(\s|")/)
     expect(out).toContain('小贴士')
     expect(out).toContain('正文内容')
   })
@@ -29,9 +29,9 @@ describe('admonitions', () => {
       '::: info 说明\nb\n:::\n' +
       '::: danger 警告\nc\n:::\n',
     )
-    expect(out).toMatch(/class="container-warning"/)
-    expect(out).toMatch(/class="container-info"/)
-    expect(out).toMatch(/class="container-danger"/)
+    expect(out).toMatch(/class="container-warning(\s|")/)
+    expect(out).toMatch(/class="container-info(\s|")/)
+    expect(out).toMatch(/class="container-danger(\s|")/)
   })
 
   it('不含 emoji（质感优先）', () => {
@@ -56,7 +56,7 @@ describe('intro / cover / author / section-title', () => {
 
   it('section-title 生成独立容器 class', () => {
     const out = run('::: section-title 第一章\n:::\n')
-    expect(out).toMatch(/class="container-section-title"/)
+    expect(out).toMatch(/class="container-section-title(\s|")/)
     expect(out).toContain('第一章')
   })
 })
@@ -64,7 +64,7 @@ describe('intro / cover / author / section-title', () => {
 describe('quote-card / highlight', () => {
   it('quote-card 识别，byline 通过 info', () => {
     const out = run('::: quote-card 苏轼\n人生如逆旅\n:::\n')
-    expect(out).toMatch(/class="container-quote-card"/)
+    expect(out).toMatch(/class="container-quote-card(\s|")/)
     expect(out).toContain('人生如逆旅')
     // byline 渲染在关闭后：含"— 苏轼"
     expect(out).toContain('苏轼')
@@ -85,9 +85,9 @@ describe('compare · pros · cons 嵌套', () => {
       '::: cons 缺点\n缺B\n:::\n' +
       '::::\n'
     const out = run(src)
-    expect(out).toMatch(/class="container-compare"/)
-    expect(out).toMatch(/class="container-pros"/)
-    expect(out).toMatch(/class="container-cons"/)
+    expect(out).toMatch(/class="container-compare(\s|")/)
+    expect(out).toMatch(/class="container-pros(\s|")/)
+    expect(out).toMatch(/class="container-cons(\s|")/)
     expect(out).toContain('优A')
     expect(out).toContain('缺B')
   })
@@ -121,13 +121,13 @@ describe('compare · pros · cons 嵌套', () => {
 describe('steps / divider', () => {
   it('steps 识别', () => {
     const out = run('::: steps 安装步骤\n1. a\n2. b\n:::\n')
-    expect(out).toMatch(/class="container-steps"/)
+    expect(out).toMatch(/class="container-steps(\s|")/)
     expect(out).toContain('安装步骤')
   })
 
   it('divider variant=wave 产出 SVG 无 id 无 url 引号', () => {
     const out = run('::: divider variant=wave\n:::\n')
-    expect(out).toMatch(/class="container-divider"/)
+    expect(out).toMatch(/class="container-divider(\s|")/)
     expect(out).toMatch(/<svg/)
     // 经 wxPatch：SVG 内部不应有 id
     expect(out).not.toMatch(/<svg[^>]*\sid=/)
@@ -135,7 +135,7 @@ describe('steps / divider', () => {
 
   it('divider 默认 variant 为线条', () => {
     const out = run('::: divider\n:::\n')
-    expect(out).toMatch(/class="container-divider"/)
+    expect(out).toMatch(/class="container-divider(\s|")/)
     // 默认 variant=line：用 hr
     expect(out).toMatch(/<hr/)
   })
@@ -191,7 +191,7 @@ describe('info / attrs 解析', () => {
 
   it('多个 attrs 共存', () => {
     const out = run('::: divider variant=dots extra=unused\n:::\n')
-    expect(out).toMatch(/class="container-divider"/)
+    expect(out).toMatch(/class="container-divider(\s|")/)
     // dots variant 用 circle
     expect(out).toMatch(/<circle/)
   })

@@ -13,6 +13,8 @@ const emit = defineEmits<{
   (e: 'clear'): void
   (e: 'toggleDrafts'): void
   (e: 'toggleTemplates'): void
+  (e: 'toggleComponents'): void
+  (e: 'saveSelection'): void
   (e: 'toggleCustomizer'): void
   (e: 'loadSample'): void
   (e: 'exportHtml'): void
@@ -32,6 +34,8 @@ const emit = defineEmits<{
       <ThemePicker :model-value="themeId" @update:model-value="(v) => emit('update:themeId', v)" />
       <button class="btn btn-ghost" @click="emit('toggleDrafts')" title="草稿列表">草稿</button>
       <button class="btn btn-ghost" @click="emit('toggleTemplates')" title="模板市场">模板</button>
+      <button class="btn btn-ghost" @click="emit('toggleComponents')" title="组件库 (Ctrl/⌘+Shift+P)">组件</button>
+      <button class="btn btn-ghost" @click="emit('saveSelection')" title="把编辑器当前选区保存为自创组件">存选</button>
       <button class="btn btn-ghost" @click="emit('toggleCustomizer')" title="自定义配色">配色</button>
       <span class="sep" />
       <button class="btn btn-ghost" @click="emit('exportHtml')" title="导出 HTML (Ctrl/⌘+Shift+H)">HTML</button>

@@ -1,0 +1,286 @@
+.markdown-body {
+  background-color: #12141a;
+  color: #e6e6e6;
+  font-size: 15px;
+  line-height: 1.8;
+  letter-spacing: 0.4px;
+  padding: 20px 16px;
+}
+
+.markdown-body h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e6e6e6;
+  margin-top: 28px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.markdown-body h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6e6e6;
+  margin-top: 28px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #2a2f3a;
+}
+
+.markdown-body h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #e6e6e6;
+  margin-top: 22px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.markdown-body p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #e6e6e6;
+  margin-top: 0;
+  margin-bottom: 18px;
+  letter-spacing: 0.4px;
+}
+
+.markdown-body blockquote {
+  border-left: 3px solid #4ec9b0;
+  background-color: #1b1f27;
+  color: #9aa5b1;
+  padding-top: 10px;
+  padding-right: 14px;
+  padding-bottom: 10px;
+  padding-left: 14px;
+  margin-top: 0;
+  margin-bottom: 18px;
+  border-radius: 0 4px 4px 0;
+}
+
+.markdown-body ul {
+  padding-left: 24px;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.markdown-body ol {
+  padding-left: 24px;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.markdown-body li {
+  margin-bottom: 8px;
+  line-height: 1.8;
+  color: #e6e6e6;
+}
+
+.markdown-body code {
+  background-color: #242933;
+  color: #4ec9b0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.markdown-body pre {
+  background-color: #1b1f27;
+  color: #e6e6e6;
+  padding-top: 14px;
+  padding-right: 16px;
+  padding-bottom: 14px;
+  padding-left: 16px;
+  border-radius: 6px;
+  border-left: 3px solid #4ec9b0;
+  overflow-x: auto;
+  white-space: pre;
+  max-width: 100%;
+  box-sizing: border-box;
+  box-shadow: inset -14px 0 10px -10px rgba(0,0,0,0.35);
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  word-break: normal;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  display: block;
+  margin-top: 10px;
+  margin-right: auto;
+  margin-bottom: 10px;
+  margin-left: auto;
+  border-radius: 6px;
+}
+
+.markdown-body a {
+  color: #4ec9b0;
+  text-decoration: underline;
+}
+
+.markdown-body hr {
+  border: none;
+  height: 1px;
+  background-color: #2a2f3a;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.markdown-body th {
+  border: 1px solid #2a2f3a;
+  padding: 6px 10px;
+  background-color: #1b1f27;
+  text-align: left;
+}
+
+.markdown-body td {
+  border: 1px solid #2a2f3a;
+  padding: 6px 10px;
+}
+
+.markdown-body strong {
+  font-weight: 700;
+  color: #e6e6e6;
+}
+
+.markdown-body em {
+  font-style: italic;
+  color: #e6e6e6;
+}
+
+.markdown-body mark {
+  background-color: #ffbf5f;
+  color: #12141a;
+  padding: 0 3px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
+.markdown-body .wx-wavy {
+  text-decoration: underline wavy;
+  text-decoration-color: #ffbf5f;
+  text-underline-offset: 3px;
+}
+
+.markdown-body .wx-emphasis {
+  color: #4ec9b0;
+  font-weight: 600;
+}
+
+.markdown-body .container-intro {
+  background-color: #1b1f27;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 16px 0;
+  color: #9aa5b1;
+}
+
+.markdown-body .container-author {
+  background-color: #1b1f27;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 16px 0;
+}
+
+.markdown-body .container-cover {
+  margin: 16px 0;
+}
+
+.markdown-body .container-quote-card {
+  background-color: #1b1f27;
+  padding: 18px 16px;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.markdown-body .container-highlight {
+  background-color: #242933;
+  padding: 12px 14px;
+  margin: 16px 0;
+  border-radius: 6px;
+}
+
+.markdown-body .container-compare {
+  margin: 16px 0;
+}
+
+.markdown-body .container-steps {
+  margin: 16px 0;
+}
+
+.markdown-body .container-section-title {
+  margin: 24px 0 12px;
+  border-bottom: 2px solid #4ec9b0;
+  padding-bottom: 6px;
+}
+
+.markdown-body .container-footer-cta {
+  margin: 24px 0;
+  padding: 16px;
+  background-color: #1b1f27;
+  border-radius: 8px;
+}
+
+.markdown-body .container-recommend {
+  margin: 20px 0;
+  padding: 14px 16px;
+  background-color: #1b1f27;
+  border-radius: 6px;
+}
+
+.markdown-body .container-qrcode {
+  margin: 20px 0;
+  padding: 14px 16px;
+}
+
+.markdown-body .container-pros, .markdown-body .container-cons {
+  letter-spacing: 0;
+}
+
+.markdown-body .container-pros p, .markdown-body .container-cons p {
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.markdown-body .container-pros li, .markdown-body .container-cons li {
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+
+.markdown-body .container-pros ul, .markdown-body .container-cons ul, .markdown-body .container-pros ol, .markdown-body .container-cons ol {
+  padding-left: 18px;
+  margin-bottom: 8px;
+}
+
+.markdown-body .container-pros h3, .markdown-body .container-cons h3 {
+  font-size: 14px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.markdown-body .container-pros code, .markdown-body .container-cons code {
+  font-size: 12px;
+  padding: 1px 4px;
+}
