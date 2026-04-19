@@ -61,6 +61,18 @@ describe('stripForbiddenAttrs', () => {
     expect(out).toContain('<p')
     expect(out).toContain('hi')
   })
+
+  it('脚注锚点（fn / fnref 前缀）白名单放行', () => {
+    const input =
+      '<sup><a href="#fn1" id="fnref1">1</a></sup>' +
+      '<li id="fn1"><p>脚注内容 <a href="#fnref1" id="fnref-return-1">↩</a></p></li>' +
+      '<p id="random">被删</p>'
+    const out = stripForbiddenAttrs(input)
+    expect(out).toMatch(/id="fnref1"/)
+    expect(out).toMatch(/id="fn1"/)
+    expect(out).toMatch(/id="fnref-return-1"/)
+    expect(out).not.toMatch(/id="random"/)
+  })
 })
 
 describe('stripForbiddenTags', () => {

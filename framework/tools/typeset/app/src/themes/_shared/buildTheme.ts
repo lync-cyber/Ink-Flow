@@ -113,8 +113,14 @@ export function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObj
       'padding-bottom': '14px',
       'padding-left': '16px',
       'border-radius': '6px',
+      // 移动端公众号对 <pre> 不提供独立横滚容器：
+      // pre 会被强制全宽，overflow-x:auto 实际不生效，长行被版心挤压。
+      // 用 pre-wrap + break-all 保证换行可控；overflow-x:auto 保留给桌面预览的保底。
       'overflow-x': 'auto',
-      'white-space': 'pre',
+      'white-space': 'pre-wrap',
+      'word-break': 'break-all',
+      'max-width': '100%',
+      'box-sizing': 'border-box',
       'margin-top': '0',
       'margin-bottom': '20px',
       'font-size': '13px',

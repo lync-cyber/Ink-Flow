@@ -1,9 +1,16 @@
 /**
  * compare / pros / cons
  *
- * 布局：绝不用 flex。
- *   外层 section 包两列，每列 display:inline-block; vertical-align:top; width:48%。
- *   中间留 2% 间隙；空白字符分隔 inline-block 的 4px 间距由 margin 吸收。
+ * 布局：绝不用 flex，改用 CSS table 做"等高两列"。
+ *   外层 section   → display:table; width:100%; table-layout:fixed; border-spacing:8px 0
+ *   pros / cons 列 → display:table-cell; vertical-align:top; width:50%
+ *
+ * 为什么是 table 而不是 inline-block：
+ *   - flex 会被微信粘贴后剥离，不能依赖
+ *   - inline-block + vertical-align:top 布局能成立，但两列高度取决于各自内容长度，
+ *     长短不一时会像"阶梯"——这是早期版本用户反馈的主要槽点
+ *   - display:table-cell 天生等高，border-spacing 吸收间隙，
+ *     且微信编辑器粘贴后保留完好（doocs/md 等排版器都走这条路径）
  *
  * 嵌套约定（markdown-it-container 用 fence 长度匹配）：
  *   `:::: compare` 包 `::: pros` / `::: cons`。用户必须写 4 个冒号外层、
@@ -23,18 +30,19 @@ function colStyle(ctx: ContainerRenderContext): string {
   const bg = ctx.tokens.colors.bgSoft
   const radius = ctx.tokens.radius.md
   const pad = ctx.tokens.spacing.containerPadding
+  const innerPad = pad - 4 < 10 ? 10 : pad - 4
   return (
-    'display:inline-block;vertical-align:top;width:48%;box-sizing:border-box;' +
-    `padding:${pad - 4 < 10 ? 10 : pad - 4}px ${pad - 4 < 10 ? 10 : pad - 4}px;` +
+    'display:table-cell;vertical-align:top;width:50%;box-sizing:border-box;' +
+    `padding:${innerPad}px ${innerPad}px;` +
     `background-color:${bg};border-radius:${radius}px`
   )
 }
 
-const GUTTER_STYLE = 'display:inline-block;width:4%;'
-
 export const compareContainer: ContainerRenderer = {
-  open: () => `<section class="container-compare" style="font-size:0">\n`,
-  // font-size:0 抹平 inline-block 之间的空白；列内部再把字号恢复
+  // border-spacing 给两列之间留缝，比 inline-block 的 4% gutter 稳定得多。
+  // data-wx-keep-flex 不需要——table 布局本身不会被 patchFlexToFallback 动到。
+  open: () =>
+    `<section class="container-compare" style="display:table;width:100%;table-layout:fixed;border-spacing:8px 0;border-collapse:separate">\n`,
   close: '</section>\n',
 }
 
@@ -51,18 +59,12 @@ export const prosContainer: ContainerRenderer = {
   close: '</section>\n',
 }
 
-/**
- * cons 的 open 里预插 gutter：这样只有当 cons 实际跟在 pros 后面时才出现分隔，
- * 独立使用 `::: pros` 时尾部不会出现孤立间隙（原先把 gutter 挂在 pros.close 上
- * 会导致独立 pros 也带一条 4% 空白条）。
- */
 export const consContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '缺点'
     const baseSize = ctx.tokens.typography.baseSize
     const color = ctx.tokens.colors.status.danger.accent
     return (
-      `<span style="${GUTTER_STYLE}"></span>` +
       `<section class="container-cons" style="${colStyle(ctx)};font-size:${baseSize}px">` +
       `<section class="container-cons__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
     )

@@ -26,11 +26,23 @@ const FORBIDDEN_VALUE_PATTERNS: Array<[RegExp, string]> = [
   [/:active/i, ':active 伪类粘贴后无效'],
 ]
 
+// display:flex / inline-flex 在公众号粘贴后会被剥成 display: 空值，
+// 子项仍带 flex:1 / flex-direction 等 orphan 样式，布局必塌。
+// patchFlexToFallback 只在 DOM 后处理阶段把已经写进产物的 flex 改回 block，
+// 这里在"主题写 CSS"更早的阶段直接 throw，避免主题作者以为自己能用。
+const FORBIDDEN_DISPLAY_VALUES = new Set(['flex', 'inline-flex', 'grid', 'inline-grid'])
+
 function assertSafeProp(prop: string, value: string, path: string): void {
   const lower = prop.toLowerCase()
   if (FORBIDDEN_PROPS.includes(lower)) {
     throw new ThemeAuthoringError(
       `[themeCSS] 主题在 ${path} 声明了 \`${prop}\`，违反微信平台约束。请移除。`,
+    )
+  }
+  if (lower === 'display' && FORBIDDEN_DISPLAY_VALUES.has(value.toLowerCase().trim())) {
+    throw new ThemeAuthoringError(
+      `[themeCSS] 主题在 ${path} 使用了 \`display: ${value}\`，微信粘贴后会被剥离。` +
+        '改用 block / inline-block / table 系列。',
     )
   }
   for (const [re, reason] of FORBIDDEN_VALUE_PATTERNS) {

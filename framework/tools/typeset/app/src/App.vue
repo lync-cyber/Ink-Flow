@@ -30,6 +30,7 @@ const activeDraftId = ref<string | null>(null)
 const baseThemeId = ref<string>('default')
 const customTheme = ref<Theme | null>(null) // 自定义配色时覆盖 baseThemeId
 const editorRef = ref<InstanceType<typeof Editor> | null>(null)
+const previewRef = ref<InstanceType<typeof Preview> | null>(null)
 
 const ui = reactive({
   draftsOpen: false,
@@ -76,16 +77,40 @@ onMounted(() => {
   // 传入当前 baseThemeId，让首次创建的示例草稿跟上保存的主题
   initActiveDraft(baseThemeId.value)
   window.addEventListener('keydown', onShortcut)
+  // pagehide 在标签关闭 / 前进后退缓存时触发，比 beforeunload 覆盖更广；
+  // onBeforeUnmount 只在 Vue 实例销毁时触发，不包括"关 tab"这种情况。
+  window.addEventListener('pagehide', flushDraftSave)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onShortcut)
+  window.removeEventListener('pagehide', flushDraftSave)
+  flushDraftSave()
 })
 
-watch(md, (val) => {
-  if (activeDraftId.value) {
-    updateDraft(activeDraftId.value, { body: val })
+// 每次击键都 JSON.stringify 整篇正文写 localStorage 在长文里可感知卡顿；
+// 渲染管线已有 80ms 防抖，这里取 400ms：断电风险仅"半秒内最新一击"，
+// 关闭页面前 onBeforeUnmount 会 flush 最终态。
+const DRAFT_SAVE_DELAY = 400
+let draftSaveTimer: number | null = null
+let pendingDraftBody: string | null = null
+
+function flushDraftSave() {
+  if (draftSaveTimer !== null) {
+    window.clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
   }
+  if (pendingDraftBody !== null && activeDraftId.value) {
+    updateDraft(activeDraftId.value, { body: pendingDraftBody })
+    pendingDraftBody = null
+  }
+}
+
+watch(md, (val) => {
+  if (!activeDraftId.value) return
+  pendingDraftBody = val
+  if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer)
+  draftSaveTimer = window.setTimeout(flushDraftSave, DRAFT_SAVE_DELAY)
 })
 
 watch(baseThemeId, (val) => {
@@ -119,8 +144,19 @@ function handleClear() {
   pingStatus(1500)
 }
 
+function handleLoadSample() {
+  const sample = getSample(baseThemeId.value)
+  // 有内容时先确认，避免用户误点覆盖正在写的正文
+  if (md.value.trim() && !confirm('当前草稿将被替换为该主题的示例内容，确定继续？')) return
+  md.value = sample
+  status.value = '已载入示例'
+  pingStatus(1500)
+}
+
 function handleSelectDraft(id: string) {
   if (id === activeDraftId.value) return
+  // 切草稿前把防抖中的 body 落到老草稿，避免老草稿内容跑到新草稿上
+  flushDraftSave()
   const d = readDraft(id)
   if (!d) return
   activeDraftId.value = d.id
@@ -191,8 +227,8 @@ function doExportMd() {
 
 async function doExportImage() {
   status.value = '长图渲染中…'
-  // 尝试从预览 iframe body 截图
-  const iframe = document.querySelector('iframe.wx-md-preview') as HTMLIFrameElement | null
+  // 通过 Preview 组件的 ref 拿 iframe，避免全局 querySelector（多 iframe / SSR 都更稳）
+  const iframe = previewRef.value?.getIframe?.() ?? null
   const body = iframe?.contentDocument?.body
   if (!body) {
     status.value = '长图导出失败：未找到预览节点'
@@ -214,7 +250,9 @@ function onShortcut(e: KeyboardEvent) {
   if (e.key.toLowerCase() === 's' && !e.shiftKey) {
     e.preventDefault()
     if (activeDraftId.value) {
-      updateDraft(activeDraftId.value, { body: md.value })
+      // 立即 flush 防抖，保证 Ctrl+S 的语义是"现在就写盘"
+      pendingDraftBody = md.value
+      flushDraftSave()
       status.value = '已保存'
       pingStatus(1000)
     }
@@ -262,6 +300,7 @@ function onShortcut(e: KeyboardEvent) {
       @update:theme-id="baseThemeId = $event"
       @copy="handleCopy"
       @clear="handleClear"
+      @load-sample="handleLoadSample"
       @toggle-drafts="ui.draftsOpen = !ui.draftsOpen"
       @toggle-templates="ui.templatesOpen = !ui.templatesOpen"
       @toggle-customizer="ui.customizerOpen = !ui.customizerOpen"
@@ -280,7 +319,7 @@ function onShortcut(e: KeyboardEvent) {
         <Editor ref="editorRef" v-model="md" />
       </section>
       <section class="pane pane-preview">
-        <Preview :html="rendered.html" />
+        <Preview ref="previewRef" :html="rendered.html" />
       </section>
       <TemplateMarket
         v-if="ui.templatesOpen"

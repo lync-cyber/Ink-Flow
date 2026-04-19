@@ -14,6 +14,7 @@ const emit = defineEmits<{
   (e: 'toggleDrafts'): void
   (e: 'toggleTemplates'): void
   (e: 'toggleCustomizer'): void
+  (e: 'loadSample'): void
   (e: 'exportHtml'): void
   (e: 'exportMd'): void
   (e: 'exportImage'): void
@@ -46,6 +47,11 @@ const emit = defineEmits<{
     </div>
 
     <div class="actions">
+      <button
+        class="btn btn-ghost"
+        @click="emit('loadSample')"
+        title="恢复为当前主题的示例正文"
+      >示例</button>
       <button class="btn btn-ghost" @click="emit('clear')" title="清空正文">清空</button>
       <button class="btn btn-primary" @click="emit('copy')" title="复制到剪贴板 (Ctrl/⌘+K)">一键复制</button>
     </div>

@@ -154,3 +154,29 @@ describe('themeCSS font-family 守卫', () => {
     expect(() => generateThemeCSS(bad)).toThrowError(ThemeAuthoringError)
   })
 })
+
+describe('themeCSS display:flex 守卫', () => {
+  it('任一 CSSObject 声明 display:flex → 抛 ThemeAuthoringError（微信粘贴后会被剥）', () => {
+    const bad = cloneTheme('bad-flex', (base) => {
+      ;(base.elements.p as Record<string, string>)['display'] = 'flex'
+      return base
+    })
+    expect(() => generateThemeCSS(bad)).toThrowError(ThemeAuthoringError)
+  })
+
+  it('display:inline-flex 同样被拒', () => {
+    const bad = cloneTheme('bad-inline-flex', (base) => {
+      ;(base.elements.p as Record<string, string>)['display'] = 'inline-flex'
+      return base
+    })
+    expect(() => generateThemeCSS(bad)).toThrowError(ThemeAuthoringError)
+  })
+
+  it('display:table-cell 允许（compare 容器等高布局依赖这条）', () => {
+    const ok = cloneTheme('ok-table-cell', (base) => {
+      ;(base.containers.compare as Record<string, string>)['display'] = 'table'
+      return base
+    })
+    expect(() => generateThemeCSS(ok)).not.toThrow()
+  })
+})

@@ -92,11 +92,14 @@ describe('compare · pros · cons 嵌套', () => {
     expect(out).toContain('缺B')
   })
 
-  it('列使用 inline-block 而非 flex（关键布局不靠 flex）', () => {
+  it('两列使用 display:table-cell 保证等高（且不走 flex）', () => {
     const src =
       ':::: compare\n::: pros\nA\n:::\n::: cons\nB\n:::\n::::\n'
     const out = run(src)
-    expect(out).toMatch(/display:\s*inline-block/)
+    // 外层 table + 内列 table-cell：微信粘贴后保留、两列内容长短不一时等高
+    expect(out).toMatch(/container-compare[^>]*display:\s*table/)
+    expect(out).toMatch(/container-pros[^>]*display:\s*table-cell/)
+    expect(out).toMatch(/container-cons[^>]*display:\s*table-cell/)
     expect(out).not.toMatch(/display:\s*flex/)
   })
 })

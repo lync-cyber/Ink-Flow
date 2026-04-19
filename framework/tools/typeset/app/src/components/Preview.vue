@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{ html: string }>()
+
+const iframeEl = ref<HTMLIFrameElement | null>(null)
+
+/** 暴露 iframe 元素给父组件（长图导出等场景需要访问 iframe.contentDocument） */
+function getIframe(): HTMLIFrameElement | null {
+  return iframeEl.value
+}
+
+defineExpose({ getIframe })
 
 /**
  * 375px 移动端保真预览
@@ -60,6 +69,7 @@ const srcdoc = computed(() => {
   <div class="preview-shell">
     <div class="preview-meta">375px · 移动端保真预览</div>
     <iframe
+      ref="iframeEl"
       class="preview-frame wx-md-preview"
       :srcdoc="srcdoc"
       sandbox="allow-same-origin"

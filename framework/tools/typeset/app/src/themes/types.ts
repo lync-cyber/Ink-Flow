@@ -116,6 +116,9 @@ export interface ThemeTemplates {
   authorBar?: string
   footerCTA?: string
   recommend?: string
+  compare?: string
+  steps?: string
+  tip?: string
 }
 
 export interface ThemeInline {

@@ -44,5 +44,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['tests/**/*.spec.ts'],
+    // Node 24+ 的原生退化 localStorage 会影子掉 jsdom 的实现；setup 里强制替换
+    setupFiles: ['tests/setup.ts'],
   },
 })

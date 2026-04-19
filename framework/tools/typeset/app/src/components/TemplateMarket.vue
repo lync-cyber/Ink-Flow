@@ -18,6 +18,9 @@ const templates = computed(() => {
   return [
     { id: 'cover', label: '封面卡', md: t.cover },
     { id: 'authorBar', label: '作者栏', md: t.authorBar },
+    { id: 'tip', label: '小贴士', md: t.tip },
+    { id: 'compare', label: '对比两列', md: t.compare },
+    { id: 'steps', label: '步骤流程', md: t.steps },
     { id: 'footerCTA', label: '文末引导', md: t.footerCTA },
     { id: 'recommend', label: '推荐阅读', md: t.recommend },
   ].filter((x): x is { id: string; label: string; md: string } => typeof x.md === 'string')

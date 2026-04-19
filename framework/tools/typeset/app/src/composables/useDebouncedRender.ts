@@ -66,12 +66,15 @@ export function useDebouncedRender(
     runRender(source.value)
   }
 
+  // shallow watch：source 是 computed，依赖变更时整个引用会换；
+  // 没必要 deep 遍历 theme.tokens / assets / containers 的整棵树——tokens 内部是不可变的
+  // （主题切换会整体替换），每次击键都深度比对是纯浪费。
   watch(
     source,
     (val) => {
       schedule(val)
     },
-    { deep: true, immediate },
+    { immediate },
   )
 
   onBeforeUnmount(() => {

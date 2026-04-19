@@ -8,13 +8,15 @@
  */
 
 import http from 'node:http'
-import { readFileSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { exec } from 'node:child_process'
+import { exec, spawnSync } from 'node:child_process'
 
 const HERE = fileURLToPath(new URL('.', import.meta.url))
-const DIST = resolve(HERE, 'app', 'dist')
+const APP = resolve(HERE, 'app')
+const DIST = resolve(APP, 'dist')
+const SRC = resolve(APP, 'src')
 const HOST = '127.0.0.1'
 const PORT = Number(process.env.WX_MD_PORT ?? 7788)
 
@@ -40,6 +42,70 @@ if (!existsSync(DIST)) {
   console.error('[wx-md] 请先运行：cd framework/tools/typeset/app && npm install && npm run build')
   process.exit(1)
 }
+
+// ---------------------------------------------------------------------------
+// 过期产物检测：源码 mtime 比 dist/index.html 新 → 自动重建
+//
+// 为什么放在 serve.mjs 而不是 launcher.{bat,command}：
+//   两个 launcher 脚本首次构建后只看 "dist/index.html 是否存在"，
+//   升级框架或 git pull 后源码变了但 dist 存在，会一直跑陈旧产物。
+//   过期检测写在 Node 里两端共用，不必维护两份 shell 逻辑。
+//
+// 开关：环境变量 WX_MD_SKIP_REBUILD=1 可跳过（调试/离线场景用）
+// ---------------------------------------------------------------------------
+function latestMtime(dir) {
+  let max = 0
+  const stack = [dir]
+  while (stack.length) {
+    const cur = stack.pop()
+    let stat
+    try { stat = statSync(cur) } catch { continue }
+    if (stat.isDirectory()) {
+      let entries
+      try { entries = readdirSync(cur) } catch { continue }
+      for (const name of entries) {
+        // 跳过 node_modules / dist 自身
+        if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue
+        stack.push(join(cur, name))
+      }
+    } else if (stat.isFile()) {
+      if (stat.mtimeMs > max) max = stat.mtimeMs
+    }
+  }
+  return max
+}
+
+function maybeRebuild() {
+  if (process.env.WX_MD_SKIP_REBUILD === '1') return
+  const distStamp = resolve(DIST, 'index.html')
+  if (!existsSync(distStamp)) return // 首次：launcher 已经构建过，或即将
+  const distMtime = statSync(distStamp).mtimeMs
+  const srcMtime = Math.max(
+    latestMtime(SRC),
+    fileMtime(resolve(APP, 'package.json')),
+    fileMtime(resolve(APP, 'vite.config.ts')),
+    fileMtime(resolve(APP, 'index.html')),
+    fileMtime(resolve(APP, 'tsconfig.json')),
+  )
+  if (srcMtime <= distMtime) return
+  console.log('[wx-md] 检测到源码更新，正在重建（npm run build）…')
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+  const result = spawnSync(npmCmd, ['run', 'build'], {
+    cwd: APP,
+    stdio: 'inherit',
+  })
+  if (result.status !== 0) {
+    console.error('[wx-md] 重建失败。保留现有 dist/ 继续启动；手动修复后重启即可。')
+  } else {
+    console.log('[wx-md] 重建完成。')
+  }
+}
+
+function fileMtime(p) {
+  try { return statSync(p).mtimeMs } catch { return 0 }
+}
+
+maybeRebuild()
 
 function safeResolve(urlPath) {
   const clean = decodeURIComponent(urlPath.split('?')[0].split('#')[0])

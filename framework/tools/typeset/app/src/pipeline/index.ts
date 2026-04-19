@@ -34,12 +34,21 @@ const ROOT_CLASS = 'markdown-body'
  *
  * 容器渲染器在 createMarkdown 的闭包里绑定了 theme 引用，
  * 因此主题切换必须换新实例。同 theme 复用——避免每次击键重建插件链。
+ *
+ * LRU（MAX=8）：自定义配色 apply 一次就产出 `${base.id}--custom` 这样的新 id，
+ * 无上限会随操作堆积。8 个容量对"4 套基础 + 数次自定义"足够周转。
  */
+const MD_CACHE_MAX = 8
 const mdCache = new Map<string, MarkdownIt>()
 
 function getMarkdown(theme: Theme): MarkdownIt {
   const cached = mdCache.get(theme.id)
-  if (cached) return cached
+  if (cached) {
+    // LRU 更新：重新插入到末尾
+    mdCache.delete(theme.id)
+    mdCache.set(theme.id, cached)
+    return cached
+  }
   const md = createMarkdown({ theme })
   md.options.highlight = (code: string, lang: string) => {
     const { html, language } = highlightCode(code, lang)
@@ -47,6 +56,11 @@ function getMarkdown(theme: Theme): MarkdownIt {
     return `<pre><code${langClass}>${html}</code></pre>`
   }
   mdCache.set(theme.id, md)
+  // 超出容量淘汰最老（Map 迭代序 = 插入序）
+  if (mdCache.size > MD_CACHE_MAX) {
+    const oldest = mdCache.keys().next().value
+    if (oldest !== undefined) mdCache.delete(oldest)
+  }
   return md
 }
 
