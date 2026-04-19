@@ -12,6 +12,21 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>()
 const host = ref<HTMLDivElement | null>(null)
 let view: EditorView | null = null
 
+/** 在当前光标处插入一段文本（替换选区）；父组件通过 ref 调用 */
+function insertAtCursor(text: string): void {
+  if (!view) return
+  const { from, to } = view.state.selection.main
+  const needsLeadingNewline = from > 0 && view.state.doc.sliceString(Math.max(0, from - 1), from) !== '\n'
+  const insert = (needsLeadingNewline ? '\n' : '') + text + (text.endsWith('\n') ? '' : '\n')
+  view.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: from + insert.length },
+  })
+  view.focus()
+}
+
+defineExpose({ insertAtCursor })
+
 function createView(doc: string) {
   if (!host.value) return
   const state = EditorState.create({

@@ -192,11 +192,11 @@ describe('applyWxPatches · 顺序 & 幂等', () => {
     expect(twice).toBe(once)
   })
 
-  it('opts.svgWhiteBg 默认关，关就不改 SVG 里的白', () => {
+  it('opts.svgWhiteBg 默认开（兜底 #fff→#fefefe），显式 false 可关', () => {
     const input = '<svg><rect fill="#fff"/></svg>'
     const def = applyWxPatches(input)
-    expect(def).toMatch(/fill="#fff"/)
-    const on = applyWxPatches(input, { svgWhiteBg: true })
-    expect(on).toMatch(/fill="#fefefe"/)
+    expect(def).toMatch(/fill="#fefefe"/)
+    const off = applyWxPatches(input, { svgWhiteBg: false })
+    expect(off).toMatch(/fill="#fff"/)
   })
 })

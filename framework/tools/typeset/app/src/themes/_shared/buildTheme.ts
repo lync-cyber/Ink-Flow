@@ -42,7 +42,7 @@ export interface BuildThemeOptions {
   code?: CSSObject
 }
 
-function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObject): ThemeElements {
+export function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObject): ThemeElements {
   const { colors, typography } = tokens
   return {
     h1: {
@@ -149,7 +149,7 @@ function baseElements(tokens: ThemeTokens, pre?: CSSObject, code?: CSSObject): T
   }
 }
 
-function baseContainers(tokens: ThemeTokens): ThemeContainers {
+export function baseContainers(tokens: ThemeTokens): ThemeContainers {
   return {
     intro: {
       'background-color': tokens.colors.bgSoft,
@@ -204,7 +204,7 @@ function baseContainers(tokens: ThemeTokens): ThemeContainers {
   }
 }
 
-function baseInline(tokens: ThemeTokens): ThemeInline {
+export function baseInline(tokens: ThemeTokens): ThemeInline {
   return {
     highlight: {
       'background-color': tokens.colors.accent,

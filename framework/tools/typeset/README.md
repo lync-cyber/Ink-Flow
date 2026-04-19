@@ -10,19 +10,17 @@
 
 ## 当前开发进度
 
-实现了 **Step 1**（端到端最小链路）：
+- [x] **Step 1** 端到端最小链路 · Vite + Vue 3 + TS + markdown-it + juice/client
+- [x] **Step 2** 预览保真 & 防抖渲染
+- [x] **Step 3** 兼容性补丁层（wxPatch · id/font-family/forbidden tags/SVG 白底替换…）
+- [x] **Step 4** 容器扩展语法（19 个容器 + 行内 highlight/wavy/emphasis）
+- [x] **Step 5** 主题设计系统升级（tokens + elements + containers + assets + templates + inline）
+- [x] **Step 6** 4 套内置风格包（tech-geek / life-aesthetic / business-finance / literary-humanism，
+      每套 ≥ 11 个专属 SVG 资产 + ≥ 3 个模板 + 全容器示例 md）
+- [x] **Step 7** 配色生成器 + 自定义面板（10 个预设 + chroma-js LCH 推导 + WCAG 对比度）
+- [x] **Step 8** 多草稿 CRUD + 模板市场 + 导出（HTML / Markdown / 长图懒加载）+ 快捷键
 
-- [x] Vite + Vue 3 + TS 骨架
-- [x] Markdown 管线：markdown-it → themeCSS → highlight.js → juice/client
-- [x] 375px iframe 预览
-- [x] Clipboard API + execCommand 降级
-- [x] localStorage 自动保存
-- [ ] Step 3 · 兼容性补丁层（wxPatch）
-- [ ] Step 4 · 容器扩展语法
-- [ ] Step 5 · 主题设计系统升级
-- [ ] Step 6 · 4 套内置风格包
-- [ ] Step 7 · 配色生成器 + 自定义面板
-- [ ] Step 8 · 草稿管理 + 模板市场 + 导出
+手动验收清单详见 [docs/TESTING.md](docs/TESTING.md)。
 
 ## 快速开始
 

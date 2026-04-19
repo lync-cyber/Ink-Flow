@@ -190,19 +190,21 @@ function iIcon(color: string): string {
 }
 
 function minusIcon(color: string): string {
+  // 横线色用 #fefefe 而非纯白：公众号把 SVG 光栅化时会把 fill=#fff 当做背景透明化
   return strip(`
     <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
       <circle cx="8" cy="8" r="6" fill="${color}"/>
-      <rect x="3" y="7" width="10" height="2" fill="#ffffff"/>
+      <rect x="3" y="7" width="10" height="2" fill="#fefefe"/>
     </svg>
   `)
 }
 
 function stepBadge(n: number, primary: string): string {
+  // font-size=15（平台下限 14，640→375 缩放后 ≈ 8.8px）；数字色 #fefefe 同上
   return strip(`
-    <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
+    <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
       <circle cx="12" cy="12" r="11" fill="${primary}"/>
-      <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">${n}</text>
+      <text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="#fefefe">${n}</text>
     </svg>
   `)
 }

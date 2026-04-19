@@ -1,10 +1,21 @@
 # 容器扩展语法
 
-> Step 1 已注册容器解析；完整渲染器与视觉样式在 Step 4/5/6 接入。
-> 此处记录语法规范与嵌套规则，供作者提前写作。
-
 基于 [markdown-it-container](https://github.com/markdown-it/markdown-it-container) 扩展。
 每种容器是公众号高频视觉元素，避免作者手写 HTML。
+
+## 通用语法
+
+```
+::: name 标题文字 key=value key2="带空格的值"
+任意 Markdown 正文
+:::
+```
+
+- **标题**：`name` 之后的首段空格分隔串（不含 `key=value`）会被当作 `info.title`，各容器按需使用（`author` 当作者名、`tip/warning/...` 当醒目标题、`intro/cover` 当标题行）
+- **键值对**：`key=value` 或 `key="v with space"`，在 open 行内声明；渲染器从 `ctx.attrs.key` 读取
+- **正文**：两行 fence 之间的内容仍是完整 Markdown（含列表、图片、强调、行内扩展等）
+
+> 常见错误：把键值对写在正文行（YAML 风格）。解析器**只**看 open 行的 `key=value`；正文里的 `name: X` 会作为普通段落渲染。
 
 ## 嵌套规则
 
@@ -29,16 +40,16 @@
 文章导语，独立视觉样式（浅色背景 + 左侧色条 + 小字号）
 :::
 
-::: author
-name: 张三
-avatar: https://...
-date: 2026-04-18
-tags: 技术, 前端
+::: author 张三 role=主笔
+发表于 2026-04-18
+
+一句简短的作者话
 :::
 
-::: cover
-src: https://...
-caption: 图片题注
+::: cover 本期封面
+![封面图](https://placehold.co/1200x630)
+
+_一句描述_
 :::
 ```
 
@@ -99,11 +110,14 @@ caption: 图片题注
 ## 章节装饰类
 
 ```
-::: divider flower
+::: divider variant=flower
 :::
+```
 
-（variant：flower / wave / dots / line）
+`variant` 可选 `wave` / `dots` / `flower` / `line`（默认 `line`）。
+视觉 SVG 来自 `theme.assets.dividerWave/Dots/Flower`，主题未提供时回退到内置简版。
 
+```
 ::: section-title 第一章
 章节大标题，带装饰 SVG
 :::
@@ -112,34 +126,33 @@ caption: 图片题注
 ## 文末引导类
 
 ```
-::: footer-cta
-关注公众号，获取更多内容
+::: footer-cta 觉得有用？ cta=关注我
+一句引导文案
 :::
 
-::: recommend
-- title: 往期推荐 1
-  url: https://...
-  cover: https://...
+::: recommend 推荐阅读
+- [文章 A](https://...)
+- [文章 B](https://...)
 :::
 
-::: qrcode
-src: https://...
-text: 扫码关注
+::: qrcode 扫码关注
+![二维码](https://...)
 :::
 ```
 
 ## 媒体类
 
 ```
-::: mpvoice
-name: 音频标题
-note: 请在公众号后台从素材库插入
+::: mpvoice 标题占位
+微信 <mpvoice> 只能在公众号后台从素材库插入，粘贴富文本无法保留；此容器渲染为占位提示卡。
 :::
-（渲染为占位卡 + 提示；微信 <mpvoice> 只能后台插入）
 
-::: mpvideo
-vid: wxv_xxx         # 官方视频占位 + 提示
-qqvid: v326875u4ek   # 可选：腾讯视频，直接渲染 iframe
+::: mpvideo vid=wxv_xxx
+官方视频同上；`vid=` 参数仅作提示。
+:::
+
+::: mpvideo qqvid=v326875u4ek
+腾讯视频：直接渲染 v.qq.com iframe。
 :::
 ```
 
@@ -148,5 +161,5 @@ qqvid: v326875u4ek   # 可选：腾讯视频，直接渲染 iframe
 - `==高亮文字==` → 荧光笔样式（markdown-it-mark）
 - `~~删除线~~` → GFM 原生
 - `++插入++` → markdown-it-ins
-- `[.着重.]` → 自定义着重号（Step 4）
-- `[~波浪~]` → 自定义波浪下划线（Step 4）
+- `[.着重.]` → 自定义着重号
+- `[~波浪~]` → 自定义波浪下划线

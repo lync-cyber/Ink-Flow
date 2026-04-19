@@ -5,6 +5,7 @@
  */
 
 import type { Theme, CSSObject } from '../types'
+import { commonTemplates } from '../_shared/defaultTemplates'
 
 const tokens = {
   colors: {
@@ -323,17 +324,19 @@ const svgInfoIcon = SVG(`
   </svg>
 `)
 
+// 横线用 #fefefe，规避公众号 SVG→PNG 把 #fff 透明化
 const svgDangerIcon = SVG(`
   <svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px">
     <circle cx="8" cy="8" r="6" fill="${tokens.colors.status.danger.accent}"/>
-    <rect x="3" y="7" width="10" height="2" fill="#ffffff"/>
+    <rect x="3" y="7" width="10" height="2" fill="#fefefe"/>
   </svg>
 `)
 
+// font-size=15（平台下限 14）；数字色用 #fefefe 规避公众号 SVG→PNG 把纯白变透明
 const svgStepBadge = (n: number) => SVG(`
-  <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
+  <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:8px">
     <circle cx="12" cy="12" r="11" fill="${tokens.colors.primary}"/>
-    <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">${n}</text>
+    <text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="#fefefe">${n}</text>
   </svg>
 `)
 
@@ -359,6 +362,6 @@ export const defaultTheme: Theme = {
     dangerIcon: svgDangerIcon,
     stepBadge: svgStepBadge,
   },
-  templates: {},
+  templates: commonTemplates,
   inline,
 }

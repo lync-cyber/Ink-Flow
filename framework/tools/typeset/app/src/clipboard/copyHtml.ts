@@ -25,9 +25,14 @@ export async function copyHtmlToClipboard(html: string, plain: string): Promise<
     typeof ClipboardItem !== 'undefined'
   ) {
     try {
+      // Safari 要求 ClipboardItem 的 value 是 Blob 或 Promise<Blob>，且构造必须处在用户
+      // 手势同步栈顶。传 Promise.resolve(Blob) 即可让 Safari 认识"异步准备好后写入"的语义，
+      // 而不是把异步 await 之后的 new Blob 误判为越过手势窗口。
+      const htmlBlob = new Blob([html], { type: 'text/html' })
+      const plainBlob = new Blob([plain], { type: 'text/plain' })
       const item = new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([plain], { type: 'text/plain' }),
+        'text/html': Promise.resolve(htmlBlob),
+        'text/plain': Promise.resolve(plainBlob),
       })
       await navigator.clipboard.write([item])
       return { ok: true, mode: 'clipboard-api' }

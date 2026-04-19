@@ -48,16 +48,21 @@ export const prosContainer: ContainerRenderer = {
       `<section class="container-pros__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
     )
   },
-  // 在 cons 之前插入 gutter：通过 close 追加尾部 gutter；pros 之后紧跟 cons 时会产生一个 gutter
-  close: `</section><span style="${GUTTER_STYLE}"></span>\n`,
+  close: '</section>\n',
 }
 
+/**
+ * cons 的 open 里预插 gutter：这样只有当 cons 实际跟在 pros 后面时才出现分隔，
+ * 独立使用 `::: pros` 时尾部不会出现孤立间隙（原先把 gutter 挂在 pros.close 上
+ * 会导致独立 pros 也带一条 4% 空白条）。
+ */
 export const consContainer: ContainerRenderer = {
   open: (ctx) => {
     const title = ctx.info.trim() || '缺点'
     const baseSize = ctx.tokens.typography.baseSize
     const color = ctx.tokens.colors.status.danger.accent
     return (
+      `<span style="${GUTTER_STYLE}"></span>` +
       `<section class="container-cons" style="${colStyle(ctx)};font-size:${baseSize}px">` +
       `<section class="container-cons__title" style="font-weight:700;color:${color};margin-bottom:8px">${escapeInner(title)}</section>\n`
     )

@@ -60,7 +60,7 @@ const srcdoc = computed(() => {
   <div class="preview-shell">
     <div class="preview-meta">375px · 移动端保真预览</div>
     <iframe
-      class="preview-frame"
+      class="preview-frame wx-md-preview"
       :srcdoc="srcdoc"
       sandbox="allow-same-origin"
       title="wx-md 预览"

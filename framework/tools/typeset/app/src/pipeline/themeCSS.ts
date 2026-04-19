@@ -13,17 +13,42 @@ const ROOT_CLASS = 'markdown-body'
 
 type Selector = string
 
+/**
+ * 与 `.claude/rules/data/platform-limits.yaml` 的 forbidden_css 对齐：
+ * 主题作者触碰任一条即 throw，让问题在开发阶段立刻暴露而不是粘贴后失效。
+ */
+const FORBIDDEN_PROPS = ['font-family', 'fontfamily', 'position', 'float']
+const FORBIDDEN_VALUE_PATTERNS: Array<[RegExp, string]> = [
+  [/-webkit-/i, '-webkit- 前缀在公众号会被剥离'],
+  [/@media/i, '@media 查询会被公众号剥离'],
+  [/@keyframes/i, '@keyframes 动画不被公众号支持'],
+  [/:hover/i, ':hover 伪类粘贴后无效'],
+  [/:active/i, ':active 伪类粘贴后无效'],
+]
+
+function assertSafeProp(prop: string, value: string, path: string): void {
+  const lower = prop.toLowerCase()
+  if (FORBIDDEN_PROPS.includes(lower)) {
+    throw new ThemeAuthoringError(
+      `[themeCSS] 主题在 ${path} 声明了 \`${prop}\`，违反微信平台约束。请移除。`,
+    )
+  }
+  for (const [re, reason] of FORBIDDEN_VALUE_PATTERNS) {
+    if (re.test(value)) {
+      throw new ThemeAuthoringError(
+        `[themeCSS] 主题在 ${path} 的值里命中禁用模式（${reason}）：\`${value}\`。请移除。`,
+      )
+    }
+  }
+}
+
 function toCssDecl(obj: CSSObject, path: string): string {
   const decls: string[] = []
   for (const [key, rawValue] of Object.entries(obj)) {
     const prop = key.trim()
-    if (prop.toLowerCase() === 'font-family' || prop.toLowerCase() === 'fontfamily') {
-      throw new ThemeAuthoringError(
-        `[themeCSS] 主题在 ${path} 声明了 font-family，违反微信平台约束（客户端会用系统字体覆盖）。请移除。`,
-      )
-    }
     const value = typeof rawValue === 'number' ? `${rawValue}px` : String(rawValue).trim()
     if (!value) continue
+    assertSafeProp(prop, value, path)
     decls.push(`  ${prop}: ${value};`)
   }
   return decls.join('\n')

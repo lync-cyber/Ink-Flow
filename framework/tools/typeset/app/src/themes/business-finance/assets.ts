@@ -139,13 +139,14 @@ export function businessFinanceAssets(p: Palette): ThemeAssets {
 
   // ---------- 步骤徽章：正方形 + 大号数字 ---------- //
   // viewBox 24×24，渲染尺寸 24×24 等比；font-size=15 在公众号光栅化后 ≥ 14px；
-  // 数字色用 textInverse，保证红底 + 白字对比度 > 4.5（WCAG AA）。
+  // 数字色用 "#fefefe" 近白，避开公众号 SVG→PNG 把纯白转透明的问题
+  // （详见 wxPatch.patchSvgWhiteBg 的背景说明）。
   const stepBadge = (n: number) => strip(`
     <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg"
          style="display:inline-block;vertical-align:middle;margin-right:8px">
       <rect x="1" y="1" width="22" height="22" fill="${p.primary}"/>
       <rect x="1" y="20" width="22" height="3" fill="${p.accent}"/>
-      <text x="12" y="16" text-anchor="middle" font-size="15" font-weight="700" fill="${p.textInverse}">${n}</text>
+      <text x="12" y="16" text-anchor="middle" font-size="15" font-weight="700" fill="#fefefe">${n}</text>
     </svg>
   `)
 

@@ -25,6 +25,10 @@ import { patchFlexToFallback } from './patchFlexToFallback'
 import { patchSvgWhiteBg } from './patchSvgWhiteBg'
 
 export interface WxPatchOptions {
+  /**
+   * SVG 纯白填充替换为 #fefefe（规避公众号把 #fff 光栅化为透明的问题）。
+   * 默认开启：主题作者即便漏掉也能兜住；显式传 false 可关闭（如主题预览纸需要纯白对比）。
+   */
   svgWhiteBg?: boolean
 }
 
@@ -37,7 +41,7 @@ export function applyWxPatches(html: string, opts: WxPatchOptions = {}): string 
   out = patchSvgUrlQuotes(out)
   out = patchSvgIds(out)
   out = patchFlexToFallback(out)
-  if (opts.svgWhiteBg) out = patchSvgWhiteBg(out)
+  if (opts.svgWhiteBg !== false) out = patchSvgWhiteBg(out)
   return out
 }
 
