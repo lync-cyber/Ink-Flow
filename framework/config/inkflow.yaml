@@ -14,6 +14,7 @@ domains:
 model_allocation:
   orchestrator: opus
   researcher: sonnet
+  atomizer: sonnet      # 抽取 + 分类，不需 opus 判断
   outliner: opus
   writer: opus
   illustrator: sonnet
@@ -35,6 +36,8 @@ defaults:
   cover_style: auto
   style_profile: default
   opening_style: auto
+  target_platforms: [wechat]       # 多平台分发：brief 必填；默认仅 wechat
+  primary_platform: wechat         # 决定 research 深度基准；必须 ∈ target_platforms
 
 # ============================================================
 # 工作流阶段 — 既是执行顺序，也是合约
@@ -66,47 +69,80 @@ stages:
       required_patterns: ["\\[来源\\]\\(http"]
       forbidden_patterns: ["TODO", "待补充"]
 
+  # ---- 内容银行：分叉前的最后一次"平台无关"统一产物 ----
+  - name: atoms
+    agent: atomizer
+    requires: [research]
+    skip_if: "brief.skip_research == true"        # 无 research 就无法原子化
+    output: "content/articles/{slug}/intermediate/02-atoms/index.md"
+    individual_outputs:
+      - "content/articles/{slug}/intermediate/02-atoms/claims.md"
+      - "content/articles/{slug}/intermediate/02-atoms/evidence-data.md"
+      - "content/articles/{slug}/intermediate/02-atoms/evidence-code.md"
+      - "content/articles/{slug}/intermediate/02-atoms/cases.md"
+      - "content/articles/{slug}/intermediate/02-atoms/analogies.md"
+      - "content/articles/{slug}/intermediate/02-atoms/quotes.md"
+      - "content/articles/{slug}/intermediate/02-atoms/pitfalls.md"
+      - "content/articles/{slug}/intermediate/02-atoms/comparison.md"
+      - "content/articles/{slug}/intermediate/02-atoms/actions.md"
+    validation:
+      required_frontmatter_per_atom: [id, type, weight, platforms, source_section, length_chars]
+      min_primary_claims: 1
+      min_evidence_total: 3         # evidence-data + evidence-code + cases 合计
+      forbidden_patterns: ["TODO", "待补充"]
+
+  # ---- 分叉点：outline 起每平台独立产出 ----
   - name: outline
     agent: outliner
-    checkpoint: true
-    requires: [brief]
-    output: "content/articles/{slug}/intermediate/03-outline-structure.md"
+    per_platform: true               # fan-out from brief.target_platforms
+    parallel: true
+    checkpoint: true                 # CP1 合并评审 N 份 outline
+    requires: [atoms, brief]
+    output: "content/articles/{slug}/intermediate/03-outline/{platform}.md"
     validation:
-      required_sections: ["总览", "视觉签名"]
-      required_per_section: ["论点", "关键细节", "预估字数", "视觉断点"]
+      required_sections: ["总览", "原子引用索引", "视觉签名"]
+      required_per_section: ["论点", "引用的 atoms", "预估字数"]
+      required_patterns: ['atom:\s*[a-z-]+-\d{2}']   # 至少引用 1 个 atom id
       word_count: { min: 300, max: 2000 }
       forbidden_patterns: ["TODO"]
 
   - name: draft
     agent: writer
+    per_platform: true
+    parallel: true
     requires: [outline]
-    output: "content/articles/{slug}/intermediate/04a-draft/merged-draft.md"
-    section_output: "content/articles/{slug}/intermediate/04a-draft/section-{N}.md"
+    output: "content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md"
+    section_output: "content/articles/{slug}/intermediate/04a-draft/{platform}/section-{N}.md"
     validation:
       section_tolerance: 0.20
-      merged_word_count: { min: 800, max: 5000 }
+      merged_word_count_from: "columns.{column}.platforms.{platform}.length_limit"
       forbidden_patterns: ["TODO"]
       forbidden_phrases_from: .claude/rules/data/forbidden-phrases.yaml
+      platform_forbidden_from: "columns.{column}.platforms.{platform}.tone.rules"
 
   - name: figures
     agent: illustrator
+    per_platform: true
+    parallel: true
     skip_if: "brief.no_figures == true"
     requires: [outline]
     parallel_with: [draft]
-    output: "content/articles/{slug}/intermediate/04b-figure/figure-index.md"
+    output: "content/articles/{slug}/intermediate/04b-figure/{platform}/figure-index.md"
     individual_output:
-      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.svg"   # SVG 源
-      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.html"  # HTML 源
-      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.md"    # 文生图建议
-      - "content/articles/{slug}/intermediate/04b-figure/fig-{N}.png"   # 转换产物
+      - "content/articles/{slug}/intermediate/04b-figure/{platform}/fig-{N}.svg"
+      - "content/articles/{slug}/intermediate/04b-figure/{platform}/fig-{N}.html"
+      - "content/articles/{slug}/intermediate/04b-figure/{platform}/fig-{N}.md"
+      - "content/articles/{slug}/intermediate/04b-figure/{platform}/fig-{N}.png"
     validation:
       required_patterns: ["image: fig-|image: pending-user"]
       forbidden_patterns: ["```mermaid"]
 
   - name: audit
     agent: auditor
+    per_platform: true
+    parallel: true
     requires: [draft]
-    output: "content/articles/{slug}/review/05-audit-report.md"
+    output: "content/articles/{slug}/review/05-audit/{platform}.md"
     validation:
       required_sections: ["审校报告", "事实准确性", "论证完整性", "AI 味检测", "风格偏离", "句式问题", "传播性评估", "审校统计"]
       severity_levels: [高, 中, 低]
@@ -114,10 +150,12 @@ stages:
 
   - name: polish
     agent: polisher
-    checkpoint: true
+    per_platform: true
+    parallel: true
+    checkpoint: true                 # CP2 合并评审 N 份终稿
     requires: [audit]
-    output: "content/articles/{slug}/review/06-polish-trace.md"
-    final_output: "content/articles/{slug}/export/07-final-manuscript.md"
+    output: "content/articles/{slug}/review/06-polish/{platform}.md"
+    final_output: "content/articles/{slug}/export/07-final/{platform}.md"
     validation:
       required_sections: ["润色结果", "变更溯源表", "润色变更摘要"]
       forbidden_patterns: ["TODO", "待确认"]
@@ -125,18 +163,19 @@ stages:
       platform_checks:
         - type: css_safety
           source: .claude/rules/data/platform-limits.yaml
+          only_if: "platform == 'wechat'"
         - type: heading_level
           source: .claude/rules/data/platform-limits.yaml
         - type: image_width
           source: .claude/rules/data/platform-limits.yaml
+          only_if: "platform == 'wechat'"
 
   - name: publish
     agent: publisher
+    per_platform: true
+    parallel: true
     requires: [polish]
-    output: "content/articles/{slug}/export/08-wechat-publish.md"
-    additional_outputs:
-      - "content/articles/{slug}/export/08-plain-publish.md"
-      - "content/articles/{slug}/export/08-teaser-120chars.md"
+    output: "content/articles/{slug}/export/08-{platform}-publish.md"
     validation:
       required_patterns: ["^# "]
       forbidden_patterns:
@@ -145,12 +184,14 @@ stages:
         - "<!-- USER_FILL:"
         - '<img src="\.\./'
         - '<svg[^>]* id='
-        # P2 重构：publisher 产物必须是纯 GFM，:::容器在 typeset 阶段加入
+        # publisher 产物必须是纯 GFM，:::容器在 typeset 阶段加入
         - '^:::'
 
+  # ---- typeset 仅对 wechat 运行（其他平台无独立排版器） ----
   - name: typeset
     agent: typesetter
-    checkpoint: true               # CP3 从 publish 移到 typeset
+    checkpoint: true                 # CP3
+    run_if: "'wechat' in brief.target_platforms"
     requires: [publish]
     output: "content/articles/{slug}/intermediate/09-typeset-plan.md"
     additional_outputs:
@@ -159,7 +200,6 @@ stages:
       - "content/articles/{slug}/export/08-typeset/wechat/meta.json"
     validation:
       required_sections: ["主题", "签名元素", "Variant 组合", "组件库预设", "改写点索引"]
-      # 能力合规由 adapter CLI 的 `conform` 子命令负责（见 typesetter.md Step 4）
       platform_checks:
         - type: capability_conformance
           adapter_cli: framework/tools/_adapters/cli.py
@@ -170,12 +210,28 @@ stages:
 # ============================================================
 exports:
   - format: wechat_md
+    platform: wechat
     description: "Markdown Nice 适配格式"
     output: "content/articles/{slug}/export/08-wechat-publish.md"
+  - format: xiaohongshu_md
+    platform: xiaohongshu
+    description: "小红书短图文正文（≤500 字 + 话题标签）"
+    output: "content/articles/{slug}/export/08-xiaohongshu-publish.md"
+    word_limit: 500
+  - format: zhihu_md
+    platform: zhihu
+    description: "知乎回答/文章（辩证结构 + 完整代码）"
+    output: "content/articles/{slug}/export/08-zhihu-publish.md"
+  - format: juejin_md
+    platform: juejin
+    description: "掘金技术实战（代码优先 + 版本说明）"
+    output: "content/articles/{slug}/export/08-juejin-publish.md"
   - format: plain_md
-    description: "纯净 Markdown（知乎/掘金等）"
+    platform: any
+    description: "纯净 Markdown（兜底）"
     output: "content/articles/{slug}/export/08-plain-publish.md"
   - format: teaser
+    platform: any
     description: "短摘要版（朋友圈/社群分发）"
     output: "content/articles/{slug}/export/08-teaser-120chars.md"
     word_limit: 120

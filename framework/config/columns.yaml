@@ -54,6 +54,7 @@ columns:
         - "结论有立场：不说'具有一定前景'，说'调试时间可以减半'"
       voice: "客观但有判断力"
       interaction_hook: "你觉得这个方法在 X 场景下还能用吗？"
+    platforms_config: "framework/config/columns/academic.platforms.yaml"
 
   # ════════════════════════════════════════
   industry:
@@ -86,6 +87,7 @@ columns:
         - "写判断不写综述：'X 将被边缘化'，非'X 面临一定挑战'"
       voice: "有立场、不中立"
       interaction_hook: "你所在的团队开始用了吗？"
+    platforms_config: "framework/config/columns/industry.platforms.yaml"
 
   # ════════════════════════════════════════
   tech:
@@ -118,6 +120,9 @@ columns:
         - "避坑具体：不说'注意性能问题'，说'超过 1000 条数据会超时，改用 X'"
       voice: "实用、直接，像给同事讲经验"
       interaction_hook: "试完了来评论区说说效果？"
+    # 多平台适配细节（skeleton/tone/kpi/atom_selection/length_limit/figure_spec）
+    # 已按栏目拆到独立文件，渐进披露：agent 只在处理该栏目 + 需要平台差异时才加载
+    platforms_config: "framework/config/columns/tech.platforms.yaml"
 
   # ════════════════════════════════════════
   story:
@@ -150,6 +155,7 @@ columns:
         - "观点强硬：'X 不好'，而非'X 可能有一些局限性'"
       voice: "对话感，像给有经验的朋友聊天"
       interaction_hook: "你有没有过类似的经历？"
+    platforms_config: "framework/config/columns/story.platforms.yaml"
 
 # ============================================================
 # 开头策略（原 opening-crafting skill 内容）

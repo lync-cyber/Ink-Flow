@@ -1,0 +1,104 @@
+# ============================================================
+# academic 栏目 · 多平台适配层
+# ============================================================
+
+column: academic
+version: "1.0"
+
+platforms:
+
+  wechat:
+    skeleton:
+      - "一句话结论 [atom: claims.primary]       # 论文的核心判断"
+      - "问题背景 [atom: cases + analogies]"
+      - "核心方法 [atom: evidence-data + analogies]"
+      - "关键结果 [atom: evidence-data.hero + comparison]"
+      - "对工业界的启示 [atom: actions]"
+      - "收尾（要点表格 / 阅读原文）"
+    tone:
+      voice: "客观但有判断力"
+      rules:
+        - "禁止照搬论文摘要 → 改为「你的判断 + 数据证据」"
+        - "禁止单独列公式 → 改为「公式 + 一句类比解释」"
+        - "禁止'具有一定前景' → 改为量化判断（调试时间减半）"
+    kpi_targets:
+      completion_rate: 0.40
+      bookmark_rate: 0.05
+      share_rate: 0.03
+    atom_selection: [claims, evidence-data, analogies, comparison, actions]
+    length_limit: 1800
+    figure_spec:
+      aspect: "16:9 或 3:2"
+      formats: [svg, png]
+      benchmark_chart_required: true        # 必有 benchmark 对比图
+
+  xiaohongshu:
+    skeleton:
+      - "封面金句 [atom: quotes×1]                # 论文亮点一句话"
+      - "核心发现 [atom: claims.primary + evidence-data.hero]"
+      - "一句话解读 [atom: analogies×1-2]           # 用类比代替公式"
+      - "适合谁 [atom: actions×1]                   # 给谁启发"
+      - "话题标签"
+    tone:
+      voice: "学霸干货感、第二人称"
+      rules:
+        - "禁止原始公式 → 改为 emoji 流程图或类比"
+        - "禁止长段落 → 改为短句 + 分行"
+        - "禁止英文缩写无解释 → 改为缩写(中文展开) 首次出现必标"
+    kpi_targets:
+      save_rate: 0.10
+      follow_rate: 0.02
+    atom_selection: [quotes, claims, analogies, actions]
+    length_limit: 500
+    figure_spec:
+      aspect: "3:4 竖版"
+      formats: [png]
+      cover_required: true
+      style_hint: "论文封面 + 核心数字大字 + 极简图标"
+
+  zhihu:
+    skeleton:
+      - "结论先行 [atom: claims.primary]"
+      - "研究背景 [atom: cases + analogies]"
+      - "方法与结果 [atom: evidence-data + comparison + evidence-code]"
+      - "与已有工作的对比 [atom: comparison]       # 学术 SOTA 表格"
+      - "对工业界的启示 + 延伸问题 [atom: actions]"
+    tone:
+      voice: "严谨、可引用、不张扬"
+      rules:
+        - "禁止口语化 → 改为学术中性表述"
+        - "禁止单引来源 → 改为「[作者年份] 表明...」引用格式"
+        - "禁止结论无 benchmark → 改为附 SOTA 对比表"
+    kpi_targets:
+      upvote_rate: 0.10
+      collect_rate: 0.06
+    atom_selection: [claims, evidence-data, evidence-code, cases, analogies, comparison, actions]
+    length_limit: 4000
+    figure_spec:
+      aspect: "任意"
+      formats: [md, png]
+      inline_formula_ok: true        # 知乎支持 LaTeX
+
+  juejin:
+    # 学术前沿在掘金关注度低，仅生成"工业界实现要点"版
+    skeleton:
+      - "TL;DR [atom: claims.primary]"
+      - "论文解决的工程问题 [atom: cases]"
+      - "核心算法的工程实现 [atom: evidence-code]"
+      - "和现有库对比 [atom: comparison]"
+      - "复现环境与资源链接 [atom: actions]"
+    tone:
+      voice: "论文 → 工程实现，去学术味"
+      rules:
+        - "禁止原始数学证明 → 改为伪代码 + 参数表"
+        - "禁止无 GitHub 链接 → 必附开源实现"
+        - "禁止无运行环境 → 必附 Python/CUDA 版本"
+    kpi_targets:
+      like_rate: 0.04
+      bookmark_rate: 0.08
+    atom_selection: [claims, evidence-code, cases, comparison, actions]
+    length_limit: 2500
+    figure_spec:
+      aspect: "任意"
+      formats: [md, png]
+      inline_code_ok: true

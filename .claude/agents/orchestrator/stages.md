@@ -1,6 +1,9 @@
 # orchestrator / stages 模块
 
-## 阶段执行通用算法
+> 本模块处理**单播**阶段（单次 agent 调用即可完成）。  
+> 若 `stage.per_platform == true`，交给 `fanout.md` 处理，不走本模块。
+
+## 阶段执行通用算法（单播）
 
 从 `framework/config/inkflow.yaml` 的 stages 列表读取阶段定义；每阶段按顺序执行：
 
@@ -48,42 +51,51 @@ FOR each stage from current_stage to end:
      追加 content/retrospectives/runs/{run_id}.log.md。
 ```
 
-## Draft 分节循环（writer 专用）
+## Draft 分节循环（writer 专用 · 每平台内部）
+
+fanout.md 已把当前 stage 按 {platform} 分派给 writer。writer 在该平台内部仍按 section 逐段写：
 
 ```
 INIT:
-  - 读 03-outline-structure.md，计算 section 总数
-  - state.draft.sections = [{index:1,status:pending},...]
+  - 读 content/articles/{slug}/intermediate/03-outline/{platform}.md，计算 section 总数
+  - state.draft.{platform}.sections = [{index:1,status:pending},...]
 
 FOR each section:
   - completed 且文件存在 → SKIP
   - 读 section.depends_on_previous（默认 true）
   - false → 可与前序并行；true → 等前序完成，读其最后两段作为衔接
   - status=in_progress，started_at
-  - 调用 writer（writer 自行读 columns.yaml 对应栏目的 skeleton/tone；
+  - 调用 writer（writer 读 columns.{column}.platforms_config 子文件，
+    加载 platforms.{platform} 的 skeleton/tone/length_limit；
     首 section 再读 opening_strategies 对应策略）
-  - 输出 → content/articles/{slug}/intermediate/04a-draft/section-{NN}.md
-  - 校验（字数 ±20%、无 forbidden_patterns）
+  - 输出 → content/articles/{slug}/intermediate/04a-draft/{platform}/section-{NN}.md
+  - 校验（字数 ±20%、无 forbidden_patterns、无 platform tone 违规）
   - status=completed
 
-所有 section 完成 → 合并为 content/articles/{slug}/intermediate/04a-draft/merged-draft.md
+所有 section 完成 → 合并为 04a-draft/{platform}/merged-draft.md
 ```
 
-## Audit + Polish 子步骤
+## Audit + Polish 子步骤（per-platform）
+
+每个平台独立完成 audit→polish 闭环：
 
 ```
-auditor → review/05-audit-report.md（只审不改）
-polisher → review/06-polish-trace.md + export/07-final-manuscript.md（按 audit 修复）
+FOR each platform in brief.target_platforms:
+  auditor  → review/05-audit/{platform}.md（只审不改）
+  polisher → review/06-polish/{platform}.md + export/07-final/{platform}.md
 ```
 
-## Publish 子步骤
+`auditor` 读 `columns.{column}.platforms.{platform}.tone.rules` + `kpi_targets` 做平台专属审校。
+
+## Publish 子步骤（per-platform）
 
 ```
-1. 调用 publisher（允许使用 quality-linting skill）
-2. publisher 执行：格式校验 → 语法标准化 → 语义检查 → 多格式导出
-3. 生成运营元数据（摘要、关键词、封面变量）
-4. 按 framework/config/inkflow.yaml 的 exports 导出到 export/
-5. 进入 CP3（checkpoints.md）
+FOR each platform in brief.target_platforms:
+  1. publisher 被 fanout.md 派发，接受 {platform} 变量
+  2. 执行：lint --platform {platform} → 语法标准化 → 多格式导出
+  3. 输出 → export/08-{platform}-publish.md
+  4. 若 platform == wechat：生成 teaser（export/08-teaser-120chars.md 仅产 1 次）
+所有平台完成 → 进入 CP3（若含 wechat，随后触发 typeset）
 ```
 
 ## 校验规则参考

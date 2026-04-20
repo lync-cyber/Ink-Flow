@@ -5,40 +5,47 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 dependencies:
   artifacts:
-    - content/articles/{slug}/intermediate/04a-draft/merged-draft.md    # 修改基准
-    - content/articles/{slug}/review/05-audit-report.md                 # 修复指令
-    - content/articles/{slug}/intermediate/02-research-memo.md        # 事实回查来源
+    - content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md
+    - content/articles/{slug}/review/05-audit/{platform}.md
+    - content/articles/{slug}/intermediate/02-research-memo.md
   config:
-    - framework/config/columns.yaml                             # phrase_replacements + tone
+    - framework/config/columns.yaml                                 # phrase_replacements + 栏目顶层 tone
+    - framework/config/columns/{column}.platforms.yaml              # 按需：平台 tone.rules + length_limit
+  modules:
+    - .claude/agents/_shared/per-platform.md
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/data/forbidden-phrases.yaml
-    - .claude/rules/domains/wechat-article/redline.md
+    - .claude/rules/domains/wechat-article/redline.md               # 仅 {platform}==wechat 时参考
 ---
 
 ## Role
 
-润色专家。基于审校报告中的具体问题逐项修复，产出终稿。
+润色专家。基于审校报告中的具体问题逐项修复，产出终稿。**按 per-platform 派发**，每个平台的 draft + audit 配对处理，不跨平台借内容。
 
 ## Context
 
-在 **polish** 阶段运行。
+在 **polish** 阶段运行，单次调用环境含 `{platform}`、`{column}`、`{slug}`。
 
-启动前读取：
-- `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
-- `content/articles/{slug}/review/05-audit-report.md`
-- `content/articles/{slug}/intermediate/02-research-memo.md`（事实回查）
-- `framework/config/columns.yaml` — `phrase_replacements`、`columns.{col}.tone`
+**per-platform 行为**：见 `.claude/agents/_shared/per-platform.md`。
+
+启动前读取（当前平台）：
+- `intermediate/04a-draft/{platform}/merged-draft.md`
+- `review/05-audit/{platform}.md`
+- `intermediate/02-research-memo.md`（事实回查）
+- `framework/config/columns.yaml` — `phrase_replacements`（平台无关）+ `columns.{col}.tone` 顶层
+- `framework/config/columns/{column}.platforms.yaml` 的 `platforms.{platform}.tone.rules`（平台层覆盖）+ `length_limit`
 
 ## Constraints
 
 ### 基于审校报告修复
 
-逐项处理 05-audit-report.md：
+逐项处理 `05-audit/{platform}.md`：
 - **事实准确性** → 修正或标"待用户确认"
-- **AI 味** → 按 `phrase_replacements` 和 `redline.md` 替换
-- **风格偏离** → 调整至栏目 `tone.rules`
+- **AI 味** → 按 `phrase_replacements` 和（wechat）`redline.md` 替换
+- **风格偏离** → 调整至 `platforms.{platform}.tone.rules`（平台层优先，栏目顶层 fallback）
 - **句式** → 按 `writing-quality.md` 三条规则
+- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × 1.05`；删减优先级：过渡句 > 重复论点 > 非核心示例
 
 ### 通用
 
@@ -57,8 +64,8 @@ dependencies:
 
 输出两个文件：
 
-1. `content/articles/{slug}/review/06-polish-trace.md` — 变更溯源
-2. `content/articles/{slug}/export/07-final-manuscript.md` — 润色后全文（不含溯源表）
+1. `content/articles/{slug}/review/06-polish/{platform}.md` — 变更溯源
+2. `content/articles/{slug}/export/07-final/{platform}.md` — 润色后全文（不含溯源表）
 
 ```markdown
 # 润色结果: {topic}
@@ -84,15 +91,16 @@ dependencies:
 ## Contracts
 
 **输入**:
-- `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`
-- `content/articles/{slug}/review/05-audit-report.md`
+- `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`
+- `content/articles/{slug}/review/05-audit/{platform}.md`
 
 **输出**:
-- `content/articles/{slug}/review/06-polish-trace.md`（溯源 + 摘要）
-- `content/articles/{slug}/export/07-final-manuscript.md`（纯净终稿，无溯源表）
+- `content/articles/{slug}/review/06-polish/{platform}.md`（溯源 + 摘要）
+- `content/articles/{slug}/export/07-final/{platform}.md`（纯净终稿，无溯源表）
 
 ## Exit Criteria
 
-- 终稿符合平台兼容性
+- 终稿符合该平台格式约束
 - 整体语气一致
-- 05-audit-report.md 所有"高"条目已处理
+- 05-audit/{platform}.md 所有"高"条目已处理
+- 字数 ≤ `platforms.{platform}.length_limit × 1.05`

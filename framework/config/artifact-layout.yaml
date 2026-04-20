@@ -19,38 +19,68 @@
 #   08 publish (wechat/plain/teaser)  [CP3]
 # ============================================================
 
-version: "2.0"
+version: "2.1"
 
 root: "content/articles/{slug}"
+
+# 占位变量：
+#   {slug}      — 文章 slug
+#   {N}         — 序号（两位零填充）
+#   {ext}       — 文件扩展名
+#   {platform}  — 目标平台（brief.target_platforms 之一；wechat / xiaohongshu / zhihu / juejin）
 
 paths:
   # ---- 元数据 ----
   meta:           "content/articles/{slug}/_meta.yaml"
 
-  # ---- 中间产物 ----
+  # ---- 中间产物 · 平台无关 ----
   brief:          "content/articles/{slug}/intermediate/01-brief.md"
   research:       "content/articles/{slug}/intermediate/02-research-memo.md"
-  outline:        "content/articles/{slug}/intermediate/03-outline-structure.md"
-  draft_section:  "content/articles/{slug}/intermediate/04a-draft/section-{N}.md"
-  draft_merged:   "content/articles/{slug}/intermediate/04a-draft/merged-draft.md"
-  figure_item:    "content/articles/{slug}/intermediate/04b-figure/fig-{N}.{ext}"
-  figure_index:   "content/articles/{slug}/intermediate/04b-figure/figure-index.md"
 
-  # ---- 审校产物 ----
-  audit:          "content/articles/{slug}/review/05-audit-report.md"
-  polish_trace:   "content/articles/{slug}/review/06-polish-trace.md"
+  # atoms · 内容银行（分叉前最后一次统一产物）
+  atoms_index:    "content/articles/{slug}/intermediate/02-atoms/index.md"
+  atoms_item:     "content/articles/{slug}/intermediate/02-atoms/{type}.md"   # {type} ∈ 9 类
 
-  # ---- 最终产物（publish 阶段 · 平台无关） ----
-  final:          "content/articles/{slug}/export/07-final-manuscript.md"
-  wechat:         "content/articles/{slug}/export/08-wechat-publish.md"
-  plain:          "content/articles/{slug}/export/08-plain-publish.md"
-  teaser:         "content/articles/{slug}/export/08-teaser-120chars.md"
+  # ---- 中间产物 · 平台相关（outline 起每平台独立） ----
+  outline:        "content/articles/{slug}/intermediate/03-outline/{platform}.md"
+  draft_section:  "content/articles/{slug}/intermediate/04a-draft/{platform}/section-{N}.md"
+  draft_merged:   "content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md"
+  figure_item:    "content/articles/{slug}/intermediate/04b-figure/{platform}/fig-{N}.{ext}"
+  figure_index:   "content/articles/{slug}/intermediate/04b-figure/{platform}/figure-index.md"
 
-  # ---- 排版产物（typeset 阶段 · 平台相关） ----
+  # ---- 审校产物 · 平台相关 ----
+  audit:          "content/articles/{slug}/review/05-audit/{platform}.md"
+  polish_trace:   "content/articles/{slug}/review/06-polish/{platform}.md"
+
+  # ---- 最终产物 · 平台相关（polish + publish 阶段） ----
+  final:          "content/articles/{slug}/export/07-final/{platform}.md"
+  publish:        "content/articles/{slug}/export/08-{platform}-publish.md"
+  teaser:         "content/articles/{slug}/export/08-teaser-120chars.md"        # 平台无关的短摘要
+
+  # ---- 排版产物（typeset 阶段 · 仅 wechat 需要深度排版） ----
   typeset_plan:       "content/articles/{slug}/intermediate/09-typeset-plan.md"
   typeset_annotated:  "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
   typeset_render:     "content/articles/{slug}/export/08-typeset/wechat/render.html"
   typeset_meta:       "content/articles/{slug}/export/08-typeset/wechat/meta.json"
+
+# ---- Atoms 类型枚举（供 lint / orchestrator 读取）----
+atom_types:
+  - claims
+  - evidence-data
+  - evidence-code
+  - cases
+  - analogies
+  - quotes
+  - pitfalls
+  - comparison
+  - actions
+
+# ---- 平台白名单（brief.target_platforms 取值域）----
+platforms:
+  - wechat
+  - xiaohongshu
+  - zhihu
+  - juejin
 
 # ---- 运行状态 ----
 state_file:       "runtime/pipeline-states/{slug}.json"
@@ -61,3 +91,4 @@ naming:
   section_number_padding: 2      # section-01, section-02
   figure_number_padding: 2
   slug_style: kebab_or_pinyin
+  platform_whitelist: [wechat, xiaohongshu, zhihu, juejin]

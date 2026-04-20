@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """InkFlow Markdown Lint — 文章格式校验工具
 
-用法: python .claude/skills/quality-linting/scripts/lint.py <markdown-file> [--column <栏目名>] [--config <config.yaml>]
+用法: python .claude/skills/quality-linting/scripts/lint.py <markdown-file> \
+           [--column <栏目名>] [--platform <wechat|xiaohongshu|zhihu|juejin>] [--config <config.yaml>]
 
 数据来源：
-- .claude/skills/quality-linting/scripts/config.yaml       规则开关与严重级别
-- .claude/rules/data/*.yaml    禁用词、CSS 安全、排版阈值（单一事实来源）
+- .claude/skills/quality-linting/scripts/config.yaml       规则开关与严重级别（基础）
+- .claude/rules/data/*.yaml           禁用词、CSS 安全、排版阈值（单一事实来源）
+- framework/config/platform-lint-rules.yaml               平台差异规则（渐进披露）
+- framework/config/columns/{column}.platforms.yaml         length_limit 硬上限
+
+平台规则合并顺序（后者覆盖前者）：
+  DEFAULT_CONFIG → .claude/rules/data/*.yaml → config.yaml → platform-lint-rules.{platform}
 
 输出: JSON (stdout), 人类可读摘要 (stderr)
 退出码: 0=通过, 1=有 error, 2=仅 warning
 """
 
 import argparse
+import copy
 import json
 import re
 import sys
@@ -70,8 +77,13 @@ DEFAULT_CONFIG = {
 
 
 # 数据文件根目录（单一事实来源）
-# __file__ = .claude/skills/quality-linting/scripts/lint.py → parent×4 = 仓库根
-RULES_DATA_DIR = Path(__file__).resolve().parent.parent.parent.parent / ".claude" / "rules" / "data"
+# __file__ = .claude/skills/quality-linting/scripts/lint.py
+# parent^1 scripts → parent^2 quality-linting → parent^3 skills → parent^4 .claude → parent^5 仓库根
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
+RULES_DATA_DIR = REPO_ROOT / ".claude" / "rules" / "data"
+FRAMEWORK_CONFIG_DIR = REPO_ROOT / "framework" / "config"
+PLATFORM_RULES_FILE = FRAMEWORK_CONFIG_DIR / "platform-lint-rules.yaml"
+COLUMNS_DIR = FRAMEWORK_CONFIG_DIR / "columns"
 
 
 def _load_yaml(path: Path) -> dict:
@@ -115,13 +127,59 @@ def _merge_data_sources(config: dict) -> dict:
     return config
 
 
-def load_config(config_path: str | None) -> dict:
+def _merge_platform_rules(config: dict, platform: str) -> dict:
+    """按 platform 加载 framework/config/platform-lint-rules.yaml 并覆盖 config.rules。
+
+    渐进披露：只读取 platforms.{platform} 段，不一次性合并所有平台。
+    合并语义：平台段中 enabled/severity/阈值字段覆盖 config.rules 对应 key。
+    """
+    if not platform or not yaml or not PLATFORM_RULES_FILE.exists():
+        return config
+    platform_data = _load_yaml(PLATFORM_RULES_FILE)
+    if not platform_data:
+        return config
+    platforms_section = platform_data.get("platforms", {}) or {}
+    p_cfg = platforms_section.get(platform)
+    if p_cfg is None:
+        # 平台未配置 → 回退到 base 规则
+        p_cfg = platform_data.get("base", {}) or {}
+    rules = config.setdefault("rules", {})
+    for rule_name, rule_override in p_cfg.items():
+        if not isinstance(rule_override, dict):
+            continue
+        if rule_name not in rules:
+            rules[rule_name] = {}
+        # 深合并（单层足够，lint 规则无嵌套结构）
+        for k, v in rule_override.items():
+            rules[rule_name][k] = v
+    # 把整段 p_cfg 也存到 config["_platform"]，便于 length_limit_factor 等顶层字段访问
+    config["_platform"] = platform
+    config["_platform_cfg"] = p_cfg
+    return config
+
+
+def _load_platform_length_limit(column: str, platform: str) -> int | None:
+    """从 framework/config/columns/{column}.platforms.yaml 读 length_limit"""
+    if not column or not platform or not yaml:
+        return None
+    col_file = COLUMNS_DIR / f"{column}.platforms.yaml"
+    if not col_file.exists():
+        return None
+    data = _load_yaml(col_file)
+    p = (data.get("platforms", {}) or {}).get(platform, {}) or {}
+    return p.get("length_limit")
+
+
+def load_config(config_path: str | None, platform: str = "") -> dict:
+    # 深拷贝避免跨 run_lint 调用污染模块级 DEFAULT_CONFIG（合并逻辑会就地改 rules）
     if config_path and Path(config_path).exists() and yaml:
         with open(config_path, encoding="utf-8") as f:
-            config = yaml.safe_load(f) or DEFAULT_CONFIG
+            config = yaml.safe_load(f) or copy.deepcopy(DEFAULT_CONFIG)
     else:
-        config = DEFAULT_CONFIG
-    return _merge_data_sources(config)
+        config = copy.deepcopy(DEFAULT_CONFIG)
+    config = _merge_data_sources(config)
+    config = _merge_platform_rules(config, platform)
+    return config
 
 
 def get_forbidden_words(config: dict) -> list[str]:
@@ -241,9 +299,10 @@ class Violation:
 
 
 class LintResult:
-    def __init__(self, file_path: str, column: str):
+    def __init__(self, file_path: str, column: str, platform: str = ""):
         self.file_path = file_path
         self.column = column
+        self.platform = platform
         self.violations: list[Violation] = []
 
     def add(self, rule: str, severity: str, line: int, message: str):
@@ -261,6 +320,7 @@ class LintResult:
         return json.dumps({
             "file": self.file_path,
             "column": self.column,
+            "platform": self.platform,
             "summary": {"errors": self.error_count, "warnings": self.warning_count},
             "violations": [v.to_dict() for v in self.violations],
         }, ensure_ascii=False)
@@ -642,6 +702,108 @@ def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
                 result.add("G1", "warning", ctx.line_num, f"检测到禁用词: {word}")
 
 
+# ============================================================
+# 平台专属规则（按需启用，config.rules.{name}.enabled 控制）
+# ============================================================
+
+def rule_forbidden_code_blocks(lines: list[str], config: dict, result: LintResult):
+    """规则 P1: 平台不支持代码块（如小红书）。仅在该规则 enabled 时生效。"""
+    cfg = config["rules"].get("forbidden_code_blocks", {})
+    severity = cfg.get("severity", "error")
+    msg = cfg.get("message", "本平台不支持代码块")
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter:
+            continue
+        # 在 in_code_block 的首行（即 ``` 开始行）即触发
+        if ctx.stripped.startswith("```"):
+            result.add("P1", severity, ctx.line_num, msg)
+            return   # 首个触发即停，避免闭合行重复报
+
+
+def rule_required_hashtags(lines: list[str], config: dict, result: LintResult):
+    """规则 P2: 小红书话题标签要求（3-5 个 #topic 形式）"""
+    cfg = config["rules"].get("required_hashtags", {})
+    min_n = cfg.get("min_count", 3)
+    max_n = cfg.get("max_count", 5)
+    severity = cfg.get("severity", "warning")
+    pattern = re.compile(cfg.get("pattern", r"^#[^\s]+$"))
+    # 尾部 20 行内寻找 #xxx 格式
+    tail = [l.strip() for l in lines[-20:] if l.strip()]
+    hashtags = [l for l in tail if pattern.match(l) or re.search(r"(?:^|\s)#[^\s#]+", l)]
+    count = sum(len(re.findall(r"#[^\s#]+", l)) for l in hashtags)
+    if count < min_n:
+        result.add("P2", severity, len(lines), f"话题标签数 {count} < {min_n}（文末应有 {min_n}-{max_n} 个 #topic）")
+    elif count > max_n:
+        result.add("P2", "warning", len(lines), f"话题标签数 {count} > {max_n}（建议控制在 {min_n}-{max_n} 个）")
+
+
+def rule_code_block_must_lang(lines: list[str], config: dict, result: LintResult):
+    """规则 P3: 代码块必须标语言（掘金要求）"""
+    cfg = config["rules"].get("code_block_must_lang", {})
+    severity = cfg.get("severity", "error")
+    msg = cfg.get("message", "代码块必须标注语言")
+    in_code = False
+    for ctx in iter_lines(lines):
+        if ctx.stripped.startswith("```"):
+            if not in_code:
+                lang = ctx.stripped[3:].strip()
+                if not lang:
+                    result.add("P3", severity, ctx.line_num, msg)
+            in_code = not in_code
+
+
+def rule_require_frontmatter_fields(lines: list[str], config: dict, result: LintResult):
+    """规则 P4: frontmatter 必须字段（掘金要求 title/description/tags）"""
+    cfg = config["rules"].get("require_frontmatter_fields", {})
+    fields = cfg.get("fields", [])
+    severity = cfg.get("severity", "error")
+    msg_template = cfg.get("message", "frontmatter 缺少必需字段: {field}")
+    fm = parse_frontmatter(lines)
+    for field in fields:
+        if field not in fm or not fm.get(field):
+            result.add("P4", severity, 1, msg_template.replace("{field}", field))
+
+
+def rule_require_counter_argument(lines: list[str], config: dict, result: LintResult):
+    """规则 P5: 知乎建议包含反方观点"""
+    cfg = config["rules"].get("require_counter_argument", {})
+    severity = cfg.get("severity", "warning")
+    msg = cfg.get("message", "建议包含至少 1 个反方观点")
+    keywords = cfg.get("detect_keywords", [])
+    full = "\n".join(lines)
+    if not any(kw in full for kw in keywords):
+        result.add("P5", severity, 0, msg)
+
+
+def rule_require_github_link(lines: list[str], config: dict, result: LintResult):
+    """规则 P6: 掘金建议文末附 GitHub/文档链接"""
+    cfg = config["rules"].get("require_github_link", {})
+    severity = cfg.get("severity", "warning")
+    msg = cfg.get("message", "文末建议附 GitHub/文档链接")
+    full = "\n".join(lines)
+    if not re.search(r"https?://(github\.com|[\w.-]+\.(?:io|dev|org|docs\.[\w.-]+))", full):
+        result.add("P6", severity, 0, msg)
+
+
+def rule_length_limit(lines: list[str], config: dict, result: LintResult, length_limit: int | None):
+    """规则 P7: 平台字数硬上限（来自 columns/{column}.platforms.yaml）"""
+    if not length_limit:
+        return
+    factor = (config.get("_platform_cfg") or {}).get("length_limit_factor", 1.05)
+    # 简单估算：非 frontmatter/非 code_block 的字符总数
+    total = 0
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter:
+            continue
+        total += len(ctx.stripped)
+    soft = int(length_limit * factor)
+    hard = int(length_limit * 1.10)
+    if total > hard:
+        result.add("P7", "error", 0, f"字数 {total} 超过硬上限 {hard}（length_limit={length_limit}，factor=1.10）")
+    elif total > soft:
+        result.add("P7", "warning", 0, f"字数 {total} 超过软上限 {soft}（length_limit={length_limit}，factor={factor}）")
+
+
 # 栏目名 → theme id 映射
 COLUMN_ALIASES = {
     "学术前沿": "academic",
@@ -659,8 +821,9 @@ COLUMN_ALIASES = {
 # 主流程
 # ============================================================
 
-def run_lint(file_path: str, column: str = "", config_path: str | None = None) -> LintResult:
-    config = load_config(config_path)
+def run_lint(file_path: str, column: str = "", platform: str = "",
+             config_path: str | None = None) -> LintResult:
+    config = load_config(config_path, platform=platform)
     rules_cfg = config.get("rules", {})
 
     path = Path(file_path)
@@ -671,35 +834,49 @@ def run_lint(file_path: str, column: str = "", config_path: str | None = None) -
         fm = parse_frontmatter(lines)
         column = fm.get("column", "")
 
-    result = LintResult(file_path, column)
+    result = LintResult(file_path, column, platform=platform)
 
-    # 按类别执行规则
-    if rules_cfg.get("forbidden_blocks", {}).get("enabled", True):
+    def is_on(rule: str, default: bool = True) -> bool:
+        return rules_cfg.get(rule, {}).get("enabled", default)
+
+    # 跨平台基础规则（默认开；平台段可关闭）
+    if is_on("forbidden_blocks"):
         rule_forbidden_blocks(lines, config, result)
-
-    if rules_cfg.get("gfm_alerts", {}).get("enabled", True):
+    if is_on("gfm_alerts"):
         rule_gfm_alerts(lines, config, result)
-
-    if rules_cfg.get("typography", {}).get("enabled", True):
+    if is_on("typography"):
         rule_typography(lines, config, result)
-
-    if rules_cfg.get("theme_constraints", {}).get("enabled", True):
+    if is_on("theme_constraints"):
         rule_theme_constraints(lines, column, config, result)
-
-    if rules_cfg.get("css_safety", {}).get("enabled", True):
+    if is_on("css_safety"):
         rule_css_safety(lines, config, result)
-
-    if rules_cfg.get("image_references", {}).get("enabled", True):
+    if is_on("image_references"):
         rule_image_references(lines, config, result)
-
-    if rules_cfg.get("forbidden_patterns", {}).get("enabled", True):
+    if is_on("forbidden_patterns"):
         rule_forbidden_patterns(lines, config, result)
-
-    if rules_cfg.get("article_structure", {}).get("enabled", True):
+    if is_on("article_structure"):
         rule_article_structure(lines, column, config, result)
-
-    if rules_cfg.get("svg_readability", {}).get("enabled", True):
+    if is_on("svg_readability"):
         rule_svg_readability(lines, config, result)
+
+    # 平台专属规则（默认关；平台段显式 enabled=true 才运行）
+    if is_on("forbidden_code_blocks", default=False):
+        rule_forbidden_code_blocks(lines, config, result)
+    if is_on("required_hashtags", default=False):
+        rule_required_hashtags(lines, config, result)
+    if is_on("code_block_must_lang", default=False):
+        rule_code_block_must_lang(lines, config, result)
+    if is_on("require_frontmatter_fields", default=False):
+        rule_require_frontmatter_fields(lines, config, result)
+    if is_on("require_counter_argument", default=False):
+        rule_require_counter_argument(lines, config, result)
+    if is_on("require_github_link", default=False):
+        rule_require_github_link(lines, config, result)
+
+    # 字数上限（读 columns/{column}.platforms.yaml）
+    length_limit = _load_platform_length_limit(column, platform)
+    if length_limit:
+        rule_length_limit(lines, config, result, length_limit)
 
     return result
 
@@ -708,12 +885,23 @@ def main():
     parser = argparse.ArgumentParser(description="InkFlow Markdown Lint — 文章格式校验工具")
     parser.add_argument("file", help="要校验的 Markdown 文件路径")
     parser.add_argument("--column", default="", help="栏目名（如未指定，从 frontmatter 读取）")
-    parser.add_argument("--config", default=None, help="配置文件路径（默认: .claude/skills/quality-linting/scripts/config.yaml）")
+    parser.add_argument("--platform", default="",
+                        help="目标平台（wechat/xiaohongshu/zhihu/juejin），决定规则集")
+    parser.add_argument("--config", default=None,
+                        help="配置文件路径（默认: .claude/skills/quality-linting/scripts/config.yaml）")
     args = parser.parse_args()
 
     if not Path(args.file).exists():
         print(f"错误: 文件不存在: {args.file}", file=sys.stderr)
         sys.exit(1)
+
+    # 默认平台：从文件名推断（08-{platform}-publish.md）
+    platform = args.platform
+    if not platform:
+        fname = Path(args.file).name
+        m = re.match(r"08-(wechat|xiaohongshu|zhihu|juejin)-publish\.md$", fname)
+        if m:
+            platform = m.group(1)
 
     # 默认配置路径
     config_path = args.config
@@ -722,7 +910,7 @@ def main():
         if default_cfg.exists():
             config_path = str(default_cfg)
 
-    result = run_lint(args.file, args.column, config_path)
+    result = run_lint(args.file, args.column, platform, config_path)
 
     # JSON to stdout
     print(result.to_json())

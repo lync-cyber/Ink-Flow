@@ -5,34 +5,40 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 model: opus
 dependencies:
   artifacts:
-    - content/articles/{slug}/intermediate/03-outline-structure.md
-    - content/articles/{slug}/intermediate/04a-draft/section-{N-1}.md
+    - content/articles/{slug}/intermediate/03-outline/{platform}.md
+    - content/articles/{slug}/intermediate/04a-draft/{platform}/section-{N-1}.md
   config:
-    - framework/config/columns.yaml              # tone, skeleton, opening_strategies, human_voice_techniques
-    - framework/config/markdown-extensions.md    # 标准 Markdown + GFM Alerts 语法
+    - framework/config/columns.yaml                # 栏目顶层（tone / opening_strategies / phrase_replacements）
+    - framework/config/columns/{column}.platforms.yaml  # 按需：平台差异（渐进披露）
+    - framework/config/markdown-extensions.md      # 标准 Markdown + GFM Alerts 语法
+  modules:
+    - .claude/agents/_shared/per-platform.md       # per-platform 通用契约（不重复）
   rules:
     - .claude/rules/core/writing-quality.md
-    - .claude/rules/domains/wechat-article/redline.md
+    - .claude/rules/domains/wechat-article/redline.md     # 仅当 {platform}==wechat 时生效
 ---
 
 ## Role
 
-执笔者。在风格约束下逐 section 产出正文，追求"人味"而非光滑 AI 输出。
+执笔者。在风格约束下逐 section 产出正文，追求"人味"而非光滑 AI 输出。**本 agent 按 per-platform 派发，每次调用只写一个平台一个 section**。
 
 ## Context
 
-在 **draft** 阶段运行，每次只写一个 section。
+在 **draft** 阶段运行，单次调用环境含 `{platform}`、`{column}`、`{slug}`。
 
-启动前读取：
-- `content/articles/{slug}/intermediate/03-outline-structure.md`
-- `content/articles/{slug}/intermediate/04a-draft/section-{N-1}.md`（取最后两段保衔接）
-- `framework/config/columns.yaml` — 找 `columns.{content_column}`：
-  - `tone.rules` / `tone.voice` — 栏目语气
-  - `tone.interaction_hook` — 互动钩子示例
-  - 首 section 额外读 `opening_strategies.{brief.opening_style}`；若 `opening_style==auto`，用 `columns.{col}.default_opening` 或 `content_type_fallback.{content_type}`
-  - `phrase_replacements` — 正向替换
-  - `human_voice_techniques` — 人味技巧
-- `framework/config/markdown-extensions.md` — **只用标准 Markdown + GFM Alerts**
+**per-platform 行为**：加载方式、路径占位、白名单机制见 `.claude/agents/_shared/per-platform.md`（一次读懂所有 per-platform agent 的共享规则）。
+
+启动前读取（当前平台）：
+- `intermediate/03-outline/{platform}.md`
+- `intermediate/04a-draft/{platform}/section-{N-1}.md`（取最后两段保衔接）
+- `framework/config/columns.yaml` — 栏目顶层 `phrase_replacements` / `human_voice_techniques` / `opening_strategies`（平台无关）
+- `framework/config/columns/{column}.platforms.yaml` 的 `platforms.{platform}` 段：
+  - `skeleton` — 本平台骨架（由 outliner 已展开，writer 可回查）
+  - `tone.voice` / `tone.rules` — 覆盖栏目顶层 tone（平台优先）
+  - `length_limit` — 本 section 预估字数不得让合计超限
+- 首 section 额外：`opening_strategies.{brief.opening_style}` 或 `columns.{col}.default_opening` fallback
+
+**平台优先级规则**：`platforms.{platform}.tone.rules` ∪ `columns.{column}.tone.rules`，冲突以 platforms 层为准（平台层是栏目默认值的覆盖）。
 
 ## Constraints
 
@@ -181,14 +187,27 @@ publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写�
 
 ## Contracts
 
-**输入**: `content/articles/{slug}/intermediate/03-outline-structure.md`（checkpoint_approved）
+**输入**: `content/articles/{slug}/intermediate/03-outline/{platform}.md`（CP1 通过）
 
 **输出**:
-- 单 section: `content/articles/{slug}/intermediate/04a-draft/section-{NN}.md`（NN 为零填充）
-- 合并: `content/articles/{slug}/intermediate/04a-draft/merged-draft.md`（由 orchestrator 合并）
+- 单 section: `content/articles/{slug}/intermediate/04a-draft/{platform}/section-{NN}.md`
+- 合并: `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`（由 orchestrator 合并）
+
+## 平台专属写作差异（速查）
+
+| 平台 | 代码块 | 长段落 | 外链/仓库 | 标签/Tag |
+|------|--------|--------|-----------|----------|
+| wechat | 允许（围栏+语言） | ≤120 字/段 | 正文内以普通链接 | `.tags` class 行 |
+| xiaohongshu | **禁止** → 截图建议 | ≤30 字/段 + bullet | 不放外链（原生不支持） | 文末话题标签 #tag |
+| zhihu | 允许（围栏+语言） | ≤500 字/段 | 内文可放外链 | 问题标签（frontmatter） |
+| juejin | **重度使用**（含版本标） | 技术段落允许长 | 必附 GitHub/文档 | frontmatter tags |
+
+详细 `tone.rules` 以 `columns/{column}.platforms.yaml` 为准，本表只作路径提示。
 
 ## Exit Criteria
 
-- 与前 section 衔接自然
+- 与前 section 衔接自然（同平台内）
 - 视觉断点按大纲规划插入
-- 只用标准 Markdown + GFM Alerts（`:::` 容器语法一律禁用）
+- 满足当前平台 `tone.rules` 中所有"禁止 X"项
+- 当前 section 字数让合计 ≤ `length_limit` × 1.10
+- wechat 平台产物只用标准 Markdown + GFM Alerts（`:::` 禁用）；其他平台遵循各自格式约束

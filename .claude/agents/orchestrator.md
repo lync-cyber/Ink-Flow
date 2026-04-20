@@ -10,11 +10,12 @@ dependencies:
     - framework/config/columns.yaml
   modules:
     - .claude/agents/orchestrator/stages.md
+    - .claude/agents/orchestrator/fanout.md        # per_platform 派发与收敛
     - .claude/agents/orchestrator/checkpoints.md
     - .claude/agents/orchestrator/recovery.md
     - .claude/agents/orchestrator/brief.md
   agents_dispatched:
-    - researcher, outliner, writer, illustrator, auditor, polisher, publisher
+    - researcher, atomizer, outliner, writer, illustrator, auditor, polisher, publisher, typesetter
 ---
 
 ## Role
@@ -29,7 +30,9 @@ dependencies:
 - `framework/config/columns.yaml` — 栏目元数据
 - `runtime/pipeline-states/{slug}.json`（若存在）— 恢复点
 
-子模块按需加载：`.claude/agents/orchestrator/{brief,stages,checkpoints,recovery}.md`。
+子模块按需加载：`.claude/agents/orchestrator/{brief,stages,fanout,checkpoints,recovery}.md`。
+
+**渐进披露**：各子模块按触发条件加载，不一次性全部读入。fanout 仅在当前 stage 含 `per_platform: true` 时加载；checkpoints 仅在 stage.checkpoint == true 时加载；recovery 仅在 validation 失败或重跑时加载。
 
 ## 启动协议
 
@@ -62,9 +65,14 @@ AskUserQuestion:
 ```
 初始化 state → 读 framework/config/inkflow.yaml 的 stages 列表
 FOR each stage from current to end:
-    调用 stages.md 的通用算法
-    若 stage.checkpoint == true → 调用 checkpoints.md
-    若出错 → 调用 recovery.md（L1-L4 + 中断恢复 + 文件完整性）
+    IF stage.per_platform == true:
+        → 调用 fanout.md（按 brief.target_platforms 并行派发 + 收敛）
+    ELSE:
+        → 调用 stages.md 的通用算法（单播）
+    IF stage.checkpoint == true:
+        → 调用 checkpoints.md（per_platform 阶段一次审核 N 份产物）
+    IF 出错:
+        → 调用 recovery.md（L1-L4 + 中断恢复 + 单平台重跑）
 结束 → 按模块 `brief.md` § 完成后建议触发后续 skill
 ```
 
@@ -90,5 +98,6 @@ FOR each stage from current to end:
 ## Exit Criteria
 
 - 所有 stages 状态 = `completed`，或用户在 checkpoint 主动终止
-- `content/articles/{slug}/export/` 下 `08-wechat-publish.md` / `08-plain-publish.md` / `08-teaser-120chars.md` 齐全
-- `runtime/pipeline-states/{slug}.json` 记录终态
+- 对每个 p ∈ `brief.target_platforms`：`content/articles/{slug}/export/08-{p}-publish.md` 存在
+- 若 wechat ∈ target_platforms：`export/08-typeset/wechat/annotated.md` 齐全
+- `runtime/pipeline-states/{slug}.json` 记录终态（含 per_platform 子状态）
