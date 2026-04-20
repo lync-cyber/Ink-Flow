@@ -1,8 +1,10 @@
-# 主题目录（5 套）
+# 主题目录
 
 SKILL.md §3 选主题时读此文件。每套主题含：基调 / 极端强项 / "不要拿它做 X" 的反例。
 
-查最新可用主题列表：`framework/tools/typeset/app/src/themes/index.ts`
+查最新可用主题列表（含版本号）：`runtime/typeset-capabilities.json` 的 `themes[]`，由
+`python framework/tools/_adapters/cli.py capabilities --cache` 生成；
+权威清单以独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 为准。
 
 ---
 
@@ -146,7 +148,7 @@ SKILL.md §3 选主题时读此文件。每套主题含：基调 / 极端强项 
 
 查法：
 ```bash
-grep -r "primary:" framework/tools/typeset/app/src/themes/*/index.ts
+python -c "import json; caps=json.load(open('runtime/typeset-capabilities.json')); [print(t['id']) for t in caps['themes']]"
 ```
 
 如果发现两个栏目的 primary 色相差 < 30°，需要：

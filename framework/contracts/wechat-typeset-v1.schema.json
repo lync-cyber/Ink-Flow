@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inkflow.dev/contracts/wechat-typeset-v1.schema.json",
+  "title": "wechat-typeset Capabilities v1",
+  "description": "Contract between InkFlow (consumer) and wechat-typeset (provider). Both repos must conform to this schema; breaking changes require schemaVersion bump + named migration.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "tool",
+    "containerSyntax",
+    "themes",
+    "variants",
+    "defaultVariants",
+    "components"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Contract version. Always '1.0' for this file."
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+.*$",
+          "description": "Provider package.json version (SemVer)."
+        }
+      }
+    },
+    "containerSyntax": {
+      "type": "object",
+      "description": "How typesetter agent should emit ::: containers.",
+      "required": ["prefix", "allowedAttrs"],
+      "properties": {
+        "prefix": { "type": "string", "const": ":::" },
+        "allowedAttrs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["variant"]
+        }
+      }
+    },
+    "themes": {
+      "type": "array",
+      "description": "Registered theme list — agent must only select ids from here.",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    },
+    "variants": {
+      "type": "object",
+      "description": "Keys are container kinds (admonition/compare/quote/...); values are supported variant ids for that kind.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "defaultVariants": {
+      "type": "object",
+      "description": "Fallback variant per kind when agent does not specify.",
+      "additionalProperties": { "type": "string" }
+    },
+    "components": {
+      "type": "array",
+      "description": "Reusable component-library presets; agent references them by id.",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "variantId": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

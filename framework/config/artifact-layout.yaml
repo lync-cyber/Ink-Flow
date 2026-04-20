@@ -40,14 +40,21 @@ paths:
   audit:          "content/articles/{slug}/review/05-audit-report.md"
   polish_trace:   "content/articles/{slug}/review/06-polish-trace.md"
 
-  # ---- 最终产物 ----
+  # ---- 最终产物（publish 阶段 · 平台无关） ----
   final:          "content/articles/{slug}/export/07-final-manuscript.md"
   wechat:         "content/articles/{slug}/export/08-wechat-publish.md"
   plain:          "content/articles/{slug}/export/08-plain-publish.md"
   teaser:         "content/articles/{slug}/export/08-teaser-120chars.md"
 
+  # ---- 排版产物（typeset 阶段 · 平台相关） ----
+  typeset_plan:       "content/articles/{slug}/intermediate/09-typeset-plan.md"
+  typeset_annotated:  "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
+  typeset_render:     "content/articles/{slug}/export/08-typeset/wechat/render.html"
+  typeset_meta:       "content/articles/{slug}/export/08-typeset/wechat/meta.json"
+
 # ---- 运行状态 ----
 state_file:       "runtime/pipeline-states/{slug}.json"
+caps_cache:       "runtime/typeset-capabilities.json"
 
 # ---- 命名规范 ----
 naming:

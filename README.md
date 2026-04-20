@@ -144,8 +144,8 @@ Skill 采用扁平目录结构，每个 agent 在 Context 段按需读取所需 
 ### 栏目业务配置与视觉分离
 
 - **业务字段**（骨架、tone、开头策略、KPI）定义在 `framework/config/columns.yaml`，由 writer / illustrator / auditor agent 直接消费。
-- **视觉字段**（主色、字体、标题样式等）不进入 `columns.yaml`。排版决策由 `typeset-authoring` skill 按文章产出（主题 id + 6 类 variant 组合 + 组件库片段 → `content/articles/{slug}/intermediate/09-typeset-plan.md`）；真正渲染由自研 wx-md 工具（`framework/tools/typeset/`）承担。
-- Writer 输出标准 Markdown + GFM Alerts + 自研 `::: container` 扩展；publish 阶段产出 `export/08-wechat-publish.md`；用户自行粘贴到 wx-md 本地排版工具，复制富文本发布。
+- **视觉字段**（主色、字体、标题样式等）不进入 `columns.yaml`。排版决策由 typesetter agent（pipeline typeset 阶段）或 `typeset-authoring` skill 按文章产出（主题 id + 6 类 variant 组合 + 组件库片段 → `content/articles/{slug}/intermediate/09-typeset-plan.md`）；真正渲染由独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 承担，Ink-Flow 通过 `framework/tools/_adapters/` 接入。
+- Writer 输出标准 Markdown + GFM Alerts（**不含 `:::` 容器**）；publish 阶段产出纯 GFM 的 `export/08-wechat-publish.md`；typeset 阶段派生 `export/08-typeset/wechat/annotated.md`（带 `:::` 容器与 variant）；用户粘贴 annotated 版到 wechat-typeset 编辑器，复制富文本发布。
 
 ### 错误处理
 

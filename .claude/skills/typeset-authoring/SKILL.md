@@ -1,30 +1,32 @@
 ---
 name: typeset-authoring
 description: >
-  wx-md 排版方案设计 — 基于自研排版工具（framework/tools/typeset/app）为单篇文章生成
-  "主题 + 6 类 variant 组合 + 组件片段"的排版方案，产出带 `variant=X` 注释的发布稿和一份
-  方案解释备忘。
+  wechat-typeset 排版方案设计 — 为单篇文章生成"主题 + 6 类 variant 组合 + 组件片段"
+  的排版方案，产出 `intermediate/09-typeset-plan.md` + `export/08-typeset/wechat/annotated.md`。
   触发条件："给这篇排版"、"排版方案"、"挑主题"、"选 variant"、"typeset {slug}"、
-  "文章视觉"、"换个排版风格"、"wx-md 怎么套"。
-  首要原则是微信公众号平台兼容（variant 已全数验证 inline-only 且无 position/float/@media）；
+  "文章视觉"、"换个排版风格"。
+  首要原则是微信公众号平台兼容（capability-conformance 静态校验强制）；
   次要原则是**极端大胆**——同一栏目如果已有视觉基调，就要么贴基调做极致，要么直接相反，
   拒绝"差不多"的中庸微调。
+
+  本 skill 是 typesetter agent 的**手动入口**：pipeline 自动跑 typeset 阶段时由
+  orchestrator 分派 typesetter；用户要单独重排某篇旧文时走本 skill。两者产物合约一致。
 argument-hint: "[文章 slug] [--mode=article|theme]"
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash
 ---
 
-# wx-md 排版方案设计（Typeset Authoring）
+# Typeset Authoring（排版方案设计）
 
 为**单篇文章**决定用哪个主题、6 类 variant 骨架怎么选、每节用什么组件库片段。
-产物是**排版方案 + 改写后的发布稿**，不是新主题 CSS 本身。
+产物是**排版方案 + 标注版本**，不是新主题 CSS 本身。
 
-> 如果用户要设计**全新主题**（新增 `framework/tools/typeset/app/src/themes/{slug}/index.ts`），
+> 如果用户要设计**全新主题**（新增独立 repo `wechat-typeset` 里的一个 theme），
 > 切换到 `--mode=theme`，本 SKILL §6 有骨架指引。
 
 **边界**：
-- 本 skill 不修改 `framework/tools/typeset/app/src/` 里的渲染器 / variant 代码（那是工具开发的事）
-- 本 skill 不生成 doocs/md 主题 CSS（doocs/md 已不在 InkFlow 下游链路上）
-- 本 skill 的所有装饰选择**必须落在**现有 23 个 variant 或 50 个内置组件上，额外的视觉需求先提交工具开发、再在本 skill 里使用
+- 本 skill 不修改 wechat-typeset 独立 repo 里的渲染器 / variant 代码（那是对方 repo 的工具开发工作）
+- 本 skill 的所有装饰选择**必须落在** `runtime/typeset-capabilities.json` 清单内（由 `framework/tools/_adapters/cli.py capabilities --cache` 刷新），任何不在清单里的 id 都不得出现
+- 合约与 `.claude/agents/typesetter.md` 完全一致；差别只在触发方式（skill 由用户手动触发，agent 由 orchestrator 自动分派）
 
 ---
 
@@ -96,14 +98,21 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash
 
 ### article 模式
 
+0. **能力刷新（强制）**：
+   ```bash
+   python framework/tools/_adapters/cli.py health
+   python framework/tools/_adapters/cli.py capabilities --cache
+   ```
+   health 失败则提示用户先 clone + build wechat-typeset 独立 repo；不进入后续步骤。
 1. `Read content/articles/{slug}/export/08-wechat-publish.md`（如不存在，降级读 `intermediate/04a-draft/merged-draft.md`）
 2. `Read framework/config/columns.yaml`，如果文章在某栏目下，读 `columns.{slug}.personality` 和该栏目 tone
-3. `Read framework/tools/typeset/app/src/themes/index.ts`，确认当前可用主题 id 清单
-4. `Glob content/styles/*/theme.css`，如果该栏目已有独立视觉产物，作为 §3 主题选择的约束
+3. `Read runtime/typeset-capabilities.json`，得到当前工具支持的 theme / variant / component 全集
+4. `Read content/articles/{slug}/intermediate/03-outline-structure.md` 的"视觉签名"段（若有）作为初选
+5. `Glob content/articles/*/intermediate/09-typeset-plan.md`，同账号同栏目的其它文章签名元素不得完全撞车（新文章与旧文章 primary 色相差 ≥30° 或明度差 ≥20%）
 
 ### theme 模式
 
-见 §6。重点：全新主题是**工具开发任务**，本 skill 只能生成 Theme 对象的设计蓝图，真正的代码文件需要手动 Cd 到 `framework/tools/typeset/app/src/themes/{slug}/` 去创建并跑测试。
+见 §6。重点：全新主题是**wechat-typeset 独立 repo 的工具开发任务**，本 skill 只能生成 Theme 对象的设计蓝图，真正的代码由 wechat-typeset 维护者实现（克隆 repo、新增 `src/themes/{slug}/index.ts`、跑 `npx vitest run`、在 `src/themes/index.ts` DISPLAY_ORDER 里注册）。
 
 ---
 
@@ -194,8 +203,8 @@ options:
 
 基于 §4 的 variant 组合，列出**本文可以直接用组件库哪些预设**。查阅：
 
-- `framework/tools/typeset/app/src/components-lib/presets/*.ts` — 50 条内置预设
-- `content/styles/_typeset/sample-full.md` — 每个 variant 的完整示例（§3–§4 的决策能直接对着抄）
+- `runtime/typeset-capabilities.json` 的 `components[]` 数组 — 当前 wechat-typeset 的组件预设（组件名按 id 引用，如 `ad-tip-terminal`）
+- 如需查组件的 markdown snippet / 截图，可以启动 wechat-typeset 本地编辑器（独立 repo），"组件"抽屉按 id 搜索
 
 输出形如：
 
@@ -211,19 +220,21 @@ options:
 
 ---
 
-## 6. 改写发布稿（article 模式核心产物）
+## 6. 派生标注稿（article 模式核心产物）
 
-从 `content/articles/{slug}/export/08-wechat-publish.md` 出发，产出：
+从 `content/articles/{slug}/export/08-wechat-publish.md`（纯 GFM）**派生**：
 
 ```
-content/articles/{slug}/intermediate/09-typeset-plan.md   ← 排版方案解释
-content/articles/{slug}/export/08-wechat-publish.md       ← 同一文件，覆写：
-                                                             加上 variant=X 的 attrs、
-                                                             把合适段落包进 ::: 容器、
-                                                             在每个重要 variant 前插 <!-- variant=X -->
+content/articles/{slug}/intermediate/09-typeset-plan.md             ← 排版方案解释
+content/articles/{slug}/export/08-typeset/wechat/annotated.md       ← 标注版本（新文件，不覆写 publish 产物）
+content/articles/{slug}/export/08-typeset/wechat/render.html        ← adapter CLI 渲染占位
+content/articles/{slug}/export/08-typeset/wechat/meta.json          ← adapter 版本 + 主题 + 时间戳
 ```
 
-**重要**：改写时不得改变**文字内容**（不删句、不重述），只改组织结构与 variant 标记。
+**关键不变量**：
+- `export/08-wechat-publish.md` **必须保持纯 GFM 不动**（下游知乎/掘金要用）
+- `:::` 容器、`variant=X` attrs 只进入 `export/08-typeset/wechat/annotated.md`
+- annotated 版本的**文字内容**与 publish 版必须逐段对齐（字数相等，只多出容器包围行）
 
 ### 09-typeset-plan.md 结构
 
@@ -252,22 +263,26 @@ content/articles/{slug}/export/08-wechat-publish.md       ← 同一文件，覆
 
 ### --mode=theme（全新主题蓝图）
 
-用户要加新主题时，本 skill 只产出**设计蓝图**，真正的代码由工具开发执行：
+用户要加新主题时，本 skill 只产出**设计蓝图**，真正的代码由 wechat-typeset 独立 repo 维护：
 
-产物：`framework/tools/typeset/app/src/themes/{slug}/BLUEPRINT.md`
+产物：`content/styles/_blueprints/{slug}-theme-blueprint.md`（在 Ink-Flow 内留档，不入 typeset repo）
 
 结构：
 - tokens（色 / 字号 / 间距 / 圆角）一整套值
 - elements（h1–h4 / p / blockquote / strong 等）关键属性
 - assets（需要新画哪些 SVG，什么视觉语言）
-- variants（6 类骨架，从现有 23 个中选 6 个——极端组合 > 全默认）
+- variants（6 类骨架，从 `runtime/typeset-capabilities.json` 中选 6 个——极端组合 > 全默认）
 - templates（3–5 段典型 markdown 片段，用作 getSample(themeId) 的 body）
 
 写完后提示用户：
 
-> 蓝图已写到 `framework/tools/typeset/app/src/themes/{slug}/BLUEPRINT.md`。
-> 要把它变成工具内可选主题，需要手动创建 `index.ts` 实现接口、跑 `npx vitest run tests/themes.spec.ts` 验证，并在 `src/themes/index.ts` 注册。
-> 工具开发完成后回来告诉我，我再把本栏目的 article 模式排版方案按新主题重算。
+> 蓝图已写到 `content/styles/_blueprints/{slug}-theme-blueprint.md`。
+> 要把它变成可选主题，需要在 wechat-typeset 独立 repo（https://github.com/lync-cyber/wechat-typeset）里：
+> 1. 新建 `src/themes/{slug}/index.ts` 实现 Theme 接口
+> 2. 在 `src/themes/index.ts` 的 DISPLAY_ORDER 里注册
+> 3. `npx vitest run tests/themes.spec.ts` 验证
+> 4. `npm run build` 让 `dist/api/capabilities.json` 出现新主题
+> 做完回 Ink-Flow 跑 `python framework/tools/_adapters/cli.py capabilities --cache` 刷新能力清单，再重跑本 skill 即可。
 
 ---
 
@@ -275,7 +290,7 @@ content/articles/{slug}/export/08-wechat-publish.md       ← 同一文件，覆
 
 ### 7.1 微信兼容（宪章 1）
 
-- [ ] 改写稿里所有 variant 名都在 `VARIANT_IDS` 清单中（见 `framework/tools/typeset/app/src/themes/types.ts`）
+- [ ] 跑一次 `python framework/tools/_adapters/cli.py conform --theme X --variants ... --component ...`，`ok=true`
 - [ ] markdown 里无 `<style>` / `<script>` / 自定义 class
 - [ ] 所有图 `src` 均为 ≤ 640 宽的占位或真实 URL
 - [ ] 代码块未引入非标 language（避免 highlight.js 漏识别）
@@ -293,9 +308,10 @@ content/articles/{slug}/export/08-wechat-publish.md       ← 同一文件，覆
 
 ### 7.4 可执行（产物闭环）
 
-- [ ] 09-typeset-plan.md 的"改写点索引"能和最终 08-wechat-publish.md 逐行对上
-- [ ] 跑一次 `python .claude/skills/quality-linting/scripts/lint.py content/articles/{slug}/export/08-wechat-publish.md`，error = 0
-- [ ] 用户在 wx-md 里粘贴改写稿，375px 预览能完整渲染、无崩版
+- [ ] 09-typeset-plan.md 的"改写点索引"能和 annotated.md 逐行对上
+- [ ] `export/08-wechat-publish.md` 未被改动（纯 GFM 仍可发去知乎/掘金）
+- [ ] 跑一次 `python .claude/skills/quality-linting/scripts/lint.py content/articles/{slug}/export/08-typeset/wechat/annotated.md`，error = 0
+- [ ] 用户在 wechat-typeset 本地编辑器粘贴 annotated.md，375px 预览能完整渲染、无崩版
 
 ---
 
@@ -303,11 +319,10 @@ content/articles/{slug}/export/08-wechat-publish.md       ← 同一文件，覆
 
 | 文件 | 何时读 |
 |---|---|
-| `references/variants-dictionary.md` | §4 决策时——23 个 variant 的气质 + 适用场景 + 不适用场景 |
-| `references/themes-catalog.md` | §3 选主题——5 套主题的极端强项与"不要拿它做 X"的反例 |
-| `content/styles/_typeset/sample-full.md` | 每个 variant 实际 markdown 是怎么写的，attrs 怎么传 |
-| `framework/tools/typeset/app/src/themes/types.ts` | `VARIANT_IDS` 白名单、`ThemeVariants` 接口定义 |
-| `framework/tools/typeset/app/src/components-lib/presets/*.ts` | 50 条内置预设的 id 和场景 |
+| `references/variants-dictionary.md` | §4 决策时——variant 的气质 + 适用场景 + 不适用场景（注：权威 id 清单以 `runtime/typeset-capabilities.json` 为准） |
+| `references/themes-catalog.md` | §3 选主题——各主题的极端强项与反例 |
+| `runtime/typeset-capabilities.json` | 当前 wechat-typeset 能力清单（theme/variant/component id 白名单） |
+| `framework/contracts/wechat-typeset-v1.schema.json` | 能力清单契约（两端约定） |
 | `.claude/rules/data/platform-limits.yaml` | 微信排版硬约束的单一事实来源 |
 
 ---

@@ -65,6 +65,14 @@ dependencies:
 - 开头策略: {opening_style}
 - CTA 类型: {cta_type}
 
+## 视觉签名（给 typesetter agent 的初选，不是最终决策）
+- candidates: {至多 3 个，按重要度排序。从下列词汇选：section-title-cornered / admonition-terminal / admonition-pill-tag / quote-magazine-dropcap / compare-ledger / steps-timeline-dot / divider-glyph / cover-bold}
+- rationale: {一句话说明为什么这篇最该落在上面那个签名。具体、可反驳——不能是"因为是技术文所以用 tech-geek"这种套话}
+
+注：本字段仅是"建议"。typesetter agent 会读能力清单校验后再决策，
+    不得让 outliner 推荐 capabilities 清单外的 id。写出来的 id 若不在
+    wechat-typeset 最新 capabilities 里，typesetter 会忽略并重新问询用户。
+
 ## Section 1: {论点标题}
 - 论点: {一句话论点陈述，非描述性}
 - 关键细节: {支撑论点的事实/数据/代码}

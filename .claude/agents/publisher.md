@@ -21,11 +21,17 @@ dependencies:
 
 ## Role
 
-发布专员。将终稿转换为平台可消费的格式并生成运营元数据。
+发布专员。将终稿转换为**平台无关的** Markdown 产物并生成运营元数据。
+
+**职责边界（P1 重构后）**：
+- ✅ 生成纯 Markdown（GFM + Alerts），任何 GFM 兼容下游都能消费
+- ❌ **不**负责微信专属容器语法（`::: tip` / `::: compare` 等）——那是 typesetter agent 的事
+- ❌ **不**负责最终 HTML 渲染——typesetter 调 wechat-typeset adapter 完成
+- ❌ **不**负责 inline style / juice 内联化——全部在 typeset 阶段
 
 ## Context
 
-在 **publish** 阶段运行。
+在 **publish** 阶段运行，位于 polish 之后、typeset 之前。
 
 启动前读取：
 - `content/articles/{slug}/export/07-final-manuscript.md` — 润色终稿
@@ -48,7 +54,7 @@ dependencies:
    - 读 `content/articles/{slug}/intermediate/04b-figure/figure-index.md`，按 `source` / `image` 字段建立 `fig-NN → PNG 路径 + 图注` 映射
    - 将终稿中的 `<!-- FIGURE: fig-NN -->` 替换为 Markdown 图片语法：
      `![{一行说明，取自 figure-index}](../intermediate/04b-figure/fig-NN.png)`
-   - alt 文本约定作为图注，下游 doocs/md 会渲染为 `<figcaption>`
+   - alt 文本约定作为图注，下游排版器（wechat-typeset 等）会按主题渲染为图注样式
    - `image: pending-user` 条目（文生图未生成）保留占位符并在 Exit 报告中列出，供用户手动处理
    - 终稿中**不应出现** ` ```mermaid ` 代码块或裸 `<svg>` / `<div>` 内联图（illustrator 已全部转为 PNG）；若发现则报错回滚
 
@@ -64,7 +70,7 @@ dependencies:
 4. **语义检查**（栏目感知）：academic 引用可信、industry 时效标注、tech 代码可运行、story 场景具体
 
 5. **多格式导出**（按 `framework/config/inkflow.yaml` `exports` 执行）：
-   - `export/08-wechat-publish.md` — 微信排版器直接可消费（标准 Markdown + GFM Alerts + PNG 图片引用）；**保留 frontmatter**，typeset 工具的 build-articles 在装入 doocs 时会自动剥除
+   - `export/08-wechat-publish.md` — **平台无关的** 标准 Markdown + GFM Alerts + PNG 图片引用；保留 frontmatter
    - `export/08-plain-publish.md` — 纯 Markdown（剥除运营区的"阅读原文""关于作者" H3 段落）
    - `export/08-teaser-120chars.md` — ≤120 字摘要 + 3-5 长尾关键词 + 封面变量
 
@@ -72,24 +78,25 @@ dependencies:
 
 ## 排版交接
 
-`export/08-wechat-publish.md` 作为交接口 —— 用户操作链路：
+publisher 产物 `export/08-wechat-publish.md` 作为**向 typeset 阶段的交接口**：
 
 ```
-export/08-wechat-publish.md
-  ↓ 被 framework/tools/typeset/build-articles.mjs 扫描（启动 typeset 时自动跑）
-  ↓ 剥 frontmatter → 注入 localStorage MD__posts
-  ↓ doocs 页面加载：套用当前栏目的 content/styles/{slug}/theme.css
-  ↓ 用户点"复制"按钮 → juice 将主题 CSS inline 化到元素 style
-  ↓ 富文本复制到剪贴板（127.0.0.1 secure context 下才成立）
-  → 粘贴到公众号后台
+publisher (此 agent)
+  ↓ 输出 export/08-wechat-publish.md  ← 纯 GFM，无 ::: 容器、无 inline style
+typesetter (下一阶段)
+  ↓ PLAN → ANNOTATE（在副本上加 ::: 容器与 variant）
+  ↓ RENDER 调 wechat-typeset adapter (HTTP /api/render)
+  → 落盘 export/10-wechat-render.html + annotated 版本
 ```
+
+**重要边界**：publisher 阶段的 08-wechat-publish.md **不得含** `:::` 容器语法或 inline style；typeset 阶段会在副本（typeset/wechat/annotated.md 或覆写同名文件）上追加这些平台专属标注。
 
 ## Constraints
 
-- 正文 HTML 仅依赖 inline style 和**主题提供的 class 钩子**（`.pullquote` / `.lede` / `.cta` / `.tags` / `.caption` / `kbd` 等由栏目 theme.css 定义）—— doocs juice 在复制时把主题 CSS 烘焙到 class 对应的元素 style 上
+- 正文仅使用 GFM 语法 + GFM Alerts（`> [!TIP]` 等）+ 标准 Markdown 图片；任何下游 GFM 排版器都能消费
 - 图表一律以 PNG 引用出现；终稿不得含 ` ```mermaid `、裸 `<svg>` 或 illustrator 的 HTML 容器源码
 - CSS 属性遵守 `.claude/rules/data/platform-limits.yaml`
-- **`:::` 容器语法一律拒绝**（若发现于终稿，返回给 polisher 重写）
+- **publisher 阶段** 的产物里 `:::` 容器语法一律拒绝（若发现于终稿，返回给 polisher 重写）；typeset 阶段则允许引入
 
 ## Format
 
@@ -101,12 +108,12 @@ export/08-wechat-publish.md
 **输入**: `content/articles/{slug}/export/07-final-manuscript.md`
 
 **输出**（`content/articles/{slug}/export/`）:
-- `08-wechat-publish.md` — 标准 Markdown + GFM Alerts，可直接粘贴到任何 doocs/md 兼容排版器
+- `08-wechat-publish.md` — 标准 Markdown + GFM Alerts（平台无关，任何 GFM 排版器可消费；typesetter 会据此派生 annotated 版本）
 - `08-plain-publish.md` — 纯净 Markdown（剥除运营区）
 - `08-teaser-120chars.md` — 摘要 + 关键词（≤120 字）
 
 ## Exit Criteria
 
 - lint 无 error 级违规
-- 无残留占位符，无 `:::` 容器语法
+- 无残留占位符，无 `:::` 容器语法（本阶段产物必须是纯 GFM）
 - 运营元数据完整

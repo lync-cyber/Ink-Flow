@@ -18,8 +18,9 @@ model_allocation:
   writer: opus
   illustrator: sonnet
   auditor: opus
-  polisher: sonnet
+  polisher: opus        # 升级：polisher 在 audit 基础上做高质量改写，sonnet 容易改坏（P2 重构）
   publisher: sonnet
+  typesetter: opus      # 决策密集：主题/variant/组件多维权衡 + AskUserQuestion 交互
 
 # Brief 默认字段
 defaults:
@@ -71,7 +72,7 @@ stages:
     requires: [brief]
     output: "content/articles/{slug}/intermediate/03-outline-structure.md"
     validation:
-      required_sections: ["总览"]
+      required_sections: ["总览", "视觉签名"]
       required_per_section: ["论点", "关键细节", "预估字数", "视觉断点"]
       word_count: { min: 300, max: 2000 }
       forbidden_patterns: ["TODO"]
@@ -131,7 +132,6 @@ stages:
 
   - name: publish
     agent: publisher
-    checkpoint: true
     requires: [polish]
     output: "content/articles/{slug}/export/08-wechat-publish.md"
     additional_outputs:
@@ -145,6 +145,25 @@ stages:
         - "<!-- USER_FILL:"
         - '<img src="\.\./'
         - '<svg[^>]* id='
+        # P2 重构：publisher 产物必须是纯 GFM，:::容器在 typeset 阶段加入
+        - '^:::'
+
+  - name: typeset
+    agent: typesetter
+    checkpoint: true               # CP3 从 publish 移到 typeset
+    requires: [publish]
+    output: "content/articles/{slug}/intermediate/09-typeset-plan.md"
+    additional_outputs:
+      - "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
+      - "content/articles/{slug}/export/08-typeset/wechat/render.html"
+      - "content/articles/{slug}/export/08-typeset/wechat/meta.json"
+    validation:
+      required_sections: ["主题", "签名元素", "Variant 组合", "组件库预设", "改写点索引"]
+      # 能力合规由 adapter CLI 的 `conform` 子命令负责（见 typesetter.md Step 4）
+      platform_checks:
+        - type: capability_conformance
+          adapter_cli: framework/tools/_adapters/cli.py
+          capabilities_cache: runtime/typeset-capabilities.json
 
 # ============================================================
 # 导出格式（publish 阶段使用）
@@ -183,17 +202,30 @@ paths:
   artifact_layout: framework/config/artifact-layout.yaml
 
 # ============================================================
-# 本地排版工具（wx-md · Vite + Vue 3 自研）
-# 入口：双击 framework/tools/typeset/launcher.bat (Win) /
-#      framework/tools/typeset/launcher.command (Mac/Linux)
-# 首次运行自动 npm install + npm run build；之后 node serve.mjs 启 127.0.0.1:7788
-# 详见 framework/tools/typeset/README.md
-# P0 设计原则：完全独立于 InkFlow 内容目录，草稿存 localStorage；
-# 不读取 content/styles/*/theme.css 或 content/articles/*/export/*.md
+# 排版工具接入（wechat-typeset · 独立 repo）
+#
+# 架构（P1 重构后）：
+#   wechat-typeset 作为独立 repo 存在 https://github.com/lync-cyber/wechat-typeset
+#   Ink-Flow 通过 framework/tools/_adapters/ 提供的 PlatformAdapter 接入，
+#   读对方 `dist/api/capabilities.json`（由 `npm run build` 产出）获取能力清单。
+#
+#   零侵入：wechat-typeset 纯浏览器工具，InkFlow 不要求它暴露 HTTP 端点；
+#          也不会去修改它的源码。唯一的合约见
+#          framework/contracts/wechat-typeset-v1.schema.json。
+#
+# 最终渲染与复制：用户在 wechat-typeset 本地编辑器里粘贴 annotated.md，
+#   一键复制到公众号后台（secure-context + Clipboard API 约束）。
 # ============================================================
 typeset:
-  engine: wx-md           # 自研 · Vite + Vue 3 + TS
-  app_dir: framework/tools/typeset/app
-  dist_dir: framework/tools/typeset/app/dist
-  serve_host: 127.0.0.1
-  serve_port: 7788
+  adapter: wechat-typeset               # 可选值 / 扩展点见 framework/tools/_adapters/
+  contract: framework/contracts/wechat-typeset-v1.schema.json
+  required_version: ">=0.2.0,<0.3.0"    # adapter 会在启动时对账
+  # dist_dir 解析优先级：
+  #   1. WECHAT_TYPESET_DIR 环境变量
+  #   2. 本字段（若填写）
+  #   3. 约定 ../wechat-typeset/dist（Ink-Flow 的同级目录）
+  dist_dir: null
+  # 本地工具启动信息（仅供运营清单提示用户；InkFlow 不会主动启动）
+  launcher:
+    repo: https://github.com/lync-cyber/wechat-typeset
+    local_default_url: http://127.0.0.1:7788/

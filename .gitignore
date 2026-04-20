@@ -26,6 +26,5 @@ Thumbs.db
 content/retrospectives/runs/*.log.md
 !content/retrospectives/runs/.gitkeep
 
-# 本地排版工具（自研 wx-md 构建产物，不进版本库）
-framework/tools/typeset/app/node_modules/
-framework/tools/typeset/app/dist/
+# 排版能力清单缓存（由 framework/tools/_adapters/cli.py --cache 生成）
+runtime/typeset-capabilities.json

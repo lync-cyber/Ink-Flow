@@ -25,11 +25,13 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 栏目业务配置 | `framework/config/columns.yaml`（骨架/tone/KPI；视觉已剥离） |
 | 产物布局 | `framework/config/artifact-layout.yaml` |
 | 风格档案（个人化） | `content/styles/default/style-profile.md` |
-| 文章排版方案（typeset-authoring skill 产出） | `content/articles/{slug}/intermediate/09-typeset-plan.md` |
+| 文章排版方案（typesetter agent 产出） | `content/articles/{slug}/intermediate/09-typeset-plan.md` |
 | 外部参考材料 | `content/references/` |
 | 文章产物 | `content/articles/{slug}/` |
 | 运行状态 | `runtime/pipeline-states/{slug}.json` |
-| 本地排版工具 | `framework/tools/typeset/app/`（自研 wx-md · Vite + Vue 3）+ `framework/tools/typeset/launcher.bat` / `framework/tools/typeset/launcher.command` |
+| 排版适配器（与独立 repo 对接） | `framework/tools/_adapters/`（Python · PlatformAdapter 接口） |
+| 排版契约（兩端共识） | `framework/contracts/wechat-typeset-v1.schema.json` |
+| 本地排版工具（独立 repo） | https://github.com/lync-cyber/wechat-typeset （约定 clone 到 Ink-Flow 同级目录） |
 
 ## 工作区结构（单篇文章）
 
@@ -73,8 +75,8 @@ content/articles/{slug}/
 - **写文章**: 告诉 Claude 主题 → 自动启动 pipeline
 - **分析风格**: "分析风格"、"提取风格 DNA" → profile 模式，从你的文章提取风格
 - **学习进修**: "学习这篇文章"、"参考这个模板" → study 模式，分析外部材料改进规则
-- **文章排版方案**: "给这篇排版"、"排版方案"、"挑主题"、"选 variant"、"文章视觉"、"栏目视觉"、"新开栏目"、"换排版风格" → typeset-authoring skill → 产出 `content/articles/{slug}/intermediate/09-typeset-plan.md` + 改写版 `08-wechat-publish.md`；要设计全新 wx-md 主题用 `--mode=theme`。
-- **本地排版**: 双击 `framework/tools/typeset/launcher.bat`（Win）或 `framework/tools/typeset/launcher.command`（Mac/Linux）→ 启 127.0.0.1:7788 → 编辑器左右分栏（左 Markdown / 右 375px 移动端预览）→ 一键复制富文本到公众号后台。首次运行自动 `npm install + npm run build`（约 2-3 分钟）。详见 `framework/tools/typeset/README.md`。工具完全独立，草稿存 localStorage；如需粘贴 InkFlow 产物文章，手动复制 `content/articles/{slug}/export/08-wechat-publish.md` 内容到编辑器即可。
+- **文章排版方案**: "给这篇排版"、"排版方案"、"挑主题"、"选 variant" → 自动触发 `typeset` pipeline 阶段（typesetter agent），或手动 `typeset-authoring` skill → 产出 `intermediate/09-typeset-plan.md` + `export/08-typeset/wechat/annotated.md`。
+- **本地排版**: 独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 的 launcher（clone 到 Ink-Flow 同级目录）→ 启 `127.0.0.1:7788` → 粘贴 `annotated.md` → 选主题 → 一键复制富文本 → 粘贴到公众号后台。Ink-Flow 这端通过 `framework/tools/_adapters/cli.py` 读对方 `dist/api/capabilities.json` 做能力对账，无 HTTP 强依赖。
 - **格式校验**: "跑一下 lint"、"检查格式" → 运行 `.claude/skills/quality-linting/scripts/lint.py`
 - **内容排期**: "排期"、"内容日历" → 生成发布计划
 - **发布准备**: "发布清单"、"运营清单" → 发布前后检查清单
@@ -92,8 +94,10 @@ bash framework/tools/bootstrap.sh . {仓库URL}
 ## Pipeline 阶段
 
 ```
-brief → research → outline [CP1] → draft ∥ figures → audit → polish [CP2] → publish [CP3]
+brief → research → outline [CP1] → draft ∥ figures → audit → polish [CP2] → publish → typeset [CP3]
 ```
+
+`publish` 出平台无关的 Markdown；`typeset` 基于 adapter 能力清单产出平台相关的排版方案与 annotated 版本。
 
 ## 文件地图
 
@@ -104,7 +108,7 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 | 场景 | 文件 |
 |------|------|
 | 新增/调整栏目业务字段（骨架、tone、KPI） | `framework/config/columns.yaml` |
-| 给文章做排版方案 / 选主题 / 选 variant | 触发 typeset-authoring skill → 写 `content/articles/{slug}/intermediate/09-typeset-plan.md` |
+| 给文章做排版方案 / 选主题 / 选 variant | pipeline 自动跑 typesetter agent；手动触发走 typeset-authoring skill → 写 `intermediate/09-typeset-plan.md` + `export/08-typeset/wechat/annotated.md` |
 | 调整默认 brief 字段 / 导出格式 | `framework/config/inkflow.yaml` |
 | 微调风格档案 | `content/styles/default/style-profile.md` |
 | 新增外部参考文章 | `content/references/articles/` |
@@ -127,8 +131,8 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 | Skill 定义 | `.claude/skills/` |
 | 工具 | `framework/tools/` |
 | 启动脚本 | `framework/tools/bootstrap.sh` |
-| 排版工具源码（自研 wx-md） | `framework/tools/typeset/app/` |
-| 排版工具构建产物（本地生成，已 gitignore） | `framework/tools/typeset/app/dist/` + `framework/tools/typeset/app/node_modules/` |
+| 排版适配器 | `framework/tools/_adapters/`（Python） |
+| 排版契约 | `framework/contracts/*.schema.json` |
 
 ## 注意事项
 

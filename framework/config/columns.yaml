@@ -2,8 +2,9 @@
 # 栏目统一配置（单一事实来源）
 # 业务定位 + 骨架结构 + 开头策略 + 语气指南
 # 视觉字段（配色/字体/variant 选择）不在此文件；排版决策按文章粒度在 pipeline 产出：
-#   content/articles/{slug}/intermediate/09-typeset-plan.md（由 typeset-authoring skill 生成）
-# 真正渲染由 wx-md 本地工具（framework/tools/typeset/）承担
+#   content/articles/{slug}/intermediate/09-typeset-plan.md（由 typesetter agent 或 typeset-authoring skill 生成）
+# 真正渲染由独立 repo wechat-typeset 承担：https://github.com/lync-cyber/wechat-typeset
+# Ink-Flow 通过 framework/tools/_adapters/ 接入（见 framework/contracts/wechat-typeset-v1.schema.json）
 # ============================================================
 
 version: "6.0"

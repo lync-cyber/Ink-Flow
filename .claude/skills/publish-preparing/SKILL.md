@@ -41,10 +41,9 @@ AskUserQuestion:
 - [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `framework/config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备
-- [ ] **本地排版**：双击 `framework/tools/typeset.bat`（Win）或 `framework/tools/typeset.command`（Mac/Linux）→ 浏览器自动打开 `http://127.0.0.1:7788/` → 选栏目（对应 `content/styles/{slug}/theme.css`）+ 选文章 → 落地 doocs 编辑器 → 右侧"复制"按钮 → 粘贴到公众号后台
-  - 若首次使用会自动跑 setup（从 Docker Hub 抽 doocs/md 预构建 SPA，约 30–60 秒）
-  - **必须走 localhost**，`file://` 下 Clipboard API 不可用、富文本会丢
-  - 如栏目或文章没出现在列表：确认 `content/styles/{slug}/theme.css` / `content/articles/{slug}/export/08-wechat-publish.md` 存在
+- [ ] **本地排版**：若 typeset 阶段已跑过（`export/10-wechat-render.html` 存在），直接用该渲染结果；否则启动 wechat-typeset 独立工具（参见 `wechat-typeset` repo 的 launcher），打开 `http://127.0.0.1:7788/`，将 `export/08-typeset/wechat/annotated.md` 粘贴到编辑器，点"一键复制"得到富文本，粘贴到公众号后台
+  - **必须走 127.0.0.1 / localhost**，`file://` 下 Clipboard API 不可用、富文本会丢
+  - 未安装 wechat-typeset：见 https://github.com/lync-cyber/wechat-typeset
 - [ ] **话题标签**: 添加 2-3 个精准话题标签（从 output/summary.md 提取）
 
 ### 栏目特化项

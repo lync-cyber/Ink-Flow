@@ -72,7 +72,7 @@ dependencies:
     | `.caption` | 图注（避免与 em 冲突） | `<p class="caption">图 1：系统架构示意</p>` |
     | `kbd` | 键盘键 | `按 <kbd>Ctrl</kbd>+<kbd>K</kbd>` |
 
-    工作机制：wx-md 本地工具在"一键复制"时通过 juice 把主题 CSS 内联到元素 style 属性，粘贴到微信后仍生效。**只能使用 wx-md 主题已定义的 class 和 `::: container` 容器**（见 `framework/tools/typeset/app/src/themes/` 和排版方案 `09-typeset-plan.md`），不发明新 class。
+    工作机制：独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 在"一键复制"时通过 juice 把主题 CSS 内联到元素 style 属性。**writer 阶段产物不得出现 `:::` 容器或主题专属 class**（那是 typesetter 阶段的工作）；writer 只用标准 GFM + `> [!TIP]` Alerts。可用的主题 class / variant 由 typesetter agent 在 typeset 阶段按 `framework/contracts/wechat-typeset-v1.schema.json` 引入。
 
 ### H2 章节编号（栏目主题约定）
 

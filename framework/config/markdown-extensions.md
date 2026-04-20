@@ -1,8 +1,8 @@
 # Markdown 语法规约（InkFlow × 微信公众号）
 
-> **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出共用一套语法；下游排版器（兼容 doocs/md 的在线/本地渲染器）消费此语法。
+> **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出共用一套语法；下游 GFM 兼容排版器（如独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset)）消费此语法。
 >
-> **核心原则**：只使用**标准 Markdown + GFM Alerts**。任何自定义容器语法（`:::` 开头）都会在粘贴到微信时被剥，禁止使用。
+> **核心原则（publisher 产物）**：只使用**标准 Markdown + GFM Alerts**。`:::` 容器语法在 publisher 阶段禁止；typesetter 阶段会派生 annotated 副本时引入。
 >
 > **职责分工**：本文件定义"能写什么"。"写什么最合适"由 writer/illustrator agent 结合
 > `framework/config/columns.yaml` 的 `suggested_components` 字段判断。
@@ -33,7 +33,7 @@
 
 ## 2. GFM Alerts（唯一允许的"容器"扩展）
 
-**5 种类型**，由 GitHub 定义。下游排版器（如 doocs/md）通常以 [marked-alert](https://github.com/bent10/marked-extensions) 渲染。
+**5 种类型**，由 GitHub 定义。下游 GFM 排版器（如 wechat-typeset）原生消费此语法。
 
 ```markdown
 > [!NOTE]

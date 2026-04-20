@@ -388,12 +388,20 @@ def check_file_cleanup(repo):
     """检查关键工具文件存在 + 已移除的历史目录未复活"""
     section("Check 7: 文件清理校验")
 
-    # typesetter 模块已废弃，不应再出现
-    typesetter_dir = repo / "framework" / "tools" / "typesetter"
-    if typesetter_dir.exists():
-        error("framework/tools/typesetter/ 应已移除（视觉交接迁移到 content/styles/）")
+    # 排版已拆成独立 repo wechat-typeset（P1 重构）；本仓库不得再出现 typeset 副本
+    for legacy in ("typeset", "typesetter"):
+        legacy_dir = repo / "framework" / "tools" / legacy
+        if legacy_dir.exists():
+            error(f"framework/tools/{legacy}/ 应已移除（排版工具已拆到独立 repo wechat-typeset）")
+        else:
+            ok(f"framework/tools/{legacy}/ 已移除")
+
+    # PlatformAdapter 必须在位（替代旧 typeset 的工具层接入）
+    adapter_base = repo / "framework" / "tools" / "_adapters" / "base.py"
+    if adapter_base.exists():
+        ok("framework/tools/_adapters/base.py 存在")
     else:
-        ok("framework/tools/typesetter/ 已移除")
+        error("framework/tools/_adapters/base.py 缺失（PlatformAdapter 接入点）")
 
     # fig2img 转换脚本必须在位（SVG/HTML → PNG）
     fig2img_py = repo / ".claude" / "scripts" / "fig2img.py"
@@ -499,8 +507,8 @@ DEPRECATED_SKILLS = {
     "article-structuring": "已合并进 framework/config/columns.yaml 的 skeleton 段",
     "writing-guiding":     "已合并进 framework/config/columns.yaml 的 phrase_replacements / human_voice_techniques",
     "opening-crafting":    "已合并进 framework/config/columns.yaml 的 opening_strategies",
-    "visual-theming":      "typeset-authoring（wx-md 文章级排版方案）",
-    "column-designing":    "typeset-authoring（wx-md 文章级排版方案；doocs/md 主题 CSS 已不再消费）",
+    "visual-theming":      "typesetter agent / typeset-authoring skill（文章级排版方案，基于独立 repo wechat-typeset）",
+    "column-designing":    "typesetter agent / typeset-authoring skill（文章级排版方案，基于独立 repo wechat-typeset）",
     "format-linting":      "quality-linting",
     "format-exporting":    "publisher agent（publish 阶段）",
 }
