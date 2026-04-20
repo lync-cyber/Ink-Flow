@@ -1,6 +1,6 @@
 # ============================================================
 # 微信平台排版 & CSS 安全阈值（单一事实来源）
-# 消费者：.claude/skills/quality-linting/scripts/lint.py、writer/illustrator/polisher agent、column-designing skill
+# 消费者：.claude/skills/quality-linting/scripts/lint.py、writer/illustrator/polisher agent、typeset-authoring skill
 # 合并自：typography-limits.yaml + css-safety.yaml（2026-04-17）
 # ============================================================
 

@@ -1,0 +1,136 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:accent-bar 1`] = `
+"<section class="container-tip container-tip--accent-bar" style="background-color:#eef7f0;border-left:3px solid #1a8450;padding:12px 16px;border-radius:0 4px 4px 0;margin:16px 0">
+<section class="container-tip__title" style="font-weight:700;color:#1a8450;margin-bottom:6px;letter-spacing:0.3px"><svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <circle cx="8" cy="8" r="6" fill="none" stroke="#1a8450" stroke-width="1.5"></circle> <rect x="7" y="4" width="2" height="5" fill="#1a8450"></rect> <rect x="7" y="10" width="2" height="2" fill="#1a8450"></rect> </svg>测试标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:card-shadow 1`] = `
+"<section class="container-tip container-tip--card-shadow" style="background-color:#ffffff;border-top:2px solid #1a8450;padding:16px;margin:18px 0;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.06)">
+<section class="container-tip__title" style="font-weight:700;color:#1a8450;margin-bottom:8px;font-size:15px"><svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <circle cx="8" cy="8" r="6" fill="none" stroke="#1a8450" stroke-width="1.5"></circle> <rect x="7" y="4" width="2" height="5" fill="#1a8450"></rect> <rect x="7" y="10" width="2" height="2" fill="#1a8450"></rect> </svg>测试标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:minimal-underline 1`] = `
+"<section class="container-tip container-tip--minimal-underline" style="padding:4px 0 4px 12px;margin:14px 0;border-left:2px solid #1a8450">
+<section class="container-tip__title" style="display:inline-block;color:#1a8450;font-weight:700;padding-bottom:4px;border-bottom:2px solid #1a8450;margin-bottom:10px;letter-spacing:0.5px"><svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <circle cx="8" cy="8" r="6" fill="none" stroke="#1a8450" stroke-width="1.5"></circle> <rect x="7" y="4" width="2" height="5" fill="#1a8450"></rect> <rect x="7" y="10" width="2" height="2" fill="#1a8450"></rect> </svg>测试标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:pill-tag 1`] = `
+"<section class="container-tip container-tip--pill-tag" style="background-color:#eef7f0;border:1px solid #1a8450;padding:24px 16px 16px;border-radius:6px;margin:24px 0 16px">
+<section class="container-tip__title" style="display:inline-block;padding:3px 12px;background-color:#1a8450;color:#ffffff;border-radius:12px;font-size:13px;font-weight:700;margin-top:-34px;margin-bottom:10px;letter-spacing:0.4px"><svg viewBox="0 0 16 16" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <circle cx="8" cy="8" r="6" fill="none" stroke="#1a8450" stroke-width="1.5"></circle> <rect x="7" y="4" width="2" height="5" fill="#1a8450"></rect> <rect x="7" y="10" width="2" height="2" fill="#1a8450"></rect> </svg>测试标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:terminal 1`] = `
+"<section class="container-tip container-tip--terminal" style="background-color:#1f2937;padding:0;margin:18px 0;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.18)">
+<section style="background-color:#2d3748;padding:8px 14px;border-bottom:1px solid #111827;border-radius:6px 6px 0 0;color:#e5e7eb;font-weight:600;font-size:13px;letter-spacing:0.4px"><svg viewBox="0 0 54 14" width="42" height="11" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 10px"><circle cx="7" cy="7" r="5" fill="#ff5f56"></circle><circle cx="22" cy="7" r="5" fill="#ffbd2e"></circle><circle cx="37" cy="7" r="5" fill="#27c93f"></circle></svg>测试标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > admonition:ticket-notch 1`] = `
+"<section class="container-tip container-tip--ticket-notch" style="background-color:#eef7f0;border:1px dashed #1a8450;border-left:2px dotted #1a8450;border-right:2px dotted #1a8450;padding:16px 20px;margin:18px 0;border-radius:3px">
+<section style="text-align:center;margin-bottom:4px"><svg viewBox="0 0 8 8" width="8" height="8" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin: 0 6px"><circle cx="4" cy="4" r="3" fill="#1a8450"></circle></svg><svg viewBox="0 0 8 8" width="8" height="8" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin: 0 6px"><circle cx="4" cy="4" r="3" fill="#1a8450"></circle></svg><svg viewBox="0 0 8 8" width="8" height="8" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin: 0 6px"><circle cx="4" cy="4" r="3" fill="#1a8450"></circle></svg></section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > compare:column-card 1`] = `
+"<section class="container-compare container-compare--column-card" style="display: table; width: 100%; table-layout: fixed; border-spacing: 4px 0; border-collapse: separate; margin: 16px 0;">
+<section class="container-pros container-pros--column-card" style="display: table-cell; vertical-align: top; width: 50%; box-sizing: border-box; padding: 10px; background-color: #f7f8fa; border-radius: 8px; font-size: 13px; letter-spacing: 0;">
+<section class="container-pros__title" style="font-size:14px;font-weight:700;color:#1a8450;margin-bottom:8px;letter-spacing:0;line-height:1.4">正方</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > compare:ledger 1`] = `
+"<section class="container-compare container-compare--ledger" style="display: table; width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin: 16px 0; border: 1px solid #e1e4e8; border-radius: 6px;">
+<section class="container-pros container-pros--column-card" style="display: table-cell; vertical-align: top; width: 50%; box-sizing: border-box; padding: 10px; background-color: #f7f8fa; border-radius: 8px; font-size: 13px; letter-spacing: 0;">
+<section class="container-pros__title" style="font-size:14px;font-weight:700;color:#1a8450;margin-bottom:8px;letter-spacing:0;line-height:1.4">正方</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > compare:stacked-row 1`] = `
+"<section class="container-compare container-compare--stacked-row" style="margin: 16px 0;">
+<section class="container-pros container-pros--column-card" style="display: table-cell; vertical-align: top; width: 50%; box-sizing: border-box; padding: 10px; background-color: #f7f8fa; border-radius: 8px; font-size: 13px; letter-spacing: 0;">
+<section class="container-pros__title" style="font-size:14px;font-weight:700;color:#1a8450;margin-bottom:8px;letter-spacing:0;line-height:1.4">正方</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > divider:dots 1`] = `
+"<section class="container-divider container-divider--dots" style="text-align:center;margin:24px 0">
+<svg viewBox="0 0 240 8" width="220" height="8" xmlns="http://www.w3.org/2000/svg"> <circle cx="60" cy="4" r="2" fill="#e1e4e8"></circle> <circle cx="100" cy="4" r="2" fill="#e1e4e8"></circle> <circle cx="140" cy="4" r="2" fill="#e1e4e8"></circle> <circle cx="180" cy="4" r="2" fill="#e1e4e8"></circle> </svg>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > divider:flower 1`] = `
+"<section class="container-divider container-divider--flower" style="text-align:center;margin:24px 0">
+<svg viewBox="0 0 240 18" width="220" height="18" xmlns="http://www.w3.org/2000/svg"> <line x1="0" y1="9" x2="100" y2="9" stroke="#e1e4e8" stroke-width="1"></line> <line x1="140" y1="9" x2="240" y2="9" stroke="#e1e4e8" stroke-width="1"></line> <path d="M120,2 L124,9 L120,16 L116,9 Z" fill="#2d6fdd"></path> <circle cx="105" cy="9" r="1.5" fill="#e1e4e8"></circle> <circle cx="135" cy="9" r="1.5" fill="#e1e4e8"></circle> </svg>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > divider:glyph 1`] = `
+"<section class="container-divider container-divider--glyph" style="text-align:center;margin:26px 0;color:#2d6fdd;font-size:18px">
+<span style="display:inline-block;width:60px;height:1px;background-color:#e1e4e8;vertical-align:middle;margin-right:12px"></span><span style="display:inline-block;vertical-align:middle">◆</span><span style="display:inline-block;width:60px;height:1px;background-color:#e1e4e8;vertical-align:middle;margin-left:12px"></span>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > divider:rule 1`] = `
+"<section class="container-divider container-divider--rule" style="margin:24px 0">
+<hr style="margin-top: 24px; margin-bottom: 24px; border: none; height: 1px; background-color: #e1e4e8; margin: 0;">
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > divider:wave 1`] = `
+"<section class="container-divider container-divider--wave" style="text-align:center;margin:24px 0">
+<svg viewBox="0 0 240 14" width="220" height="14" xmlns="http://www.w3.org/2000/svg"> <path d="M0,7 Q15,0 30,7 T60,7 T90,7 T120,7 T150,7 T180,7 T210,7 T240,7" fill="none" stroke="#e1e4e8" stroke-width="1.5"></path> </svg>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > quote:classic 1`] = `
+"<section class="container-quote-card container-quote-card--classic" style="background-color: #f7f8fa; padding: 18px 16px; margin: 20px 0; border-radius: 8px;">
+<svg viewBox="0 0 40 32" width="34" height="28" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: top; margin-right: 4px"> <path d="M4,26 L4,16 C4,10 8,6 14,4 L14,8 C10,9 8,12 8,16 L12,16 L12,26 Z M22,26 L22,16 C22,10 26,6 32,4 L32,8 C28,9 26,12 26,16 L30,16 L30,26 Z" fill="#2d6fdd" opacity="0.3"></path> </svg>
+<section class="container-quote-card__body" style="font-size:16px;line-height:1.7;text-align:center">
+<p style="font-size: 15px; line-height: 1.8; color: #1f2328; margin-top: 0; margin-bottom: 18px; letter-spacing: 0.5px;">人生如逆旅，我亦是行人。</p>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > quote:column-rule 1`] = `
+"<section class="container-quote-card container-quote-card--column-rule" style="background-color: #f7f8fa; border-radius: 8px; padding: 18px 28px; margin: 22px 12px; border-left: 3px solid #2d6fdd; border-right: 3px solid #2d6fdd;">
+<section class="container-quote-card__body" style="font-size:16px;line-height:1.85;text-align:center;color:#1f2328">
+<p style="font-size: 15px; line-height: 1.8; color: #1f2328; margin-top: 0; margin-bottom: 18px; letter-spacing: 0.5px;">人生如逆旅，我亦是行人。</p>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > quote:frame-brackets 1`] = `
+"<section class="container-quote-card container-quote-card--frame-brackets" style="background-color: #f7f8fa; border-radius: 8px; padding: 26px 22px; margin: 22px 0;">
+<svg viewBox="0 0 320 120" width="100%" height="120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="display: block; margin-bottom: -120px"><path d="M0,20 L0,0 L20,0 M300,0 L320,0 L320,20 M0,100 L0,120 L20,120 M300,120 L320,120 L320,100" stroke="#2d6fdd" stroke-width="2" fill="none"></path></svg>
+<section class="container-quote-card__body" style="font-size:16px;line-height:1.85;text-align:center;color:#1f2328">
+<p style="font-size: 15px; line-height: 1.8; color: #1f2328; margin-top: 0; margin-bottom: 18px; letter-spacing: 0.5px;">人生如逆旅，我亦是行人。</p>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > quote:magazine-dropcap 1`] = `
+"<section class="container-quote-card container-quote-card--magazine-dropcap" style="border-radius: 8px; background-color: #ffffff; padding: 22px 18px; margin: 24px 0; border-top: 3px double #2d6fdd; border-bottom: 3px double #2d6fdd;">
+<span style="display:inline-block;font-size:48px;line-height:1;color:inherit;opacity:0.25;margin-right:8px;font-style:italic">“</span>
+<section class="container-quote-card__body" style="font-size:17px;line-height:1.85;color:#1f2328">
+<p style="font-size: 15px; line-height: 1.8; color: #1f2328; margin-top: 0; margin-bottom: 18px; letter-spacing: 0.5px;">人生如逆旅，我亦是行人。</p>
+</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > sectionTitle:bordered 1`] = `
+"<section class="container-section-title container-section-title--bordered" style="margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #2d6fdd;">
+<section class="container-section-title__label" style="font-weight:700;font-size:20px;color:#1f2328"><svg viewBox="0 0 18 18" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <path d="M0,0 L18,0 L18,4 L4,4 L4,18 L0,18 Z" fill="#2d6fdd"></path> </svg>章节标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > sectionTitle:cornered 1`] = `
+"<section class="container-section-title container-section-title--cornered" style="border-bottom: 2px solid #2d6fdd; padding-bottom: 6px; margin: 24px 0 12px;">
+<section class="container-section-title__label" style="font-weight:700;font-size:20px;color:#1f2328"><svg viewBox="0 0 18 18" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 6px"> <path d="M0,0 L18,0 L18,4 L4,4 L4,18 L0,18 Z" fill="#2d6fdd"></path> </svg>章节标题</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > steps:number-circle 1`] = `
+"<section class="container-steps container-steps--number-circle" style="margin: 16px 0;">
+<section class="container-steps__title" style="font-weight:700;margin-bottom:12px">操作步骤</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > steps:ribbon-chain 1`] = `
+"<section class="container-steps container-steps--ribbon-chain" style="margin: 18px 0; padding: 8px 0 8px 18px; border-left: 4px solid #2d6fdd;">
+<section class="container-steps__title" style="display:inline-block;padding:4px 12px;background-color:#2d6fdd;color:#ffffff;border-radius:12px;font-weight:700;font-size:13px;margin:0 0 12px -30px;letter-spacing:0.4px">操作步骤</section>"
+`;
+
+exports[`默认主题 · 每 variant 渲染片段快照 > steps:timeline-dot 1`] = `
+"<section class="container-steps container-steps--timeline-dot" style="margin: 18px 0; padding: 4px 0 4px 20px; border-left: 2px dotted #2d6fdd;">
+<svg viewBox="0 0 10 10" width="10" height="10" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 8px; margin-left: -16px"><circle cx="5" cy="5" r="4" fill="#2d6fdd"></circle></svg>
+<section class="container-steps__title" style="font-weight:700;color:#2d6fdd;margin-bottom:10px">操作步骤</section>"
+`;

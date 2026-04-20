@@ -183,19 +183,17 @@ paths:
   artifact_layout: framework/config/artifact-layout.yaml
 
 # ============================================================
-# 本地排版工具（基于 doocs/md）
-# 入口：双击 framework/tools/typeset.bat (Win) / framework/tools/typeset.command (Mac/Linux)
-# 首次初始化由启动脚本自动完成（等价于 node framework/tools/typeset/setup.mjs）
+# 本地排版工具（wx-md · Vite + Vue 3 自研）
+# 入口：双击 framework/tools/typeset/launcher.bat (Win) /
+#      framework/tools/typeset/launcher.command (Mac/Linux)
+# 首次运行自动 npm install + npm run build；之后 node serve.mjs 启 127.0.0.1:7788
 # 详见 framework/tools/typeset/README.md
+# P0 设计原则：完全独立于 InkFlow 内容目录，草稿存 localStorage；
+# 不读取 content/styles/*/theme.css 或 content/articles/*/export/*.md
 # ============================================================
 typeset:
-  engine: doocs-md
-  engine_image: doocs/md        # Docker Hub image
-  engine_tag: 2.1.0-assets      # *-assets 镜像是专门抽预构建 SPA 用的
-  engine_inner_path: /app/assets
-  dist_dir: framework/tools/typeset/dist
+  engine: wx-md           # 自研 · Vite + Vue 3 + TS
+  app_dir: framework/tools/typeset/app
+  dist_dir: framework/tools/typeset/app/dist
   serve_host: 127.0.0.1
   serve_port: 7788
-  # 数据源（serve 启动时扫描并注入到 doocs）
-  theme_source: content/styles/*/theme.css
-  article_source: content/articles/*/export/08-wechat-publish.md
