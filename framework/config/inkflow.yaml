@@ -19,9 +19,10 @@ model_allocation:
   writer: opus
   illustrator: sonnet
   auditor: opus
-  polisher: opus        # 升级：polisher 在 audit 基础上做高质量改写，sonnet 容易改坏（P2 重构）
+  polisher: opus        # 升级：polisher 在 audit 基础上做高质量改写，sonnet 容易改坏
   publisher: sonnet
   typesetter: opus      # 决策密集：主题/variant/组件多维权衡 + AskUserQuestion 交互
+  style-analyzer: sonnet  # 由 style-learning skill 调用；风格 DNA 提取，不在 pipeline 主链
 
 # Brief 默认字段
 defaults:
@@ -187,7 +188,11 @@ stages:
         # publisher 产物必须是纯 GFM，:::容器在 typeset 阶段加入
         - '^:::'
 
-  # ---- typeset 仅对 wechat 运行（其他平台无独立排版器） ----
+  # ---- typeset 仅对 wechat 运行 ----
+  # 决策：typesetter 是 wechat-only by design（详见 .claude/agents/typesetter.md
+  # 的"多平台决策"段）。其他平台 publisher 产物即终稿，不进入 typeset。
+  # 扩展路径：未来新增 typeset-able 平台时，本 stage 改为 per_platform: true
+  # + 多个 adapter；当前不预投入抽象。
   - name: typeset
     agent: typesetter
     checkpoint: true                 # CP3
@@ -196,10 +201,12 @@ stages:
     output: "content/articles/{slug}/intermediate/09-typeset-plan.md"
     additional_outputs:
       - "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
-      - "content/articles/{slug}/export/08-typeset/wechat/render.html"
       - "content/articles/{slug}/export/08-typeset/wechat/meta.json"
     validation:
-      required_sections: ["主题", "签名元素", "Variant 组合", "组件库预设", "改写点索引"]
+      # plan.md 结构（与 typesetter.md § Format 对齐）
+      required_sections: ["Persona 选型", "签名元素（唯一）", "改写点索引", "自检"]
+      # adapter 侧的真实校验：health → capabilities → conform → validate（dry-run render）
+      # 任何一步不过 → CP3 status=failed；conform ok 但带 issues → CP3 status=degraded
       platform_checks:
         - type: capability_conformance
           adapter_cli: framework/tools/_adapters/cli.py
@@ -267,14 +274,14 @@ paths:
 #
 #   零侵入：wechat-typeset 纯浏览器工具，InkFlow 不要求它暴露 HTTP 端点；
 #          也不会去修改它的源码。唯一的合约见
-#          framework/contracts/wechat-typeset-v1.schema.json。
+#          framework/contracts/wechat-typeset-v2.schema.json。
 #
 # 最终渲染与复制：用户在 wechat-typeset 本地编辑器里粘贴 annotated.md，
 #   一键复制到公众号后台（secure-context + Clipboard API 约束）。
 # ============================================================
 typeset:
   adapter: wechat-typeset               # 可选值 / 扩展点见 framework/tools/_adapters/
-  contract: framework/contracts/wechat-typeset-v1.schema.json
+  contract: framework/contracts/wechat-typeset-v2.schema.json
   required_version: ">=0.2.0,<0.3.0"    # adapter 会在启动时对账
   # dist_dir 解析优先级：
   #   1. WECHAT_TYPESET_DIR 环境变量

@@ -30,6 +30,28 @@ Q: "这篇文章属于哪个栏目？"
 
 用 WebSearch 做 1-2 次验证；输出一句话评估 + 差异化角度。不阻塞流程。
 
+### Step 2d — 目标平台确认（按用户指定优先，未指定则按栏目推荐）
+
+```
+IF 用户消息显式指定 target_platforms（如"写给公众号 + 知乎"）:
+  直接填入 brief.target_platforms
+  primary_platform = 列表第一个
+ELSE:
+  读 framework/config/columns.yaml 的 columns.{content_column}.suggested_platforms
+  AskUserQuestion:
+    question: "推荐的目标平台: {suggested_platforms}，确认或调整？"
+    options:
+      - "采用推荐"
+      - "只发 wechat"
+      - "自定义组合" — multiSelect 从 [wechat, xiaohongshu, zhihu, juejin] 选
+  primary_platform = 最终列表第一个
+```
+
+约束：
+- `target_platforms` 非空，元素 ∈ `framework/config/artifact-layout.yaml` 的 `platforms`
+- 某个 `{platform}` 若在 `columns.{col}.platforms_config` 里声明 `applicable: conditional` 且
+  `applicable_if` 不满足，fanout 时会跳过——此处不做硬阻断，让用户先定意图。
+
 ### Step 3 — 生成 brief
 
 1. 自动生成 slug（中文 pinyin 或英文 kebab-case）

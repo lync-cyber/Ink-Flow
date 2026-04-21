@@ -15,8 +15,8 @@
 # 阶段映射：
 #   01 brief          02 research        03 outline  [CP1]
 #   04a draft  ∥  04b figure
-#   05 audit          06 polish  [CP2]   07 final-manuscript
-#   08 publish (wechat/plain/teaser)  [CP3]
+#   05 audit          06 polish  [CP2]   07 final
+#   08 publish (per-platform)         09 typeset-plan (wechat-only)  [CP3]
 # ============================================================
 
 version: "2.1"
@@ -58,9 +58,9 @@ paths:
   teaser:         "content/articles/{slug}/export/08-teaser-120chars.md"        # 平台无关的短摘要
 
   # ---- 排版产物（typeset 阶段 · 仅 wechat 需要深度排版） ----
+  # 真实渲染在独立 repo wechat-typeset 的浏览器 launcher 完成（不写 render.html 占位页）
   typeset_plan:       "content/articles/{slug}/intermediate/09-typeset-plan.md"
   typeset_annotated:  "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
-  typeset_render:     "content/articles/{slug}/export/08-typeset/wechat/render.html"
   typeset_meta:       "content/articles/{slug}/export/08-typeset/wechat/meta.json"
 
 # ---- Atoms 类型枚举（供 lint / orchestrator 读取）----

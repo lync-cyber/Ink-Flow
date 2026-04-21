@@ -1,0 +1,27 @@
+# ============================================================
+# zhihu 平台 publish 转换序列
+# ============================================================
+
+platform: zhihu
+
+keep_frontmatter: true
+
+transforms:
+  - kind: adapt_frontmatter_tags
+    target_field: tags
+    note: "frontmatter.tags 适配知乎标签语义（topic-style，非 hashtag）"
+
+  - kind: keep_code_blocks
+    note: "知乎原生支持代码块围栏，保留 ``` 不动"
+
+  - kind: keep_references_section
+    note: "保留参考文献节，知乎渲染良好"
+
+  - kind: degrade_gfm_alert_to_blockquote
+    pattern: "> [!*]"
+    replacement: "> "
+    note: "知乎不渲染 GFM Alert，降级为普通 blockquote 避免视觉错乱"
+
+extra_outputs: []
+
+hands_off_to_typeset: false

@@ -2,8 +2,9 @@
 name: quality-linting
 description: >
   格式 lint — 对指定文章运行 .claude/skills/quality-linting/scripts/lint.py，报告 error / warning。
-  由 publisher agent 自动调用，也可被用户手动触发。
   触发条件："跑一下 lint"、"检查格式"、"格式校验"、"lint {slug}"。
+  由 publisher agent 在发布前自动调用；当用户想手工校验单篇文章排版/段落/SVG 是否合规时，
+  也应触发此 skill。
 argument-hint: "[文章 slug 或文件路径]"
 allowed-tools: Read, Bash, Glob, AskUserQuestion
 ---

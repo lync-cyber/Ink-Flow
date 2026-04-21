@@ -1,13 +1,20 @@
 # ============================================================
-# 平台 lint 规则数据（消费者：lint.py --platform）
+# 平台 lint 规则策略（消费者：lint.py --platform）
+#
+# 职责边界（v2.0 起）：
+# - 本文件只放"规则的开/关 / 严重级别 / 消息文案 / 关键词列表 / 平台特化模式"
+# - 数值阈值（max_paragraph_chars / max_sentence_chars / allowed_headings /
+#   length_limit_factor / length_hard_factor / svg / forbidden_css / forbidden_tags）
+#   全部由 .claude/rules/data/platform-limits.yaml 单一事实来源提供
+# - lint.py 的 _merge_platform_rules 会先读 platform-limits.yaml 注入数值，
+#   再读本文件做 enabled/severity 覆盖
 #
 # 设计原则：
-# - 本文件只放"平台差异规则"。跨平台共用规则在 lint.py DEFAULT_CONFIG + .claude/rules/data/*.yaml
-# - 渐进披露：lint.py 按 --platform 参数只加载当前平台段，不一次性读全
+# - 渐进披露：lint.py 按 --platform 参数只加载当前平台段
 # - enforce 级别：error 阻断；warning 记录不阻断
 # ============================================================
 
-version: "1.0"
+version: "2.0"
 
 # 所有平台共享的基础（强制启用）
 base:
@@ -24,6 +31,7 @@ base:
 # ============================================================
 # 平台差异段：覆盖/关闭/追加
 # key = brief.target_platforms 元素
+# 数值阈值参见 .claude/rules/data/platform-limits.yaml 同 key
 # ============================================================
 
 platforms:
@@ -33,9 +41,6 @@ platforms:
     typography:
       enabled: true
       severity: warning
-      max_paragraph_chars: 120
-      max_sentence_chars: 40
-      allowed_headings: [2, 3, 4]
     gfm_alerts:
       enabled: true
       severity: warning
@@ -43,8 +48,6 @@ platforms:
     css_safety:
       enabled: true
       severity: error
-      forbidden_css: ["position:", "@media", "@keyframes", ":hover", ":active", "float:", "gap:"]
-      forbidden_tags: ["<style", "<script", "<iframe", "<form"]
     svg_readability:
       enabled: true
       severity: error
@@ -53,16 +56,12 @@ platforms:
       severity: error
     forbidden_code_blocks:
       enabled: false         # wechat 允许代码块
-    length_limit_factor: 1.05    # 超 length_limit × 此系数判 warning，× 1.10 判 error
 
   xiaohongshu:
     # 短图文：禁代码块 / 段落短 / 不要 GFM Alerts（不原生支持）/ 不强调 CSS
     typography:
       enabled: true
       severity: error              # 小红书段落硬约束
-      max_paragraph_chars: 30
-      max_sentence_chars: 30
-      allowed_headings: [2, 3]     # 小红书渲染仅到 H3
     gfm_alerts:
       enabled: false               # 小红书不渲染 GFM Alert，lint 跳过
     css_safety:
@@ -81,16 +80,12 @@ platforms:
       min_count: 3
       max_count: 5
       pattern: "^#[^\\s]+$"
-    length_limit_factor: 1.05
 
   zhihu:
     # 长文深度：宽松段落 / Alert 降级 / 允许 inline 公式 / 要求辩证
     typography:
       enabled: true
       severity: warning
-      max_paragraph_chars: 500     # 知乎段落可以很长
-      max_sentence_chars: 50
-      allowed_headings: [2, 3, 4]
     gfm_alerts:
       enabled: true
       severity: warning
@@ -109,16 +104,12 @@ platforms:
       severity: warning
       message: "知乎文章建议至少包含 1 个反方观点（tone.rules 要求）"
       detect_keywords: ["反过来", "但也有人", "反对意见", "另一种看法"]
-    length_limit_factor: 1.05
 
   juejin:
     # 技术实战：代码块必标语言 / 允许 inline code / frontmatter description 必填 / 宽松段落
     typography:
       enabled: true
       severity: warning
-      max_paragraph_chars: 300
-      max_sentence_chars: 45
-      allowed_headings: [2, 3, 4]
     gfm_alerts:
       enabled: true
       severity: warning
@@ -142,4 +133,3 @@ platforms:
       enabled: true
       severity: warning
       message: "掘金技术文建议文末附 GitHub/文档链接"
-    length_limit_factor: 1.05

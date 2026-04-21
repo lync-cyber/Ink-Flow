@@ -81,7 +81,7 @@ platforms:
     applicable: conditional
     applicable_if: "brief.story_subtype in [career, technical_growth, team_incident]"
     skeleton:
-      - "TL;DR [atom: claims.primary]                # 职业/成长的一句话教训"
+      - "一句话结论 [atom: claims.primary]             # 职业/成长的一句话教训"
       - "背景 [atom: cases×1]                         # 技术/团队场景"
       - "经过 + 关键决策 [atom: cases + pitfalls]"
       - "复盘 [atom: actions]                         # 技术/流程改进"

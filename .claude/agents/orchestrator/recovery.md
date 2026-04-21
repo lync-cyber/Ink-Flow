@@ -29,11 +29,39 @@ state.draft.sections 数组中，从第一个非 completed 的 section 继续。
 
 ## Rerun
 
+支持两种粒度：**全量重跑**（影响所有 per-platform 平台）与 **per-platform 重跑**（只影响指定平台）。
+
 ```
-用户: "重跑 {stage}"
-1. 读 state，找到 {stage} 及其所有后继
-2. AskUserQuestion: "重跑 {stage} 会使后续 [outline, draft, ...] 重置。确认？"
-3. 确认 → {stage} 及所有后继 status=pending；清除其 output 文件；重跑
+用户输入解析：
+  "重跑 {stage}"            → 全量重跑（旧语义）
+  "重跑 {stage}.{platform}"  → per-platform 重跑（新语义，需 stage.per_platform == true）
+  "重跑 {stage} --platform {p}"  → 等价写法
+
+算法：
+
+1. 读 state，找到 {stage} 在 inkflow.yaml 的定义
+2. IF stage.per_platform == true 且用户给了 {platform}：
+     a. 校验 {platform} ∈ brief.target_platforms；否则报错退出
+     b. 找出"同平台后继链"：
+        - 从 {stage} 起，逐 stage 向后扫
+        - 若后继 stage.per_platform == true → 只算该平台子状态
+        - 若后继 stage.per_platform == false（如 typeset 仅 wechat）：
+          · run_if 与 {platform} 相关时纳入（例：typeset 只在重跑 wechat 时纳入）
+          · 否则跳过
+     c. AskUserQuestion: "重跑 {stage}.{platform}（独立隔离），影响平台内后继 [outline.{p}, draft.{p}, ...]。
+        其他平台（{others}）不受影响。确认？"
+     d. 确认 → 仅重置 state.stages.{stage_i}.platforms.{platform}.status = pending
+            清除该平台的 output 文件（路径含 {platform}）
+            stage_i.overall_status 重新计算（其他平台 completed → overall = partial）
+
+3. ELSE（全量重跑或非 per_platform stage）：
+     a. AskUserQuestion: "重跑 {stage} 会重置所有后继 [...]。确认？"
+     b. 确认 → 全部后继 status=pending；清除全部对应 output；重跑
+
+设计动机（C4）：
+- per-platform 失败隔离已在 fanout.md:53-57 落地；rerun 也应同等粒度
+- 重跑 polish.wechat 不应使 polish.zhihu 也变 pending（双倍 token 浪费）
+- typeset 仅 wechat → 重跑 wechat 链才纳入 typeset
 ```
 
 ## Dry-Run

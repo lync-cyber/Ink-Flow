@@ -1,11 +1,12 @@
 ---
 name: typeset-authoring
 description: >
-  wechat-typeset 排版方案设计的**手动入口**（pipeline 自动跑时由 orchestrator 分派
-  typesetter agent）。触发词："给这篇排版"、"排版方案"、"挑 persona"、"选签名容器"、
+  wechat-typeset 排版方案手动入口 — thin shell：采集参数 + 调 typesetter agent。
+  触发条件："给这篇排版"、"排版方案"、"挑 persona"、"选签名容器"、
   "typeset {slug}"、"换个排版风格"。
-  本 skill 是 thin shell——采集参数 + 调 typesetter agent。容器 / persona / 变体
-  的权威知识在 sibling repo wechat-typeset 的 SKILL 里，本 skill 不做离线副本。
+  当用户想为已发布完成的微信文章重做排版方案、或临时换 persona / 签名容器时，
+  应触发此 skill；pipeline 自动跑时由 orchestrator 分派 typesetter agent，无需手动入口。
+  容器 / persona / 变体权威知识在 sibling repo wechat-typeset 的 SKILL 里，本 skill 不做副本。
 argument-hint: "[文章 slug]"
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash, Task
 ---
@@ -61,7 +62,7 @@ Task(
     入口: typeset-authoring skill（手动触发）
     走完 ①health → ②capabilities → ③docs → ④PLAN（强制 AskUserQuestion）→
     ⑤ANNOTATE → ⑥conform → ⑦validate 全流程。
-    产物落到 .claude/agents/typesetter.md 约定的三个文件，不写 render.html。
+    产物落到 .claude/agents/typesetter.md 约定的三个文件（plan.md / annotated.md / meta.json），不写 render.html。
   """
 )
 ```

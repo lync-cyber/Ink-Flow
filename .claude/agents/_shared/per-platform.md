@@ -65,7 +65,7 @@ per-platform agent 可以读**同平台**上一阶段的产物（如 writer 读 
 
 - 产物路径含正确的 `{platform}` 目录/后缀
 - 遵守 `columns.{column}.platforms.{platform}.tone.rules` 的禁止项（至少不新引入违规）
-- 字数 ≤ `length_limit` × 1.10（10% 弹性，仅允许超限用于必要完整性）
+- 字数 ≤ `length_limit × length_hard_factor`（硬上限弹性，从 `.claude/rules/data/platform-limits.yaml` 的 `platforms.{platform}.length_hard_factor` 读取；超出仅允许用于必要完整性）
 
 ## 与 lint 的接口
 

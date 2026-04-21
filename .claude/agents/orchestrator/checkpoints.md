@@ -4,20 +4,46 @@
 
 ## CP1 — 大纲审核（outline 阶段结束）
 
+### CP1 前置：标题门禁（title-crafting skill · 程序调用）
+
+outline 阶段所有 `{platform}` 完成校验后、**进入 AskUserQuestion 之前**，orchestrator 必须
+对每个 `{platform} ∈ brief.target_platforms` 跑一次 `.claude/skills/title-crafting/SKILL.md`：
+
+```
+FOR platform in brief.target_platforms:
+  读 content/articles/{slug}/intermediate/03-outline/{platform}.md
+  抽取"# 大纲: {topic} · {platform}"的 {topic} 或总览中的标题
+  执行 title-crafting 硬性规则（≤15 中文字 + 有观点 / 信息增量）
+  不通过：
+    生成 3 个备选（按 title-crafting § 备选标题生成规则）
+    AskUserQuestion 让用户选「备选 1/2/3 / 手动改」
+    按用户选择更新 03-outline/{platform}.md 的标题字段
+  通过：记录"✓ 标题检查通过"到 state.stages.outline.platforms.{platform}.title_gate = "passed"
+```
+
+**重要**：title-crafting skill 的 frontmatter 含 `user-invocable: false` +
+`disable-model-invocation: true`——**只能由 orchestrator 程序性调用**，LLM 不应主动触发。
+调用失败（标题无法抽取等）记录到 state，**不**阻塞 CP1 进入主流程——orchestrator 在主 AskUserQuestion
+的摘要里附上"标题门禁: {状态}"供用户可见。
+
+### CP1 主交互
+
 ```
 AskUserQuestion:
-  question: "大纲已生成，请审核"（附大纲摘要 + 审核要点）
+  question: "大纲已生成，请审核"
+    （附：每个 {platform} 的大纲摘要 + 标题门禁结果 + 审核要点）
   options:
     - "通过，继续写作"
-    - "修改特定 section" — 暂停等待用户编辑
-    - "重新组织结构" — 重跑 outline
+    - "修改特定 section" — 暂停等待用户编辑（多平台时需指明平台 + section）
+    - "重新组织结构" — 重跑 outline（per-platform rerun，见 recovery.md）
     - "返回调研阶段" — 重跑 research
 ```
 
 审核要点：
 - 每个 section 有明确论点（非描述性标题）
 - 视觉断点归属清晰（writer:/illustrator:）
-- 总字数与 brief.target_length 偏差 ≤20%
+- 总字数与 `columns.{column}.platforms.{platform}.length_limit` 偏差 ≤10%
+- 标题已通过 title-crafting 门禁（硬性 15 字 + 信息增量）
 
 ## CP2 — 终审（polish 阶段结束）
 
@@ -27,7 +53,7 @@ AskUserQuestion:
   options:
     - "通过，准备发布"
     - "处理审校问题后重新润色" — 重跑 polish
-    - "手动编辑" — 暂停等待用户编辑 export/07-final-manuscript.md
+    - "手动编辑" — 暂停等待用户编辑对应平台 export/07-final/{platform}.md（多平台按 brief.target_platforms 逐一编辑）
     - "返回重写" — 重跑 draft
 ```
 

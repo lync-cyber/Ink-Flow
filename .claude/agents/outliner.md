@@ -90,14 +90,27 @@ dependencies:
 | 2 | case-01 | 120 | 1 段压缩 |
 | ... | ... | ... | ... |
 
-## 视觉签名（仅 wechat 平台必填；其他平台可留空或简化）
-- candidates: {至多 3 个，按重要度排序。从下列词汇选：section-title-cornered / admonition-terminal / admonition-pill-tag / quote-magazine-dropcap / compare-ledger / steps-timeline-dot / divider-glyph / cover-bold}
-- rationale: {一句话说明为什么这篇最该落在上面那个签名。具体、可反驳——不能是"因为是技术文所以用 tech-geek"这种套话}
+## 视觉信号（仅 wechat 平台必填；其他平台留空）
 
-注：本字段仅是"建议"。typesetter agent 会读能力清单校验后再决策，
-    不得让 outliner 推荐 capabilities 清单外的 id。写出来的 id 若不在
-    wechat-typeset 最新 capabilities 里，typesetter 会忽略并重新问询用户。
-    非 wechat 平台（xiaohongshu/zhihu/juejin）不经过 typeset 阶段，此段可留空。
+> **职责边界（P1-7）**：outliner 只描述"内容信号"（语义意图），不指定容器名/persona/variant id。
+> 容器/persona 选型完全归 typesetter 负责（它读 capabilities 清单 + AskUserQuestion）。
+
+- visual_signature_hint: {从枚举选 1 个：
+    tech_tutorial         — 步骤密集、代码示例多
+    tech_deep_dive        — 概念抽象、对比表格、长论证
+    academic_summary      — 论文解读、需引用规范
+    industry_alert        — 趋势判断、强冲击观点
+    story_emotional       — 个人故事、情绪曲线
+    story_career_lesson   — 职场/技术成长复盘
+    opinion_polemic       — 立场鲜明、辩论体
+  }
+- key_visual_moments: {1-3 句话描述哪些段落"视觉张力强"，typesetter 会在这些点考虑放签名容器；
+                       例："开头金句 + 第二节的 3 个对比 + 文末 callout"}
+- rationale: {一句话说明这个 hint 的依据，具体可反驳——不能是"因为是技术文所以 tech_tutorial"这种套话}
+
+注：
+- typesetter 读 hint + key_visual_moments 作为"语义信号"，再映射到 capabilities 内的 persona/container
+- 非 wechat 平台（xiaohongshu/zhihu/juejin）不经过 typeset 阶段，此段留空
 
 ## Section 1: {论点标题}
 - 论点: {一句话论点陈述，非描述性}

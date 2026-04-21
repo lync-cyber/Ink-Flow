@@ -16,17 +16,26 @@
   "created_at": "2026-04-04T10:00:00Z",
   "meta": { ... },
   "stages": {
-    "brief": { ... },
+    "brief":    { ... },
     "research": { ... },
-    "outline": { ... },
-    "draft": { ... },
-    "figures": { ... },
-    "audit": { ... },
-    "polish": { ... },
-    "publish": { ... }
+    "atoms":    { ... },
+    "outline":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "draft":    { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "figures":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "audit":    { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "polish":   { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "publish":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
+    "typeset":  { ... }
   }
 }
 ```
+
+`per_platform: true` 的阶段不再持有扁平状态字段，状态下沉到
+`stages.{stage}.platforms.{platform}`。`overall_status ∈
+{all_completed, partial, failed}`（来自 `orchestrator/fanout.md` § 状态存储）。
+
+`typeset` 仅 wechat 触发；非 wechat pipeline 在 publish 完成后即结束，`stages.typeset`
+字段可不存在或为 `{"status": "skipped", "skipped_reason": "wechat ∉ target_platforms"}`。
 
 ## meta — 全局元数据
 
@@ -76,7 +85,7 @@ Brief 阶段确定后一次写入，后续阶段只读。
 
 ## 阶段通用字段
 
-每个阶段共享以下字段结构：
+每个**非 per_platform** 阶段共享以下字段结构：
 
 ```json
 "{stage_name}": {
@@ -92,6 +101,31 @@ Brief 阶段确定后一次写入，后续阶段只读。
   "retries": []
 }
 ```
+
+**per_platform** 阶段的结构（outline / draft / figures / audit / polish / publish）：
+
+```json
+"{stage_name}": {
+  "per_platform": true,
+  "overall_status": "all_completed",
+  "agent": "writer",
+  "started_at": "...",
+  "completed_at": "...",
+  "platforms": {
+    "wechat":      { "status": "completed", "started_at": "...", "completed_at": "...", "validation": {...}, "retries": [...] },
+    "zhihu":       { "status": "completed", ... },
+    "xiaohongshu": { "status": "failed",    "violations": [...], "retries": [...] },
+    "juejin":      { "status": "skipped",   "reason": "applicable_if 不满足" }
+  }
+}
+```
+
+- `overall_status` 由 fanout 根据各平台状态聚合：
+  - `all_completed`：所有 effective_platforms = completed
+  - `partial`：部分 completed，其他 skipped，无 failed
+  - `failed`：任一平台 failed
+- Checkpoint 若挂在 per_platform 阶段（如 CP1@outline / CP2@polish），直接写在该阶段顶层的 `checkpoint` 字段，
+  决策含"是否允许部分平台未完成就放行"由 orchestrator/checkpoints.md 决定。
 
 | 字段 | 类型 | 何时写入 | 说明 |
 |------|------|----------|------|
@@ -170,47 +204,45 @@ Brief 是用户输入阶段，不经过 agent，无 validation。记录用户交
 | `outline_review` | 用户大纲审查结果：`adopted`（采纳建议）/ `partial`（部分采纳）/ `kept`（保持原样）/ `null`（用户未提供大纲） |
 | `user_overrides` | 用户覆盖了默认值的字段列表（格式："field: value"），空数组表示全部使用默认值 |
 
-### draft
+### draft（per_platform）
 
-Draft 阶段支持 section 粒度跟踪。
+Draft 在 per_platform 结构下把 `sections` 下沉到每个平台：
 
 ```json
 "draft": {
-  "status": "in_progress",
-  "started_at": "2026-04-04T10:30:00Z",
-  "completed_at": null,
+  "per_platform": true,
+  "overall_status": "partial",
   "agent": "writer",
-  "sections": [
-    {
-      "index": 1,
-      "title": "一句话结论",
-      "status": "completed",
-      "started_at": "2026-04-04T10:30:00Z",
-      "completed_at": "2026-04-04T10:33:00Z",
-      "artifact": "drafts/section-1.md",
-      "word_count": 320
-    },
-    {
-      "index": 2,
-      "title": "问题定义",
+  "started_at": "2026-04-04T10:30:00Z",
+  "platforms": {
+    "wechat": {
       "status": "in_progress",
-      "started_at": "2026-04-04T10:33:30Z",
-      "completed_at": null,
-      "artifact": "drafts/section-2.md",
-      "word_count": null
-    }
-  ],
-  "merged_word_count": null,
-  "validation": null,
-  "retries": []
+      "started_at": "2026-04-04T10:30:00Z",
+      "sections": [
+        { "index": 1, "title": "一句话结论", "status": "completed",
+          "started_at": "2026-04-04T10:30:00Z",
+          "completed_at": "2026-04-04T10:33:00Z",
+          "artifact": "intermediate/04a-draft/wechat/section-01.md",
+          "word_count": 320 },
+        { "index": 2, "title": "问题定义", "status": "in_progress",
+          "started_at": "2026-04-04T10:33:30Z",
+          "artifact": "intermediate/04a-draft/wechat/section-02.md",
+          "word_count": null }
+      ],
+      "merged_word_count": null,
+      "validation": null,
+      "retries": []
+    },
+    "zhihu": { "status": "completed", "sections": ["..."], "merged_word_count": 3200 }
+  }
 }
 ```
 
 | 字段 | 说明 |
 |------|------|
-| `sections[].title` | section 标题（从 outline 提取，便于日志可读性） |
-| `sections[].word_count` | 该 section 字符数（completed 后写入） |
-| `merged_word_count` | 合并后 full.md 总字符数（全部 section 完成后写入） |
+| `platforms.{p}.sections[].title` | section 标题（从该平台 outline 提取，便于日志可读性） |
+| `platforms.{p}.sections[].word_count` | 该 section 字符数（completed 后写入） |
+| `platforms.{p}.merged_word_count` | 该平台 merged-draft.md 总字符数（全部 section 完成后写入） |
 
 ### audit
 
@@ -290,11 +322,20 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 ```
 
 ```json
-"publish": {
+"typeset": {
+  "status": "completed",
+  "agent": "typesetter",
+  "started_at": "...",
+  "completed_at": "...",
   "checkpoint": {
     "id": "CP3",
+    "status": "passed",
     "decision": "approved",
-    "modifications": [],
+    "persona": "tech-explainer",
+    "adapter_version": "0.1.0",
+    "conform": { "ok": true, "violations": [] },
+    "validate": { "ok": true, "issues": [] },
+    "reasons": [],
     "decided_at": "2026-04-04T11:35:00Z"
   }
 }
@@ -303,13 +344,15 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 | 字段 | 说明 |
 |------|------|
 | `id` | CP1 / CP2 / CP3 |
-| `decision` | `approved`（直接通过）/ `approved_with_edits`（修改后通过）/ `rejected`（打回重做）/ `returned`（返回前序阶段） |
+| `status` | **仅 CP3 必填**：`passed` / `degraded` / `failed`（见 `orchestrator/checkpoints.md` § CP3）。CP1/CP2 可省 |
+| `decision` | `approved`（直接通过）/ `approved_with_edits`（修改后通过）/ `rejected`（打回重做）/ `returned`（返回前序阶段）/ `skipped`（CP3 非 wechat 时） |
 | `modifications` | 用户在 checkpoint 做的调整（简短描述列表），无调整则为空数组 |
 | `decided_at` | 用户做出决策的时间 |
+| `persona` / `adapter_version` / `conform` / `validate` / `reasons` | **仅 CP3**：从 meta.json 冗余落地到 state，便于复盘。`adapter_version` 严禁字面值 `unknown` |
 
-## 完整示例
+## 完整示例（per-platform · 目标平台 = wechat + zhihu）
 
-一次成功的 pipeline 运行产生的最终 state 文件：
+一次成功 pipeline 运行产生的最终 state 文件（字段省略号表示与"阶段通用字段"相同，不再重复）：
 
 ```json
 {
@@ -318,131 +361,88 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
   "meta": {
     "topic": "React Hooks 深度解析",
     "content_column": "tech",
-    "content_type": "deep_dive",
-    "audience": "tech_intermediate",
-    "target_length": 1500,
-    "opening_style": "pain_point",
-    "series_name": "",
-    "series_index": 0,
-    "topic_assessment": {
-      "search_heat": "高",
-      "differentiation": "中",
-      "column_fit": "高",
-      "verdict": "推荐",
-      "suggestion": "聚焦 useEffect 清理陷阱"
-    }
+    "target_platforms": ["wechat", "zhihu"],
+    "primary_platform": "wechat",
+    "...": "..."
   },
   "stages": {
-    "brief": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:00:00Z",
-      "completed_at": "2026-04-04T10:04:00Z",
-      "agent": null,
-      "decisions": {
-        "column_source": "user_selected",
-        "opening_source": "auto_from_column",
-        "outline_review": null,
-        "user_overrides": []
-      },
-      "validation": null,
-      "retries": []
-    },
-    "research": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:05:00Z",
-      "completed_at": "2026-04-04T10:15:00Z",
-      "agent": "researcher",
-      "validation": { "passed": true, "violations": [] },
-      "retries": []
-    },
+    "brief":    { "status": "completed", "agent": null, "decisions": { "...": "..." } },
+    "research": { "status": "completed", "agent": "researcher", "validation": { "passed": true } },
+    "atoms":    { "status": "completed", "agent": "atomizer",  "validation": { "passed": true } },
+
     "outline": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:16:00Z",
-      "completed_at": "2026-04-04T10:22:00Z",
-      "agent": "outliner",
-      "validation": { "passed": true, "violations": [] },
-      "retries": [],
-      "checkpoint": {
-        "id": "CP1",
-        "decision": "approved",
-        "modifications": [],
-        "decided_at": "2026-04-04T10:25:00Z"
-      }
-    },
-    "draft": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:26:00Z",
-      "completed_at": "2026-04-04T10:50:00Z",
-      "agent": "writer",
-      "sections": [
-        { "index": 1, "title": "一句话结论", "status": "completed", "started_at": "2026-04-04T10:26:00Z", "completed_at": "2026-04-04T10:29:00Z", "artifact": "drafts/section-1.md", "word_count": 280 },
-        { "index": 2, "title": "问题定义", "status": "completed", "started_at": "2026-04-04T10:29:30Z", "completed_at": "2026-04-04T10:35:00Z", "artifact": "drafts/section-2.md", "word_count": 350 },
-        { "index": 3, "title": "方案详解", "status": "completed", "started_at": "2026-04-04T10:35:30Z", "completed_at": "2026-04-04T10:43:00Z", "artifact": "drafts/section-3.md", "word_count": 520 },
-        { "index": 4, "title": "性能验证", "status": "completed", "started_at": "2026-04-04T10:43:30Z", "completed_at": "2026-04-04T10:47:00Z", "artifact": "drafts/section-4.md", "word_count": 280 },
-        { "index": 5, "title": "避坑要点", "status": "completed", "started_at": "2026-04-04T10:47:30Z", "completed_at": "2026-04-04T10:50:00Z", "artifact": "drafts/section-5.md", "word_count": 200 }
-      ],
-      "merged_word_count": 1630,
-      "validation": { "passed": true, "violations": [] },
-      "retries": []
-    },
-    "figures": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:26:00Z",
-      "completed_at": "2026-04-04T10:35:00Z",
-      "agent": "illustrator",
-      "validation": { "passed": true, "violations": [] },
-      "retries": []
-    },
-    "audit": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:51:00Z",
-      "completed_at": "2026-04-04T10:58:00Z",
-      "agent": "auditor",
-      "summary": {
-        "fact_issues": 1,
-        "ai_tone_issues": 3,
-        "style_deviations": 0,
-        "sentence_issues": 1,
-        "severity_high": 0,
-        "severity_medium": 2,
-        "severity_low": 2
+      "per_platform": true, "overall_status": "all_completed", "agent": "outliner",
+      "platforms": {
+        "wechat": { "status": "completed", "validation": { "passed": true } },
+        "zhihu":  { "status": "completed", "validation": { "passed": true } }
       },
-      "validation": { "passed": true, "violations": [] },
-      "retries": []
+      "checkpoint": { "id": "CP1", "decision": "approved", "modifications": [], "decided_at": "..." }
     },
-    "polish": {
-      "status": "completed",
-      "started_at": "2026-04-04T10:59:00Z",
-      "completed_at": "2026-04-04T11:08:00Z",
-      "agent": "polisher",
-      "high_severity_resolved": 0,
-      "high_severity_rejected": 0,
-      "validation": { "passed": true, "violations": [] },
-      "retries": [],
-      "checkpoint": {
-        "id": "CP2",
-        "decision": "approved",
-        "modifications": [],
-        "decided_at": "2026-04-04T11:15:00Z"
+
+    "draft": {
+      "per_platform": true, "overall_status": "all_completed", "agent": "writer",
+      "platforms": {
+        "wechat": {
+          "status": "completed",
+          "sections": [
+            { "index": 1, "title": "一句话结论", "status": "completed",
+              "artifact": "intermediate/04a-draft/wechat/section-01.md", "word_count": 280 },
+            "..."
+          ],
+          "merged_word_count": 1630,
+          "validation": { "passed": true }
+        },
+        "zhihu": { "status": "completed", "sections": ["..."], "merged_word_count": 3200 }
       }
     },
+
+    "figures": {
+      "per_platform": true, "overall_status": "all_completed", "agent": "illustrator",
+      "platforms": { "wechat": { "status": "completed" }, "zhihu": { "status": "completed" } }
+    },
+
+    "audit": {
+      "per_platform": true, "overall_status": "all_completed", "agent": "auditor",
+      "platforms": {
+        "wechat": { "status": "completed",
+                    "summary": { "fact_issues": 1, "ai_tone_issues": 3, "severity_high": 0 },
+                    "validation": { "passed": true } },
+        "zhihu":  { "status": "completed", "summary": { "...": "..." } }
+      }
+    },
+
+    "polish": {
+      "per_platform": true, "overall_status": "all_completed", "agent": "polisher",
+      "platforms": {
+        "wechat": { "status": "completed", "high_severity_resolved": 0, "validation": { "passed": true } },
+        "zhihu":  { "status": "completed", "high_severity_resolved": 0 }
+      },
+      "checkpoint": { "id": "CP2", "decision": "approved", "modifications": [] }
+    },
+
     "publish": {
-      "status": "completed",
-      "started_at": "2026-04-04T11:16:00Z",
-      "completed_at": "2026-04-04T11:20:00Z",
-      "agent": "publisher",
-      "validation": { "passed": true, "violations": [] },
-      "retries": [],
+      "per_platform": true, "overall_status": "all_completed", "agent": "publisher",
+      "platforms": {
+        "wechat": { "status": "completed", "validation": { "passed": true } },
+        "zhihu":  { "status": "completed", "validation": { "passed": true } }
+      }
+    },
+
+    "typeset": {
+      "status": "completed", "agent": "typesetter",
       "checkpoint": {
-        "id": "CP3",
-        "decision": "approved",
-        "modifications": [],
-        "decided_at": "2026-04-04T11:22:00Z"
+        "id": "CP3", "status": "passed", "decision": "approved",
+        "persona": "tech-explainer", "adapter_version": "0.1.0",
+        "conform": { "ok": true, "violations": [] },
+        "validate": { "ok": true, "issues": [] },
+        "reasons": [], "decided_at": "..."
       }
     }
   }
 }
 ```
+
+单平台场景（仅 wechat）同上——`platforms` 对象只有 `wechat` 一个键。
 
 ## 写入规则
 
@@ -456,6 +456,6 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 | skip_if 命中 | `status = "skipped"`、`skipped_reason` |
 | Checkpoint 通过 | `checkpoint` 对象（含 decision、modifications） |
 | Draft section | 更新 `sections[]` 对应项的 status/时间/word_count |
-| Audit 完成 | `summary` 对象（从 05-audit-report.md 提取统计数字） |
+| Audit 完成 | `summary` 对象（从 `review/05-audit/{platform}.md` 提取统计数字，多平台逐平台合并） |
 | Polish 完成 | `high_severity_resolved/rejected`（从变更溯源表统计） |
 

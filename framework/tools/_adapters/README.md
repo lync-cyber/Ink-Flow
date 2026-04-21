@@ -17,7 +17,7 @@ InkFlow 与外部排版 / 渲染工具对接的**单一入口**。每个 adapter
 
 | name | 平台 | 对接方式 | 契约 | render 可用 |
 |---|---|---|---|---|
-| `wechat-typeset` | 微信公众号 | 文件系统（读 dist/api/capabilities.json） | `framework/contracts/wechat-typeset-v1.schema.json` | 否（v1 降级为占位） |
+| `wechat-typeset` | 微信公众号 | 文件系统（读 dist/api/capabilities.json） | `framework/contracts/wechat-typeset-v2.schema.json` | 否（launcher 在浏览器完成；adapter 只做 conform + validate dry-run） |
 
 ## 新增平台三步
 
@@ -65,7 +65,7 @@ if name in ("zhihu", "zhihu-typeset"):
 ```yaml
 typeset:
   adapter: wechat-typeset             # 当前 adapter
-  contract: framework/contracts/wechat-typeset-v1.schema.json
+  contract: framework/contracts/wechat-typeset-v2.schema.json
   required_version: ">=0.2.0,<0.3.0"
 ```
 
@@ -88,8 +88,8 @@ typeset:
 
 ### `framework/config/artifact-layout.yaml`
 
-新增 `typeset_plan` / `typeset_annotated` / `typeset_render` / `typeset_meta`
-字段已预留平台隔离，无需改动。
+`typeset_plan` / `typeset_annotated` / `typeset_meta` 字段已预留平台隔离，无需改动。
+（v2 起不再写 `render.html` 占位页——真实渲染走浏览器 launcher。）
 
 ## Adapter 失败降级矩阵
 

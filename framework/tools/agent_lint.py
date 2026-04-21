@@ -1,0 +1,176 @@
+"""agent_lint — 校验 .claude/agents/*.md 与 inkflow.yaml 的契约一致性 (P2-2).
+
+规则
+----
+1. 每个 agent frontmatter 必含 ``name`` / ``description`` / ``allowed-tools`` / ``model``
+2. ``model`` 必须等于 ``framework/config/inkflow.yaml`` 的 ``model_allocation.{name}``
+   - 缺失或漂移即为 error（防 P2 polisher: opus vs sonnet 漂移再发）
+3. orchestrator / typesetter 等"模块化 agent"（带 ``modules`` 子文件）允许在子目录有
+   <agent>/<sub>.md，子文件不参与 lint
+
+只读、零副作用。
+
+用法
+----
+::
+
+    python framework/tools/agent_lint.py            # 校验全部 agent
+    python framework/tools/agent_lint.py --json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+
+
+def _parse_frontmatter(text: str) -> dict[str, Any]:
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        return {}
+    out: dict[str, Any] = {}
+    current_key: str | None = None
+    folded: list[str] = []
+
+    def _flush() -> None:
+        nonlocal folded, current_key
+        if current_key and folded:
+            out[current_key] = " ".join(s.strip() for s in folded).strip()
+        folded = []
+
+    for raw in m.group(1).splitlines():
+        if raw.startswith("#") or not raw.strip():
+            continue
+        if raw.startswith(" ") and current_key is not None:
+            folded.append(raw.strip())
+            continue
+        _flush()
+        if ":" not in raw:
+            continue
+        k, _, v = raw.partition(":")
+        k = k.strip()
+        v = v.strip()
+        current_key = k
+        if v in {">", "|"}:
+            folded = []
+            continue
+        if v.lower() in {"true", "false"}:
+            out[k] = v.lower() == "true"
+            current_key = None
+        elif v.startswith("[") and v.endswith("]"):
+            out[k] = [s.strip().strip('"').strip("'") for s in v[1:-1].split(",") if s.strip()]
+            current_key = None
+        elif v:
+            out[k] = v.strip('"').strip("'")
+            current_key = None
+    _flush()
+    return out
+
+
+def _load_inkflow_models(yaml_path: Path) -> dict[str, str]:
+    """读 model_allocation 段（只解析 ``key: value`` 行，避免引入 pyyaml）。"""
+    if not yaml_path.exists():
+        raise SystemExit(f"inkflow.yaml not found: {yaml_path}")
+    in_section = False
+    out: dict[str, str] = {}
+    for line in yaml_path.read_text(encoding="utf-8").splitlines():
+        s = line.rstrip()
+        if not s:
+            continue
+        if s.startswith("model_allocation:"):
+            in_section = True
+            continue
+        if in_section:
+            if not s.startswith(" "):
+                # 顶层另一段开始
+                break
+            stripped = s.strip()
+            if stripped.startswith("#") or not stripped:
+                continue
+            if ":" not in stripped:
+                continue
+            k, _, v = stripped.partition(":")
+            v = v.split("#", 1)[0].strip()
+            if v:
+                out[k.strip()] = v
+    return out
+
+
+def lint(agents_dir: Path, yaml_path: Path) -> tuple[list[dict], int]:
+    expected = _load_inkflow_models(yaml_path)
+    issues: list[dict] = []
+    n_err = 0
+    for md in sorted(agents_dir.glob("*.md")):
+        agent_name = md.stem
+        text = md.read_text(encoding="utf-8")
+        fm = _parse_frontmatter(text)
+        if not fm:
+            issues.append({"agent": agent_name, "severity": "error", "rule": "frontmatter_missing", "message": "无 frontmatter"})
+            n_err += 1
+            continue
+        # 必填项
+        for required in ("name", "description", "allowed-tools", "model"):
+            if not fm.get(required):
+                issues.append({"agent": agent_name, "severity": "error", "rule": f"{required}_missing", "message": f"缺 {required}"})
+                n_err += 1
+
+        name_in_fm = fm.get("name", "")
+        if name_in_fm and name_in_fm != agent_name:
+            issues.append({"agent": agent_name, "severity": "error", "rule": "name_mismatch",
+                           "message": f"name={name_in_fm!r} 与文件名 {agent_name!r} 不一致"})
+            n_err += 1
+
+        model = fm.get("model", "")
+        want = expected.get(agent_name)
+        if want is None:
+            issues.append({"agent": agent_name, "severity": "warning", "rule": "model_not_allocated",
+                           "message": f"inkflow.yaml model_allocation 未声明 {agent_name}"})
+        elif model and model != want:
+            issues.append({"agent": agent_name, "severity": "error", "rule": "model_mismatch",
+                           "message": f"agent model={model!r} ≠ inkflow.yaml model_allocation.{agent_name}={want!r}"})
+            n_err += 1
+
+    # 反向：声明但缺 agent
+    declared = set(expected)
+    files = {p.stem for p in agents_dir.glob("*.md")}
+    for missing in sorted(declared - files):
+        issues.append({"agent": missing, "severity": "error", "rule": "agent_missing",
+                       "message": f"inkflow.yaml 声明了 {missing} 但 .claude/agents/{missing}.md 不存在"})
+        n_err += 1
+
+    return issues, n_err
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
+    p = argparse.ArgumentParser()
+    p.add_argument("--root", default=".claude/agents")
+    p.add_argument("--config", default="framework/config/inkflow.yaml")
+    p.add_argument("--json", action="store_true")
+    args = p.parse_args(argv)
+    issues, n_err = lint(Path(args.root), Path(args.config))
+    if args.json:
+        print(json.dumps(issues, ensure_ascii=False, indent=2))
+    else:
+        for it in issues:
+            tag = "ERROR" if it["severity"] == "error" else "warn "
+            print(f"  {tag} {it['agent']:18s} {it['rule']:24s} {it['message']}")
+        if not issues:
+            print("  ok   所有 agent 与 inkflow.yaml model_allocation 对齐")
+        n_warn = sum(1 for i in issues if i["severity"] == "warning")
+        print()
+        print(f"summary: {n_err} error, {n_warn} warning")
+    return 1 if n_err else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

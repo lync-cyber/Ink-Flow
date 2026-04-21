@@ -85,7 +85,8 @@ platforms:
 
   juejin:
     skeleton:
-      - "TL;DR [atom: claims.primary]               # ≤3 行"
+      # 用"一句话结论"取代 "TL;DR"——writer.md 明确禁止 "TL;DR" 作为正文词
+      - "一句话结论 [atom: claims.primary]           # ≤3 行"
       - "背景问题 [atom: cases×1]"
       - "核心实现 [atom: evidence-code + 分步骤]"
       - "踩坑与解决 [atom: pitfalls]"

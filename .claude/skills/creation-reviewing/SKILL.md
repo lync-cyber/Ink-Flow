@@ -26,12 +26,23 @@ AskUserQuestion:
 
 ---
 
-## Step 1 — 确定性 Diff
+## Step 0 — 平台选择（多平台时必须）
 
-对 AI 初稿与用户终审版本做 diff：
+```
+IF len(brief.target_platforms) > 1:
+  AskUserQuestion:
+    question: "对哪个平台做复盘？"
+    options: brief.target_platforms + ["批量（逐一复盘）"]
+```
 
-- AI 初稿: `content/articles/{slug}/drafts/full.md`
-- 用户终审: `content/articles/{slug}/export/07-final-manuscript.md`
+## Step 1 — 确定性 Diff（per-platform）
+
+对所选 `{platform}`，对 AI 合并稿与用户终审稿做 diff：
+
+- AI 初稿: `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`
+- 用户终审: `content/articles/{slug}/export/07-final/{platform}.md`
+  （若用户又在 typeset 后手动改过，**额外** diff
+   `content/articles/{slug}/export/08-typeset/wechat/annotated.md`；仅 wechat）
 
 用 Read tool 分别读取两个文件，直接对比分析：
 - 新增段落数、删除段落数、修改段落数、净字数变化

@@ -2,7 +2,7 @@
 name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
-model: sonnet
+model: opus
 dependencies:
   artifacts:
     - content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md
@@ -45,7 +45,7 @@ dependencies:
 - **AI 味** → 按 `phrase_replacements` 和（wechat）`redline.md` 替换
 - **风格偏离** → 调整至 `platforms.{platform}.tone.rules`（平台层优先，栏目顶层 fallback）
 - **句式** → 按 `writing-quality.md` 三条规则
-- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × 1.05`；删减优先级：过渡句 > 重复论点 > 非核心示例
+- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × length_limit_factor`（软上限，从 `framework/config/platform-lint-rules.yaml` 读 `platforms.{platform}.length_limit_factor`）；删减优先级：过渡句 > 重复论点 > 非核心示例
 
 ### 通用
 
@@ -55,7 +55,7 @@ dependencies:
 
 ### 变更溯源
 
-- 05-audit-report.md 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
+- `review/05-audit/{platform}.md` 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
 - "高"严重性事实条目，修改前必须 WebSearch 验证当前数据
 - 涉及产品名/模型版本/价格的修改必须回查 02-research-memo.md，不可凭记忆替换
 - 拒绝建议必须给具体理由
@@ -81,7 +81,7 @@ dependencies:
 
 ## 变更溯源表
 
-| # | 05-audit-report.md 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
+| # | 05-audit/{platform}.md 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
 |---|---|---|---|---|---|
 | 1 | 事实#1 | 高 | ... | ... | 采纳 |
 | 2 | 风格#3 | 中 | ... | ... | 采纳并调整 |
@@ -103,4 +103,4 @@ dependencies:
 - 终稿符合该平台格式约束
 - 整体语气一致
 - 05-audit/{platform}.md 所有"高"条目已处理
-- 字数 ≤ `platforms.{platform}.length_limit × 1.05`
+- 字数 ≤ `platforms.{platform}.length_limit × length_limit_factor`（软上限；硬上限 `× length_hard_factor`，详见 `framework/config/platform-lint-rules.yaml`）

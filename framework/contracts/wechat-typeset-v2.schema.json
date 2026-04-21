@@ -131,7 +131,7 @@
     "personaSchemaUri": { "type": "string" },
     "docs": {
       "type": "object",
-      "description": "Paths (relative to provider repo root) of authoritative reference docs InkFlow agents should Read at runtime. 方式 A (vendored skill) 通过这些路径引用对方 SKILL，避免维护离线副本。",
+      "description": "Paths (relative to provider repo root) of authoritative reference docs InkFlow agents should Read at runtime. Agents reference the sibling SKILL via these paths to avoid maintaining a local copy.",
       "additionalProperties": { "type": "string" }
     }
   },

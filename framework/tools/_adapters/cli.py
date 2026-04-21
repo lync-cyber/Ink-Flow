@@ -4,7 +4,7 @@
 子命令：
   health         探测 adapter 目标是否在线（capabilities.json 可读 + node/npx 可用）
   capabilities   拉取 capabilities 并写入 runtime/typeset-capabilities.json
-  docs           列出 sibling repo 内 SKILL / 参考文档的**绝对路径**（方式 A）
+  docs           列出 sibling repo 内 SKILL / 参考文档的**绝对路径**（agent 直接 Read，无离线副本）
   validate       对 annotated.md 做 dry-run：fence 语法 + 真实 render 能否成功
   conform        校验 plan 是否只用合规 id（persona / container / variant）
 

@@ -82,7 +82,7 @@ platforms:
   juejin:
     # 学术前沿在掘金关注度低，仅生成"工业界实现要点"版
     skeleton:
-      - "TL;DR [atom: claims.primary]"
+      - "一句话结论 [atom: claims.primary]"
       - "论文解决的工程问题 [atom: cases]"
       - "核心算法的工程实现 [atom: evidence-code]"
       - "和现有库对比 [atom: comparison]"

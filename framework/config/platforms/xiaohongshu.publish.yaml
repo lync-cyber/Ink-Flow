@@ -1,0 +1,29 @@
+# ============================================================
+# xiaohongshu 平台 publish 转换序列
+# ============================================================
+
+platform: xiaohongshu
+
+# 小红书不支持 frontmatter，必须剥除
+keep_frontmatter: false
+
+transforms:
+  - kind: strip_frontmatter
+    note: "小红书平台不渲染 frontmatter，整段删除"
+
+  - kind: code_block_to_screenshot_placeholder
+    note: "代码块整体替换为 [图 N：贴截图]，因小红书不支持 ``` 代码块"
+
+  - kind: split_long_paragraph_to_bullets
+    threshold_chars: 30
+    note: "段落超过 30 字自动拆为 bullet 列表（移动端竖版气泡视觉）"
+
+  - kind: append_hashtags
+    min_count: 3
+    max_count: 5
+    pattern: "#{topic}"
+    note: "文末追加 3-5 个话题标签，每个 # 开头无空格"
+
+extra_outputs: []
+
+hands_off_to_typeset: false

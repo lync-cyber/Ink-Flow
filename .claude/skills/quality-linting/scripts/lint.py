@@ -105,56 +105,114 @@ def _merge_data_sources(config: dict) -> dict:
             words.extend(phrases.get(group, []) or [])
         rules.setdefault("forbidden_patterns", {})["words"] = words
 
-    # platform-limits.yaml → rules.typography + rules.svg_readability + rules.css_safety
-    platform = _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
-    if platform:
-        para = platform.get("paragraph", {}) or {}
-        sent = platform.get("sentence", {}) or {}
-        heads = platform.get("headings", {}) or {}
-        typo_rule = rules.setdefault("typography", {})
-        typo_rule.setdefault("max_paragraph_chars", para.get("max_chars", 120))
-        typo_rule.setdefault("max_sentence_chars", sent.get("max_chars", 40))
-        typo_rule.setdefault("allowed_headings", heads.get("allowed", [2, 3, 4]))
-        svg = platform.get("svg", {}) or {}
-        svg_rule = rules.setdefault("svg_readability", {})
-        svg_rule.setdefault("min_font_size", svg.get("min_font_size", 14))
-        svg_rule.setdefault("caption_font_size", svg.get("caption_font_size", 12))
-        css_rule = rules.setdefault("css_safety", {})
-        css_rule.setdefault("forbidden_css", platform.get("forbidden_css", []))
-        forbidden_tags = platform.get("forbidden_tags", []) or []
-        css_rule.setdefault("forbidden_tags", [f"<{t}" for t in forbidden_tags] or ["<style", "<script"])
+    # platform-limits.yaml v3：多平台结构。这里只做 wechat 默认注入；
+    # 其他平台由 _merge_platform_rules 按 --platform 选段覆盖。
+    platform_doc = _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
+    if platform_doc:
+        platforms_section = platform_doc.get("platforms", {}) or {}
+        wechat_cfg = platforms_section.get("wechat", {}) or {}
+        # 兜底：若是旧版 v2 扁平结构（无 platforms 段），整段当 wechat
+        if not platforms_section and platform_doc.get("paragraph"):
+            wechat_cfg = platform_doc
+        _apply_platform_thresholds(rules, wechat_cfg)
+        # 把整份 doc 存到 config，供 _merge_platform_rules 按平台抽取
+        config["_platform_limits_doc"] = platform_doc
 
     return config
 
 
+def _apply_platform_thresholds(rules: dict, p_cfg: dict) -> None:
+    """把 platform-limits.yaml 单个平台段的数值阈值合并到 lint rules。"""
+    if not p_cfg:
+        return
+    para = p_cfg.get("paragraph", {}) or {}
+    sent = p_cfg.get("sentence", {}) or {}
+    heads = p_cfg.get("headings", {}) or {}
+    typo_rule = rules.setdefault("typography", {})
+    if "max_chars" in para:
+        typo_rule["max_paragraph_chars"] = para["max_chars"]
+    if "max_chars" in sent:
+        typo_rule["max_sentence_chars"] = sent["max_chars"]
+    if "allowed" in heads:
+        typo_rule["allowed_headings"] = heads["allowed"]
+    svg = p_cfg.get("svg", {}) or {}
+    if svg:
+        svg_rule = rules.setdefault("svg_readability", {})
+        if "min_font_size" in svg:
+            svg_rule["min_font_size"] = svg["min_font_size"]
+        if "caption_font_size" in svg:
+            svg_rule["caption_font_size"] = svg["caption_font_size"]
+    css_rule = rules.setdefault("css_safety", {})
+    if "forbidden_css" in p_cfg:
+        css_rule["forbidden_css"] = p_cfg["forbidden_css"]
+    if "forbidden_tags" in p_cfg:
+        forbidden_tags = p_cfg.get("forbidden_tags", []) or []
+        css_rule["forbidden_tags"] = [f"<{t}" for t in forbidden_tags]
+
+
 def _merge_platform_rules(config: dict, platform: str) -> dict:
-    """按 platform 加载 framework/config/platform-lint-rules.yaml 并覆盖 config.rules。
+    """按 platform 合并：
+       (1) 数值阈值 ← .claude/rules/data/platform-limits.yaml 的 platforms.{platform}
+                      （含 length_limit_factor / length_hard_factor / paragraph / sentence / svg / css）
+       (2) 规则启用/严重级别/消息 ← framework/config/platform-lint-rules.yaml 的 platforms.{platform}
 
     渐进披露：只读取 platforms.{platform} 段，不一次性合并所有平台。
-    合并语义：平台段中 enabled/severity/阈值字段覆盖 config.rules 对应 key。
     """
-    if not platform or not yaml or not PLATFORM_RULES_FILE.exists():
+    if not platform or not yaml:
         return config
-    platform_data = _load_yaml(PLATFORM_RULES_FILE)
-    if not platform_data:
-        return config
-    platforms_section = platform_data.get("platforms", {}) or {}
-    p_cfg = platforms_section.get(platform)
-    if p_cfg is None:
-        # 平台未配置 → 回退到 base 规则
-        p_cfg = platform_data.get("base", {}) or {}
     rules = config.setdefault("rules", {})
-    for rule_name, rule_override in p_cfg.items():
-        if not isinstance(rule_override, dict):
-            continue
-        if rule_name not in rules:
-            rules[rule_name] = {}
-        # 深合并（单层足够，lint 规则无嵌套结构）
-        for k, v in rule_override.items():
-            rules[rule_name][k] = v
-    # 把整段 p_cfg 也存到 config["_platform"]，便于 length_limit_factor 等顶层字段访问
+
+    # ---- (1) platform-limits.yaml v3：注入数值阈值 ----
+    plimits_doc = config.get("_platform_limits_doc") or _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
+    if plimits_doc:
+        defaults = plimits_doc.get("defaults", {}) or {}
+        p_limits = (plimits_doc.get("platforms", {}) or {}).get(platform, {}) or {}
+        # 顶层数值字段：缺则回退 defaults
+        merged_top = {}
+        for key in ("length_limit_factor", "length_hard_factor"):
+            if key in p_limits:
+                merged_top[key] = p_limits[key]
+            elif key in defaults:
+                merged_top[key] = defaults[key]
+        # 合并嵌套段（paragraph/sentence/headings 等），platform 段覆盖 defaults
+        for section in ("paragraph", "sentence", "headings"):
+            base_seg = defaults.get(section, {}) or {}
+            plat_seg = p_limits.get(section, {}) or {}
+            if base_seg or plat_seg:
+                merged_top[section] = {**base_seg, **plat_seg}
+        # 把数值阈值注入 lint rules
+        merged_for_apply = {**p_limits}
+        for k in ("paragraph", "sentence", "headings"):
+            if k in merged_top:
+                merged_for_apply[k] = merged_top[k]
+        _apply_platform_thresholds(rules, merged_for_apply)
+        # 顶层字段（length_limit_factor 等）放入 _platform_cfg 供 rule_length_limit 读取
+        platform_top = {**merged_top}
+    else:
+        platform_top = {}
+
+    # ---- (2) platform-lint-rules.yaml：覆盖规则 enabled/severity/messages ----
+    if PLATFORM_RULES_FILE.exists():
+        platform_data = _load_yaml(PLATFORM_RULES_FILE)
+        if platform_data:
+            platforms_section = platform_data.get("platforms", {}) or {}
+            p_cfg = platforms_section.get(platform)
+            if p_cfg is None:
+                p_cfg = platform_data.get("base", {}) or {}
+            for rule_name, rule_override in p_cfg.items():
+                if not isinstance(rule_override, dict):
+                    continue
+                if rule_name not in rules:
+                    rules[rule_name] = {}
+                for k, v in rule_override.items():
+                    rules[rule_name][k] = v
+            # platform-lint-rules 的顶层字段（如向后兼容残留）也并入 platform_top
+            for k, v in p_cfg.items():
+                if not isinstance(v, dict):
+                    platform_top.setdefault(k, v)
+
     config["_platform"] = platform
-    config["_platform_cfg"] = p_cfg
+    config["_platform_cfg"] = platform_top
     return config
 
 
@@ -840,19 +898,21 @@ def rule_length_limit(lines: list[str], config: dict, result: LintResult, length
     """规则 P7: 平台字数硬上限（来自 columns/{column}.platforms.yaml）"""
     if not length_limit:
         return
-    factor = (config.get("_platform_cfg") or {}).get("length_limit_factor", 1.05)
+    p_cfg = (config.get("_platform_cfg") or {})
+    soft_factor = p_cfg.get("length_limit_factor", 1.05)
+    hard_factor = p_cfg.get("length_hard_factor", 1.10)
     # 简单估算：非 frontmatter/非 code_block 的字符总数
     total = 0
     for ctx in iter_lines(lines):
         if ctx.in_frontmatter:
             continue
         total += len(ctx.stripped)
-    soft = int(length_limit * factor)
-    hard = int(length_limit * 1.10)
+    soft = int(length_limit * soft_factor)
+    hard = int(length_limit * hard_factor)
     if total > hard:
-        result.add("P7", "error", 0, f"字数 {total} 超过硬上限 {hard}（length_limit={length_limit}，factor=1.10）")
+        result.add("P7", "error", 0, f"字数 {total} 超过硬上限 {hard}（length_limit={length_limit}，factor={hard_factor}）")
     elif total > soft:
-        result.add("P7", "warning", 0, f"字数 {total} 超过软上限 {soft}（length_limit={length_limit}，factor={factor}）")
+        result.add("P7", "warning", 0, f"字数 {total} 超过软上限 {soft}（length_limit={length_limit}，factor={soft_factor}）")
 
 
 # 栏目名 → theme id 映射

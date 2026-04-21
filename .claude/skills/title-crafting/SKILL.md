@@ -3,13 +3,16 @@ name: title-crafting
 description: >
   标题打磨 — 校验标题是否符合长度限制和价值标准，不合格时提供备选方案。
   由 pipeline 在 outline 阶段完成后、Checkpoint 1 前执行。
+allowed-tools: Read, Write, Edit, Glob, AskUserQuestion
 user-invocable: false
 disable-model-invocation: true
 ---
 
 ## 标题质量门禁
 
-在大纲生成后、Checkpoint 1 前执行。检查 `03-outline-structure.md` 的 `## 总览` 区块中的文章标题。
+在大纲生成后、Checkpoint 1 前由 orchestrator 程序性调用（**不**由 LLM 触发；frontmatter 的
+`disable-model-invocation: true` 已锁死）。对每个 platform，检查
+`content/articles/{slug}/intermediate/03-outline/{platform}.md` 的 `## 总览` 区块中的文章标题。
 
 ---
 
@@ -53,7 +56,9 @@ disable-model-invocation: true
 
 ## 执行流程
 
-1. 从 `content/articles/{slug}/intermediate/03-outline-structure.md` 提取文章标题（`# 大纲: {topic}` 行或总览中的标题字段）
+1. 对每个 `{platform} ∈ brief.target_platforms`：从
+   `content/articles/{slug}/intermediate/03-outline/{platform}.md` 提取文章标题
+   （`# 大纲: {topic} · {platform}` 行或总览中的标题字段）。首平台的标题作为主标题基线。
 2. 执行硬性规则检查
 3. **若全部通过** → 输出 "✓ 标题检查通过: {标题}" → 继续 Checkpoint 1
 4. **若任一规则未通过** → 执行以下流程:
@@ -73,10 +78,10 @@ AskUserQuestion:
     - "使用备选 1"
     - "使用备选 2"
     - "使用备选 3"
-    - "我自己修改" — 暂停，等待用户编辑 03-outline-structure.md 后继续
+    - "我自己修改" — 暂停，等待用户编辑 03-outline/{platform}.md 后继续
 ```
 
-5. 用户选择后，更新 `content/articles/{slug}/intermediate/03-outline-structure.md` 中的标题字段
+5. 用户选择后，更新 `content/articles/{slug}/intermediate/03-outline/{platform}.md` 中的标题字段
 6. 继续 Checkpoint 1
 
 ---

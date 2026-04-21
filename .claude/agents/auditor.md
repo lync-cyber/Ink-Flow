@@ -49,7 +49,7 @@ dependencies:
 - **论证完整性**: 每论点是否有代码/数据支撑、是否有逻辑漏洞
 - **AI 味检测**: 对照 `forbidden-phrases.yaml` 所有分组
 - **风格偏离**: 平台叠加检测——以 `platforms.{platform}.tone.rules` 为主，`columns.{column}.tone.rules` 为辅；冲突以 platforms 层为准
-- **句式问题**: 被动句过多、长句（>40字）、冗余过渡；**字数越界**（超 `length_limit × 1.10`）判为 error
+- **句式问题**: 被动句过多、长句（>40字）、冗余过渡；**字数越界**（超 `length_limit × length_hard_factor`，从 `.claude/rules/data/platform-limits.yaml` 的 `platforms.{platform}.length_hard_factor` 读取）判为 error
 - **传播性评估**: 标题转发欲、金句密度、开头钩子强度（1-5 分量化）；**KPI 对齐**用 `platforms.{platform}.kpi_targets` 作为评分锚点（如小红书 `save_rate` 目标 0.12 则评估"本文能带来收藏的元素有几个"）
 - **平台专属红线**：
   - wechat：`:::` 容器、inline style、`<script>`/`<style>`（publisher 前必须清）
@@ -118,4 +118,4 @@ dependencies:
 - 各维度结果完整，每问题标位置（L行号）
 - 审校统计数据完整
 - 平台专属红线（如小红书代码块）若触发一律判 error 级
-- 总字数与 `length_limit` 对齐：`> 1.10 × limit` 判 error，`> 1.05 × limit` 判 warning
+- 总字数与 `length_limit` 对齐：超 `length_hard_factor × limit` 判 error，超 `length_limit_factor × limit` 判 warning（两个因子均从 `.claude/rules/data/platform-limits.yaml` 的 `platforms.{platform}` 读取）

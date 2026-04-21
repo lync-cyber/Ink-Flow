@@ -209,5 +209,5 @@ publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写�
 - 与前 section 衔接自然（同平台内）
 - 视觉断点按大纲规划插入
 - 满足当前平台 `tone.rules` 中所有"禁止 X"项
-- 当前 section 字数让合计 ≤ `length_limit` × 1.10
+- 当前 section 字数让合计 ≤ `length_limit × length_hard_factor`（硬上限，从 `.claude/rules/data/platform-limits.yaml` 的 `platforms.{platform}.length_hard_factor` 读取）
 - wechat 平台产物只用标准 Markdown + GFM Alerts（`:::` 禁用）；其他平台遵循各自格式约束

@@ -40,14 +40,21 @@ content/articles/{slug}/
   intermediate/
     01-brief.md
     02-research-memo.md
-    03-outline-structure.md
-    04a-draft/section-NN.md   04a-draft/merged-draft.md
-    04b-figure/fig-NN.svg     04b-figure/figure-index.md
+    02-atoms/{index.md + 9 类原子}
+    03-outline/{platform}.md                        # per-platform
+    04a-draft/{platform}/section-NN.md              # per-platform
+    04a-draft/{platform}/merged-draft.md
+    04b-figure/{platform}/fig-NN.{svg,html,md,png}  # per-platform
+    04b-figure/{platform}/figure-index.md
+    09-typeset-plan.md                              # 仅 wechat
   review/
-    05-audit-report.md        06-polish-trace.md
+    05-audit/{platform}.md                          # per-platform
+    06-polish/{platform}.md                         # per-platform
   export/
-    07-final-manuscript.md
-    08-wechat-publish.md      08-plain-publish.md    08-teaser-120chars.md
+    07-final/{platform}.md                          # per-platform
+    08-{platform}-publish.md                        # 每平台独立
+    08-plain-publish.md        08-teaser-120chars.md  # 仅 wechat 附加
+    08-typeset/wechat/{annotated.md, meta.json}     # 仅 wechat
 ```
 
 ## 规则体系（单一事实来源）
@@ -99,7 +106,7 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 
 `publish` 出平台无关的 Markdown；`typeset` 基于 adapter 能力清单产出平台相关的排版方案与 annotated 版本。
 
-## typeset 阶段：方式 A 集成（容器/主题知识外部化）
+## typeset 阶段：容器/主题知识外部化
 
 Ink-Flow **不维护**容器名、variant id、persona id 的离线字典——所有权威知识都在
 sibling repo `wechat-typeset/skills/wechat-typeset/` 的 SKILL 与 `docs/container-syntax.md`

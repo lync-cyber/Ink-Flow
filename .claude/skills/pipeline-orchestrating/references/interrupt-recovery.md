@@ -29,42 +29,60 @@ Resume 时对每个标记为 `completed` 的依赖阶段执行：
 2. 确认文件非空（字符数 > 0）
 3. 若文件缺失或为空 → 重置该阶段为 `pending`，通知用户
 
-约定路径映射：
+约定路径映射（per-platform 阶段按 `brief.target_platforms` 展开 `{platform}`）：
 - brief → `content/articles/{slug}/intermediate/01-brief.md`
 - research → `content/articles/{slug}/intermediate/02-research-memo.md`
-- outline → `content/articles/{slug}/intermediate/03-outline-structure.md`
-- draft → `content/articles/{slug}/drafts/full.md`
-- figures → `content/articles/{slug}/figures/summary.md`
-- audit → `content/articles/{slug}/review/05-audit-report.md`
-- polish → `content/articles/{slug}/export/07-final-manuscript.md`
+- atoms → `content/articles/{slug}/intermediate/02-atoms/index.md` + 9 类 `{type}.md`
+- outline（per_platform）→ `content/articles/{slug}/intermediate/03-outline/{platform}.md`
+- draft（per_platform）→ `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`
+- figures（per_platform）→ `content/articles/{slug}/intermediate/04b-figure/{platform}/figure-index.md`
+- audit（per_platform）→ `content/articles/{slug}/review/05-audit/{platform}.md`
+- polish（per_platform）→ `content/articles/{slug}/review/06-polish/{platform}.md` + `content/articles/{slug}/export/07-final/{platform}.md`
+- publish（per_platform）→ `content/articles/{slug}/export/08-{platform}-publish.md`
+- typeset（仅 wechat）→ `content/articles/{slug}/intermediate/09-typeset-plan.md` + `content/articles/{slug}/export/08-typeset/wechat/{annotated.md, meta.json}`
 
-## Draft Section 级恢复
+注：per_platform 阶段的完整性校验逐平台执行——若某一个 `{platform}` 产物缺失，只重置该平台状态，不影响同阶段其他平台（对齐 `orchestrator/fanout.md` § 失败隔离）。
+**权威来源是 `framework/config/artifact-layout.yaml` 的 `paths.*`**，恢复逻辑应直接从该文件读路径模板，不要在本文档里硬编码。
 
-Draft 阶段是最耗时的阶段（多次 writer 调用），支持 section 粒度的恢复：
+## Draft Section 级恢复（per-platform）
+
+Draft 阶段是最耗时的阶段（多次 writer 调用），支持"平台 × section"粒度的恢复：
 
 ### 状态结构
 
 ```json
 "draft": {
+  "per_platform": true,
   "status": "in_progress",
   "started_at": "2026-04-01T10:30:00Z",
-  "sections": [
-    { "index": 1, "status": "completed", "artifact": "drafts/section-1.md" },
-    { "index": 2, "status": "completed", "artifact": "drafts/section-2.md" },
-    { "index": 3, "status": "in_progress", "started_at": "2026-04-01T10:45:00Z" },
-    { "index": 4, "status": "pending" },
-    { "index": 5, "status": "pending" }
-  ]
+  "platforms": {
+    "wechat": {
+      "status": "in_progress",
+      "sections": [
+        { "index": 1, "status": "completed", "artifact": "intermediate/04a-draft/wechat/section-01.md" },
+        { "index": 2, "status": "completed", "artifact": "intermediate/04a-draft/wechat/section-02.md" },
+        { "index": 3, "status": "in_progress", "started_at": "2026-04-01T10:45:00Z" },
+        { "index": 4, "status": "pending" },
+        { "index": 5, "status": "pending" }
+      ]
+    },
+    "zhihu": {
+      "status": "completed",
+      "sections": [ ... ]
+    }
+  }
 }
 ```
 
 ### 恢复流程
 
-1. 读取 `draft.sections` 数组
-2. 跳过所有 `completed` 的 section（验证文件存在）
-3. `in_progress` 的 section → 重新执行（部分写入的文件不可信）
-4. `pending` 的 section → 正常执行
-5. 全部完成后合并为 `full.md`
+1. 对每个 `{platform}` 并行执行：
+   1. 读取 `draft.platforms.{platform}.sections` 数组
+   2. 跳过所有 `completed` 的 section（验证文件存在）
+   3. `in_progress` 的 section → 重新执行（部分写入的文件不可信）
+   4. `pending` 的 section → 正常执行
+   5. 全部完成后合并为 `intermediate/04a-draft/{platform}/merged-draft.md`
+2. 某平台失败不影响其他平台的恢复进度。
 
 ## 常见中断场景
 

@@ -7,7 +7,7 @@
 - **dry-run 渲染**：shell-out 到 ``<WECHAT_TYPESET_DIR>/scripts/wechat-typeset-cli.ts``
   （npx tsx 跑，不依赖 headless 浏览器）。
 - **文档路径**：通过 ``docs_paths()`` 暴露 sibling repo 内 SKILL.md / references/
-  的绝对路径，agent 直接 Read——方式 A 集成无副本。
+  的绝对路径，agent 直接 Read——无离线副本。
 
 路径解析优先级：
 1. 构造函数 ``repo_dir`` 参数

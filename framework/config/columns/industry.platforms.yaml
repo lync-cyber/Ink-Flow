@@ -73,7 +73,7 @@ platforms:
   juejin:
     # 行业趋势在掘金聚焦技术栈变化，不做商业解读
     skeleton:
-      - "TL;DR [atom: claims.primary]              # 技术栈变化一句话"
+      - "一句话结论 [atom: claims.primary]           # 技术栈变化一句话"
       - "技术信号 [atom: evidence-data + evidence-code]"
       - "工程影响 [atom: cases + actions]"
       - "迁移建议 [atom: actions]"
