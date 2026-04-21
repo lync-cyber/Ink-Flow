@@ -4,11 +4,11 @@
 并在 ``__init__.py`` 的 ``get_adapter`` 工厂里注册。
 
 设计原则：
-- **无状态**：adapter 不持有会话或鉴权；所有调用都是单次 HTTP。
-- **失败即告知**：`health()` 返回布尔 + 原因；`render()` 不可用时返回 None
-  并在 warnings 里说明，而不是抛异常。上游 agent 可据此降级。
-- **合约锁定**：capabilities 字段读自 JSON Schema，Agent 读取前必须调用
-  ``conform_plan`` 做静态校验，拒绝 hallucinated id。
+- **无状态**：adapter 不持有会话或鉴权。
+- **早失败**：health() / capabilities() 失败直接 raise AdapterError；不再有"静态推断
+  降级"或"adapter_version=unknown"这种半活产物——上游流水线据此硬停 CP3。
+- **合约锁定**：capabilities 字段读自对方 v2 schema，conform 对照 containers[] +
+  signatureContainerIds + personas[]，拒绝 hallucinated id。
 """
 
 from __future__ import annotations
@@ -28,45 +28,121 @@ class AdapterError(Exception):
 
 
 @dataclass(frozen=True)
+class Persona:
+    id: str
+    name: str
+    description: str
+    audience: str
+    signature_containers: tuple[str, ...]
+    variants: dict[str, str]
+    palette_primary: str = ""
+
+
+@dataclass(frozen=True)
+class ContainerSpec:
+    id: str
+    kind: str  # variantized / admonition / free / nested
+    variants: tuple[str, ...] = ()
+    default_variant: str = ""
+    children: tuple[str, ...] = ()
+    notes: str = ""
+
+    def allows_variant(self, variant_id: str) -> bool:
+        if not self.variants:
+            return False
+        return variant_id in self.variants
+
+
+@dataclass(frozen=True)
 class Capabilities:
-    """来自 GET /api/capabilities 的结构化快照。字段来自 v1 schema。"""
+    """来自 dist/api/capabilities.json 的结构化快照；契约 v2。"""
 
     schema_version: str
     tool_name: str
     tool_version: str
-    themes: list[dict[str, Any]]
-    variants: dict[str, list[str]]
-    default_variants: dict[str, str]
-    components: list[dict[str, Any]]
+    personas: list[Persona]
+    containers: list[ContainerSpec]
+    signature_container_ids: tuple[str, ...]
+    inline_extensions: list[dict[str, str]]
+    hard_rules: dict[str, Any]
+    docs: dict[str, str]
+    generated_at: str = ""
     raw: dict[str, Any] = field(repr=False, default_factory=dict)
 
     @classmethod
     def from_json(cls, payload: dict[str, Any]) -> "Capabilities":
+        if payload.get("schemaVersion") != "2.0":
+            raise AdapterError(
+                f"unsupported capabilities schemaVersion: {payload.get('schemaVersion')!r} "
+                f"(expected '2.0'). Rebuild provider: `npm run build:capabilities` in wechat-typeset."
+            )
+        tool = payload.get("tool") or {}
+        version = str(tool.get("version", ""))
+        if not version or version == "unknown":
+            raise AdapterError(
+                f"capabilities.tool.version must be a concrete SemVer, got {version!r}. "
+                "Provider did not stamp a version; rebuild with proper package.json."
+            )
+        personas = [
+            Persona(
+                id=p["id"],
+                name=p["name"],
+                description=p["description"],
+                audience=p["audience"],
+                signature_containers=tuple(p.get("signatureContainers", [])),
+                variants=dict(p.get("variants", {})),
+                palette_primary=p.get("palettePrimary", ""),
+            )
+            for p in payload.get("personas", [])
+        ]
+        containers = [
+            ContainerSpec(
+                id=c["id"],
+                kind=c["kind"],
+                variants=tuple(c.get("variants", [])),
+                default_variant=c.get("defaultVariant", ""),
+                children=tuple(c.get("children", [])),
+                notes=c.get("notes", ""),
+            )
+            for c in payload.get("containers", [])
+        ]
         return cls(
             schema_version=payload["schemaVersion"],
-            tool_name=payload["tool"]["name"],
-            tool_version=payload["tool"]["version"],
-            themes=list(payload.get("themes", [])),
-            variants={k: list(v) for k, v in payload.get("variants", {}).items()},
-            default_variants=dict(payload.get("defaultVariants", {})),
-            components=list(payload.get("components", [])),
+            tool_name=tool.get("name", ""),
+            tool_version=version,
+            personas=personas,
+            containers=containers,
+            signature_container_ids=tuple(payload.get("signatureContainerIds", [])),
+            inline_extensions=list(payload.get("inlineExtensions", [])),
+            hard_rules=dict(payload.get("hardRules", {})),
+            docs=dict(payload.get("docs", {})),
+            generated_at=payload.get("generatedAt", ""),
             raw=payload,
         )
 
-    def theme_ids(self) -> list[str]:
-        return [t["id"] for t in self.themes]
+    # 便捷查询
+    def persona_ids(self) -> list[str]:
+        return [p.id for p in self.personas]
 
-    def component_ids(self) -> set[str]:
-        return {c["id"] for c in self.components}
+    def container_ids(self) -> set[str]:
+        return {c.id for c in self.containers}
+
+    def container(self, cid: str) -> ContainerSpec | None:
+        for c in self.containers:
+            if c.id == cid:
+                return c
+        return None
 
 
 @dataclass(frozen=True)
-class RenderResult:
-    """v2 预留；v1 下 adapter.render() 返回 None，agent 按降级路径继续。"""
-
-    html: str
-    warnings: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+class ValidateResult:
+    ok: bool
+    persona: str = ""
+    word_count: int = 0
+    reading_time: int = 0
+    html_length: int = 0
+    issues: list[dict[str, Any]] = field(default_factory=list)
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -80,11 +156,8 @@ class HealthResult:
 class PlatformAdapter(ABC):
     """Ink-Flow 与外部排版工具之间的稳定接口。"""
 
-    #: adapter 在注册表里的 canonical name
     name: str = ""
-
-    #: 契约版本（与 capabilities.schemaVersion 对齐）
-    contract_version: str = "1.0"
+    contract_version: str = "2.0"
 
     @abstractmethod
     def health(self, timeout: float = 2.0) -> HealthResult: ...
@@ -93,47 +166,75 @@ class PlatformAdapter(ABC):
     def capabilities(self, timeout: float = 5.0) -> Capabilities: ...
 
     @abstractmethod
-    def render(
+    def validate_markdown(
         self,
-        md: str,
-        theme: str,
+        md_path: str,
         *,
-        timeout: float = 10.0,
-    ) -> RenderResult | None:
-        """v1 可返回 None 表示"当前工具版本不支持服务端渲染"。"""
+        persona: str,
+        timeout: float = 30.0,
+    ) -> ValidateResult:
+        """对 annotated markdown 做 dry-run：fence 语法 + render 能否成功。"""
+
+    @abstractmethod
+    def docs_paths(self) -> dict[str, str]:
+        """返回 sibling repo 内 SKILL / 参考文档的**绝对路径**，供 agent Read。"""
 
     # ------------------------------------------------------------------
-    # 公共工具：plan 合规校验。实现放在基类，子类不用重复。
+    # 公共工具：plan 合规校验（对 v2 containers + personas）
     # ------------------------------------------------------------------
     def conform_plan(
         self,
         *,
-        theme_id: str,
-        variant_choices: dict[str, str],
-        component_ids: list[str],
+        persona_id: str,
+        signature: dict[str, str] | None,
+        variant_overrides: list[dict[str, str]],
         capabilities: Capabilities,
     ) -> list[str]:
-        """返回违反条目的人类可读列表；空列表即通过。"""
+        """返回违反条目的人类可读列表；空列表即通过。
+
+        参数：
+          persona_id          对方 personas[].id
+          signature           {"container": "tip", "variant": "terminal"} 或 None
+          variant_overrides   [{"container":"quote-card","variant":"classic"}, ...]
+        """
         violations: list[str] = []
 
-        if theme_id not in capabilities.theme_ids():
+        if persona_id not in capabilities.persona_ids():
             violations.append(
-                f"theme '{theme_id}' not in capabilities (available: {', '.join(capabilities.theme_ids())})"
+                f"persona '{persona_id}' not in capabilities "
+                f"(available: {', '.join(capabilities.persona_ids())})"
             )
 
-        for kind, vid in variant_choices.items():
-            allowed = capabilities.variants.get(kind)
-            if allowed is None:
-                violations.append(f"unknown container kind '{kind}'")
-                continue
-            if vid not in allowed:
+        def _check_container_variant(cid: str, vid: str, context: str) -> None:
+            c = capabilities.container(cid)
+            if c is None:
+                violations.append(f"{context}: container '{cid}' not registered")
+                return
+            if c.kind in ("free", "nested"):
                 violations.append(
-                    f"variant '{vid}' not valid for kind '{kind}' (allowed: {', '.join(allowed)})"
+                    f"{context}: container '{cid}' (kind={c.kind}) has no variant support"
+                )
+                return
+            if not c.allows_variant(vid):
+                allowed = ", ".join(c.variants)
+                violations.append(
+                    f"{context}: variant '{vid}' not valid for container '{cid}' "
+                    f"(allowed: {allowed})"
                 )
 
-        known = capabilities.component_ids()
-        for cid in component_ids:
-            if cid not in known:
-                violations.append(f"component id '{cid}' not registered in tool")
+        if signature and signature.get("container") and signature.get("variant"):
+            _check_container_variant(
+                signature["container"], signature["variant"], "signature"
+            )
+
+        for idx, ov in enumerate(variant_overrides):
+            cid = ov.get("container") or ""
+            vid = ov.get("variant") or ""
+            if not cid or not vid:
+                violations.append(
+                    f"variantOverrides[{idx}] missing container/variant"
+                )
+                continue
+            _check_container_variant(cid, vid, f"variantOverrides[{idx}]")
 
         return violations

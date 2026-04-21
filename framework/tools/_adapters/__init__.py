@@ -8,14 +8,25 @@ expose a uniform interface via ``base.PlatformAdapter``.
 See ``README.md`` for registration semantics and how to add new platforms.
 """
 
-from .base import PlatformAdapter, Capabilities, RenderResult, AdapterError
+from .base import (
+    AdapterError,
+    Capabilities,
+    ContainerSpec,
+    HealthResult,
+    Persona,
+    PlatformAdapter,
+    ValidateResult,
+)
 from .wechat_typeset import WechatTypesetAdapter
 
 __all__ = [
-    "PlatformAdapter",
-    "Capabilities",
-    "RenderResult",
     "AdapterError",
+    "Capabilities",
+    "ContainerSpec",
+    "HealthResult",
+    "Persona",
+    "PlatformAdapter",
+    "ValidateResult",
     "WechatTypesetAdapter",
     "get_adapter",
 ]

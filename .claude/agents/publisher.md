@@ -54,6 +54,10 @@ dependencies:
    - error → 停止，返回 violations
    - warning → 记录，继续
 
+   本次规则 `forbidden_blocks` 会把所有 `^:::` 行判 error——任何 `::: quoteCard` / `::: tip` 类的
+   typeset-only 语法出现在 07-final 都是 writer/polisher 漏网的**严重 bug**，**不得**在本阶段
+   手工"过滤掉后继续"。必须回滚到 polish 阶段让上游 agent 把 `:::` 移出纯 GFM 区。
+
 2. **图片占位符替换**：读 `04b-figure/{platform}/figure-index.md`，将 `<!-- FIGURE: fig-NN -->` 替换为 `![{图注}](../intermediate/04b-figure/{platform}/fig-NN.png)`；`image: pending-user` 保留占位并在退出报告列出
 
 3. **语法标准化**（按平台分支）：
@@ -70,6 +74,16 @@ dependencies:
    - **仅 wechat 额外产**：`export/08-plain-publish.md`（剥运营区的平台无关兜底版）
 
 6. **清理残留**：`<!-- USER_FILL:` / `<!-- FIGURE:` / `<!-- MEDIA:` / `TODO` 必须全部清除
+
+7. **后校验**（**强制**）：
+   ```bash
+   python .claude/skills/quality-linting/scripts/lint.py export/08-{platform}-publish.md --platform {platform}
+   ```
+   - error 非 0 → 回滚本次产出（删除 `export/08-{platform}-publish.md`），返回 violations
+     给 orchestrator，**不**声明阶段完成。
+   - warning → 记录，继续。
+   - 特别关注：wechat 平台**任何** `::: ` 残留都是红线（CP3 typesetter 的独占语法），
+     本阶段决不能让它泄漏到下游输入里。
 
 ## 排版交接
 

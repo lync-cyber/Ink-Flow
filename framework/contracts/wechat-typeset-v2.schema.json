@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inkflow.dev/contracts/wechat-typeset-v2.schema.json",
+  "title": "wechat-typeset Capabilities v2",
+  "description": "Contract v2 between InkFlow (consumer) and wechat-typeset (provider). Breaking changes vs v1: containers[] replaces flat variants{}; personas[] carries full selection signals; hardRules is machine-readable. Both repos must conform — breaking changes require schemaVersion bump + named migration.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "tool",
+    "contract",
+    "personas",
+    "containers",
+    "signatureContainerIds",
+    "inlineExtensions",
+    "hardRules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "2.0"
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+.*$",
+          "description": "Provider package.json version (SemVer). 'unknown' explicitly rejected."
+        },
+        "repo": { "type": "string" }
+      }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "contract": {
+      "type": "object",
+      "required": ["fenceOuter", "fenceInner", "attrSyntax", "variantKey"],
+      "properties": {
+        "fenceOuter": { "type": "string", "const": "::::" },
+        "fenceInner": { "type": "string", "const": ":::" },
+        "attrSyntax": { "type": "string" },
+        "variantKey": { "type": "string", "const": "variant" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "personas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description", "audience", "signatureContainers", "variants"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "audience": { "type": "string" },
+          "signatureContainers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "variants": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "palettePrimary": { "type": "string", "pattern": "^#[0-9a-fA-F]{3,8}$" }
+        }
+      }
+    },
+    "containers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "kind": {
+            "type": "string",
+            "enum": ["variantized", "admonition", "free", "nested"]
+          },
+          "variants": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "defaultVariant": { "type": "string" },
+          "children": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "signatureContainerIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "signatureContainerMarkdownNames": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "inlineExtensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["syntax", "description"],
+        "properties": {
+          "syntax": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "hardRules": {
+      "type": "object",
+      "required": ["minFontSize", "minStrokeWidth"],
+      "properties": {
+        "minFontSize": { "type": "number" },
+        "minStrokeWidth": { "type": "number" },
+        "paletteHexPattern": { "type": "string" },
+        "forbidFontFamily": { "type": "boolean" },
+        "forbidClass": { "type": "boolean" },
+        "forbidStyleTag": { "type": "boolean" },
+        "forbidPosition": { "type": "boolean" },
+        "forbidMediaQueries": { "type": "boolean" }
+      }
+    },
+    "personaSchemaUri": { "type": "string" },
+    "docs": {
+      "type": "object",
+      "description": "Paths (relative to provider repo root) of authoritative reference docs InkFlow agents should Read at runtime. 方式 A (vendored skill) 通过这些路径引用对方 SKILL，避免维护离线副本。",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

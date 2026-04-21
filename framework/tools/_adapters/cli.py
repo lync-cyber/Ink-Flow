@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
-"""Adapter CLI — agent 通过 Bash 调用的统一入口。
+"""Adapter CLI — agent 通过 Bash 调用的统一入口（契约 v2）.
 
 子命令：
-  health         探测 adapter 目标是否在线
+  health         探测 adapter 目标是否在线（capabilities.json 可读 + node/npx 可用）
   capabilities   拉取 capabilities 并写入 runtime/typeset-capabilities.json
-  conform        校验排版方案是否只用合规 id
-  render         调 /api/render；v1 返回 501 时落盘占位并退出 0
+  docs           列出 sibling repo 内 SKILL / 参考文档的**绝对路径**（方式 A）
+  validate       对 annotated.md 做 dry-run：fence 语法 + 真实 render 能否成功
+  conform        校验 plan 是否只用合规 id（persona / container / variant）
 
 示例：
   python framework/tools/_adapters/cli.py health
   python framework/tools/_adapters/cli.py capabilities --cache
-  python framework/tools/_adapters/cli.py conform --theme tech-geek \\
-        --variants admonition=terminal compare=ledger
-  python framework/tools/_adapters/cli.py render --input annotated.md \\
-        --theme tech-geek --output render.html
+  python framework/tools/_adapters/cli.py docs
+  python framework/tools/_adapters/cli.py validate --input annotated.md --persona tech-explainer
+  python framework/tools/_adapters/cli.py conform --persona tech-explainer \\
+        --signature tip=terminal \\
+        --variant-override quote-card=classic --variant-override compare=ledger
 
 退出码：
-  0   成功 / 降级成功
-  1   目标不可达 / 合规校验失败 / 其它已知错误
+  0   成功
+  1   health 失败 / 合规校验失败 / render dry-run 失败
   2   参数错误
+  3   AdapterError（能力清单缺失、repo 未 clone 等）
 """
 
 from __future__ import annotations
@@ -29,15 +32,22 @@ import os
 import sys
 from pathlib import Path
 
-# 允许脚本直接执行（`python cli.py ...`），需把上层目录入 sys.path
 HERE = Path(__file__).resolve().parent
 if str(HERE.parent) not in sys.path:
     sys.path.insert(0, str(HERE.parent))
 
+# Windows 控制台默认 cp1252 会吃中文 / emoji；JSON 输出统一走 utf-8。
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
+
 from _adapters import AdapterError, get_adapter  # noqa: E402
+from _adapters.base import Capabilities  # noqa: E402
 
-
-REPO_ROOT = Path(__file__).resolve().parents[3]  # cli.py → _adapters → tools → framework → repo
+REPO_ROOT = Path(__file__).resolve().parents[3]
 CACHE_FILE = REPO_ROOT / "runtime" / "typeset-capabilities.json"
 
 
@@ -68,83 +78,105 @@ def cmd_capabilities(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_docs(args: argparse.Namespace) -> int:
+    adapter = get_adapter(args.adapter)
+    paths = adapter.docs_paths()
+    _emit({"paths": paths})
+    return 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    adapter = get_adapter(args.adapter)
+    md_path = Path(args.input)
+    if not md_path.exists():
+        print(f"[validate] input not found: {md_path}", file=sys.stderr)
+        return 2
+    result = adapter.validate_markdown(
+        str(md_path),
+        persona=args.persona,
+        timeout=args.timeout,
+    )
+    _emit(
+        {
+            "ok": result.ok,
+            "persona": result.persona,
+            "wordCount": result.word_count,
+            "readingTime": result.reading_time,
+            "htmlLength": result.html_length,
+            "issues": result.issues,
+        }
+    )
+    return 0 if result.ok else 1
+
+
+def _parse_kv(items: list[str] | None) -> list[dict[str, str]]:
+    """['container=variant', ...] → [{"container": c, "variant": v}]"""
+    out: list[dict[str, str]] = []
+    for s in items or []:
+        if "=" not in s:
+            raise argparse.ArgumentTypeError(f"expected container=variant, got {s!r}")
+        c, v = s.split("=", 1)
+        out.append({"container": c.strip(), "variant": v.strip()})
+    return out
+
+
 def cmd_conform(args: argparse.Namespace) -> int:
-    """校验 plan 是否只引用合规 id。优先读缓存，缓存缺失再走 HTTP。"""
     caps_payload: dict
     if CACHE_FILE.exists() and not args.no_cache:
         caps_payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
     else:
         adapter = get_adapter(args.adapter)
-        caps = adapter.capabilities(timeout=args.timeout)
-        caps_payload = caps.raw
-
-    from _adapters.base import Capabilities  # lazy import after sys.path tweak
+        caps_payload = adapter.capabilities(timeout=args.timeout).raw
     caps = Capabilities.from_json(caps_payload)
 
-    variants: dict[str, str] = {}
-    for item in args.variants or []:
-        if "=" not in item:
-            print(f"[conform] --variants expects kind=variantId, got {item!r}", file=sys.stderr)
+    signature: dict[str, str] | None = None
+    if args.signature:
+        if "=" not in args.signature:
+            print(f"[conform] --signature expects container=variant, got {args.signature!r}", file=sys.stderr)
             return 2
-        k, v = item.split("=", 1)
-        variants[k.strip()] = v.strip()
+        c, v = args.signature.split("=", 1)
+        signature = {"container": c.strip(), "variant": v.strip()}
+    overrides = _parse_kv(args.variant_override)
 
     adapter = get_adapter(args.adapter)
     violations = adapter.conform_plan(
-        theme_id=args.theme,
-        variant_choices=variants,
-        component_ids=args.component or [],
+        persona_id=args.persona,
+        signature=signature,
+        variant_overrides=overrides,
         capabilities=caps,
     )
+
+    # 额外：图片 src 必须是 http(s) 或数据 URI（P1-6）
+    if args.markdown:
+        import re
+
+        md = Path(args.markdown).read_text(encoding="utf-8")
+        for m in re.finditer(r"!\[[^\]]*\]\(([^)]+)\)", md):
+            src = m.group(1).strip()
+            if not (src.startswith("http://") or src.startswith("https://") or src.startswith("data:")):
+                violations.append(
+                    f"image src {src!r} is a local/relative path; upload to CDN or 公众号素材库 before typeset"
+                )
 
     _emit({"ok": len(violations) == 0, "violations": violations})
     return 0 if not violations else 1
 
 
-def cmd_render(args: argparse.Namespace) -> int:
-    adapter = get_adapter(args.adapter)
-    md = Path(args.input).read_text(encoding="utf-8")
-    result = adapter.render(md, args.theme, timeout=args.timeout)
-
-    out = Path(args.output)
-    out.parent.mkdir(parents=True, exist_ok=True)
-
-    if result is None:
-        # v1 降级：落盘带 banner 的占位，告诉用户在浏览器里完成渲染
-        placeholder = (
-            "<!doctype html>\n<meta charset='utf-8'>\n"
-            "<title>wechat-typeset render placeholder</title>\n"
-            "<p style='font-family:monospace;padding:2em'>"
-            "服务端渲染在 wechat-typeset v1 未实现。\n"
-            f"请在浏览器打开 http://127.0.0.1:7788/ 粘贴同目录 annotated.md，"
-            f"选择主题 <code>{args.theme}</code> 后一键复制。"
-            "</p>\n"
-        )
-        out.write_text(placeholder, encoding="utf-8")
-        _emit({"ok": True, "degraded": True, "output": str(out.relative_to(REPO_ROOT))})
-        return 0
-
-    out.write_text(result.html, encoding="utf-8")
-    _emit(
-        {
-            "ok": len(result.errors) == 0,
-            "degraded": False,
-            "output": str(out.relative_to(REPO_ROOT)),
-            "warnings": result.warnings,
-            "errors": result.errors,
-        }
-    )
-    return 0 if not result.errors else 1
-
-
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="adapter-cli", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--adapter", default=os.environ.get("INKFLOW_ADAPTER", "wechat-typeset"),
-                   help="adapter name (default: wechat-typeset or $INKFLOW_ADAPTER)")
-    p.add_argument("--timeout", type=float, default=5.0)
+    p = argparse.ArgumentParser(
+        prog="adapter-cli",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--adapter",
+        default=os.environ.get("INKFLOW_ADAPTER", "wechat-typeset"),
+        help="adapter name (default: wechat-typeset or $INKFLOW_ADAPTER)",
+    )
+    p.add_argument("--timeout", type=float, default=30.0)
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("health", help="ping the adapter target")
+    sp = sub.add_parser("health", help="check adapter reachability")
     sp.set_defaults(func=cmd_health)
 
     sp = sub.add_parser("capabilities", help="fetch capabilities.json")
@@ -152,18 +184,25 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--print", action="store_true", help="also print to stdout when --cache")
     sp.set_defaults(func=cmd_capabilities)
 
+    sp = sub.add_parser("docs", help="list absolute paths of sibling repo SKILL/reference docs")
+    sp.set_defaults(func=cmd_docs)
+
+    sp = sub.add_parser("validate", help="fence-syntax + render dry-run via provider CLI")
+    sp.add_argument("--input", required=True)
+    sp.add_argument("--persona", required=True)
+    sp.set_defaults(func=cmd_validate)
+
     sp = sub.add_parser("conform", help="verify plan ids against capabilities")
-    sp.add_argument("--theme", required=True)
-    sp.add_argument("--variants", nargs="*", help="kind=variantId pairs, e.g. admonition=terminal")
-    sp.add_argument("--component", action="append", help="component id to verify (repeatable)")
+    sp.add_argument("--persona", required=True)
+    sp.add_argument("--signature", help="container=variant, e.g. tip=terminal")
+    sp.add_argument(
+        "--variant-override",
+        action="append",
+        help="container=variant; repeatable",
+    )
+    sp.add_argument("--markdown", help="optional annotated.md path; checks image src policy")
     sp.add_argument("--no-cache", action="store_true")
     sp.set_defaults(func=cmd_conform)
-
-    sp = sub.add_parser("render", help="POST /api/render (degrades on 501)")
-    sp.add_argument("--input", required=True)
-    sp.add_argument("--output", required=True)
-    sp.add_argument("--theme", required=True)
-    sp.set_defaults(func=cmd_render)
 
     return p
 
@@ -174,7 +213,7 @@ def main() -> int:
         return args.func(args)
     except AdapterError as e:
         print(f"[adapter-cli] {e}", file=sys.stderr)
-        return 1
+        return 3
 
 
 if __name__ == "__main__":

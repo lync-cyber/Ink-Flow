@@ -78,7 +78,7 @@ dependencies:
     | `.caption` | 图注（避免与 em 冲突） | `<p class="caption">图 1：系统架构示意</p>` |
     | `kbd` | 键盘键 | `按 <kbd>Ctrl</kbd>+<kbd>K</kbd>` |
 
-    工作机制：独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 在"一键复制"时通过 juice 把主题 CSS 内联到元素 style 属性。**writer 阶段产物不得出现 `:::` 容器或主题专属 class**（那是 typesetter 阶段的工作）；writer 只用标准 GFM + `> [!TIP]` Alerts。可用的主题 class / variant 由 typesetter agent 在 typeset 阶段按 `framework/contracts/wechat-typeset-v1.schema.json` 引入。
+    工作机制：独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 在"一键复制"时通过 juice 把主题 CSS 内联到元素 style 属性。**writer 阶段产物不得出现 `:::` 容器或主题专属 class**（那是 typesetter 阶段的工作）；writer 只用标准 GFM + `> [!TIP]` Alerts。可用的容器 / variant / persona 由 typesetter agent 在 typeset 阶段从 sibling repo 的 capabilities.json（契约 `framework/contracts/wechat-typeset-v2.schema.json`）按需读取——**writer 完全不需要知道这些 id**。
 
 ### H2 章节编号（栏目主题约定）
 

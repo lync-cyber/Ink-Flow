@@ -36,22 +36,47 @@ AskUserQuestion:
 - 变更溯源表覆盖所有改动
 - 无残留 `USER_FILL` 占位符（publisher 前必须清理）
 
-## CP3 — 发布确认（publish 阶段结束）
+## CP3 — 排版就绪（typeset 阶段结束 · 仅 wechat）
 
 ```
 AskUserQuestion:
-  question: "导出文件已生成"（附文件列表 + 运营元数据摘要）
+  question: "排版方案与 annotated.md 已生成"（附 persona + validate 结果）
   options:
-    - "确认发布"
-    - "调整运营元数据"
-    - "更换导出格式"
-    - "暂不发布"
+    - "确认，去浏览器复制"
+    - "换 persona / 换签名" — 重跑 typesetter
+    - "先修图片 / 先手动上传素材库" — 暂停
+    - "暂不排版"
 ```
 
-审核要点：
-- export/08-wechat-publish.md / 08-plain-publish.md / 08-teaser-120chars.md 均存在
-- 摘要 ≤120 字（config.exports.teaser.word_limit）
-- 无残留 `<!-- FIGURE:` `<!-- MEDIA:` `<!-- USER_FILL:` 占位符
+CP3 有**三态**，state.checkpoints.CP3.status 必填：
+
+| status | 触发条件 | 下一步 |
+|---|---|---|
+| `passed`   | `meta.json.conform.ok=true` 且 `meta.json.validate.ok=true` 且产物三件齐全 | 允许 pipeline 声明完成，交付用户去 wechat-typeset launcher 粘贴 |
+| `degraded` | conform/validate ok 但带 `issues[]`（如图片本地路径但用户选"粘贴时手动补图"）| 把 degraded reason 写进 state 与用户告知，不阻塞结束，但 retrospective 必须登记 |
+| `failed`   | health=false（能力清单缺失）/ conform.ok=false / validate.ok=false / 产物缺件 | **禁止**声明 pipeline 完成；recovery.md 的 L2 走向要求用户修 sibling repo 或重跑 typesetter |
+
+非 wechat 平台不触发 CP3（pipeline 在 publish 完成后即结束）。
+
+## CP3 的 state 记录格式
+
+```json
+"checkpoints": {
+  "CP3": {
+    "status": "passed|degraded|failed",
+    "decision": "approved|approved_with_edits|returned|skipped",
+    "persona": "tech-explainer",
+    "adapter_version": "0.1.0",
+    "conform": { "ok": true, "violations": [] },
+    "validate": { "ok": true, "issues": [] },
+    "reasons": ["local_image_manual_upload: 4 images pending 素材库 paste"],
+    "recorded_at": "2026-04-21T12:00:00Z"
+  }
+}
+```
+
+- `adapter_version` 为空或字面 `unknown` → 本次 CP3 一律 `failed`
+- `reasons` 数组是结构化降级原因，只在 `degraded` 下非空
 
 ## checkpoint 状态
 

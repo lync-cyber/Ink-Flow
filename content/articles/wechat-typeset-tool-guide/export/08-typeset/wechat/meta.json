@@ -1,0 +1,42 @@
+{
+  "adapter": "wechat-typeset",
+  "adapter_version": "unknown",
+  "contract_version": "1.0",
+  "theme": "tech-explainer",
+  "signature": {
+    "kind": "admonition",
+    "variant": "terminal",
+    "anchor": "section-04-important"
+  },
+  "variants": {
+    "admonition": "terminal",
+    "quote": "classic",
+    "compare": "ledger",
+    "steps": "timeline-dot",
+    "divider": "rule",
+    "codeBlock": "header-bar"
+  },
+  "components": [
+    "admonition-terminal",
+    "admonition-accent-bar",
+    "quote-classic",
+    "compare-ledger",
+    "steps-timeline-dot",
+    "divider-rule",
+    "codeBlock-header-bar"
+  ],
+  "conform": {
+    "ok": null,
+    "reason": "capabilities.json missing — sibling repo dist/api/capabilities.json not built; ids validated manually against src/variants/registry.ts + src/themes/*/persona.spec.ts"
+  },
+  "render": {
+    "degraded": true,
+    "output": "render.html",
+    "note": "v1 placeholder; user runs launcher at 127.0.0.1:7788 and pastes annotated.md"
+  },
+  "generated_at": "2026-04-21",
+  "source": {
+    "publish_md": "content/articles/wechat-typeset-tool-guide/export/08-wechat-publish.md",
+    "outline_visual_signature": "content/articles/wechat-typeset-tool-guide/intermediate/03-outline/wechat.md"
+  }
+}

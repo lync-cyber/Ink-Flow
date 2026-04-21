@@ -1,0 +1,104 @@
+<svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #f0f2f5; }
+      .label-badge { font-family: "Microsoft YaHei","PingFang SC",sans-serif; font-size: 14px; font-weight: 700; text-anchor: middle; }
+      .card-title { font-family: "Microsoft YaHei","PingFang SC",sans-serif; font-size: 18px; font-weight: 700; }
+      .body-text { font-family: "Microsoft YaHei","PingFang SC",sans-serif; font-size: 14px; font-weight: 400; }
+      .caption { font-family: "Microsoft YaHei","PingFang SC",sans-serif; font-size: 14px; font-weight: 400; fill: #666; text-anchor: middle; }
+      .header-caption { font-family: "Microsoft YaHei","PingFang SC",sans-serif; font-size: 16px; font-weight: 700; fill: #333; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- 整体背景 -->
+  <rect class="bg" width="640" height="420"/>
+
+  <!-- 顶部标题 -->
+  <text class="header-caption" x="320" y="36">同一篇稿子，两套主题的视觉气质对比</text>
+
+  <!-- ===================== 左侧：科技极客 ===================== -->
+  <!-- 卡片背景：深色 -->
+  <rect x="24" y="56" width="286" height="320" rx="10" fill="#0d1117"/>
+
+  <!-- 徽标 -->
+  <rect x="34" y="66" width="80" height="24" rx="4" fill="#4f9cf9"/>
+  <text class="label-badge" x="74" y="83" fill="#fefefe">科技极客</text>
+
+  <!-- 标题行 -->
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="18" font-weight="700" fill="#58a6ff" x="34" y="118">如何用 AI 生成排版主题</text>
+
+  <!-- 分隔线 -->
+  <line x1="34" y1="130" x2="296" y2="130" stroke="#30363d" stroke-width="1"/>
+
+  <!-- 正文段落 -->
+  <text class="body-text" fill="#c9d1d9" x="34" y="154">每次打开 Markdown Nice，</text>
+  <text class="body-text" fill="#c9d1d9" x="34" y="174">都要重新调一遍样式——</text>
+  <text class="body-text" fill="#c9d1d9" x="34" y="194">字号、颜色、行距，一个都不能少。</text>
+
+  <!-- 代码块风格容器 -->
+  <rect x="34" y="210" width="262" height="56" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text font-family="'Courier New',monospace" font-size="13" fill="#7ee787" x="46" y="232">$ git clone wechat-typeset</text>
+  <text font-family="'Courier New',monospace" font-size="13" fill="#79c0ff" x="46" y="254">$ npm start</text>
+
+  <!-- 提示块 -->
+  <rect x="34" y="278" width="262" height="48" rx="4" fill="#0d2137" stroke="#1f6feb" stroke-width="1.5"/>
+  <text class="body-text" fill="#79c0ff" x="46" y="299">提示：全程本地运行，</text>
+  <text class="body-text" fill="#79c0ff" x="46" y="318">草稿不上传服务器。</text>
+
+  <!-- 分隔装饰 -->
+  <line x1="34" y1="340" x2="296" y2="340" stroke="#21262d" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+  <!-- 底部作者行 -->
+  <circle cx="46" cy="358" r="10" fill="#4f9cf9"/>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="13" fill="#8b949e" x="62" y="362">@tech_author · 2024-04</text>
+
+  <!-- 左侧说明文字 -->
+  <text class="caption" x="167" y="394">深色背景 · 终端配色 · 代码块突出</text>
+
+  <!-- ===================== 右侧：生活美学 ===================== -->
+  <!-- 卡片背景：浅色暖白 -->
+  <rect x="330" y="56" width="286" height="320" rx="10" fill="#fffdf7"/>
+
+  <!-- 徽标 -->
+  <rect x="340" y="66" width="80" height="24" rx="12" fill="#f8c8a0"/>
+  <text class="label-badge" x="380" y="83" fill="#8b4513">生活美学</text>
+
+  <!-- 标题行 -->
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="18" font-weight="700" fill="#8b4513" x="340" y="118">如何用 AI 生成排版主题</text>
+
+  <!-- 装饰分隔线（花纹感） -->
+  <line x1="340" y1="128" x2="540" y2="128" stroke="#e8c4a0" stroke-width="2"/>
+  <circle cx="380" cy="128" r="3" fill="#e8a87c"/>
+  <circle cx="440" cy="128" r="3" fill="#e8a87c"/>
+  <circle cx="500" cy="128" r="3" fill="#e8a87c"/>
+
+  <!-- 正文段落，字间距更松 -->
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="15" letter-spacing="1" fill="#5a3e28" x="340" y="157">每次打开 Markdown Nice，</text>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="15" letter-spacing="1" fill="#5a3e28" x="340" y="179">都要重新调一遍样式——</text>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="15" letter-spacing="1" fill="#5a3e28" x="340" y="201">字号、颜色、行距，一个都不能少。</text>
+
+  <!-- 引用块 / 金句容器 -->
+  <rect x="340" y="218" width="262" height="56" rx="6" fill="#fff4e6"/>
+  <line x1="340" y1="218" x2="340" y2="274" stroke="#e8a87c" stroke-width="4" stroke-linecap="round"/>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="14" font-style="italic" fill="#8b4513" x="354" y="241">排版不是内容，</text>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="14" font-style="italic" fill="#8b4513" x="354" y="261">却吃掉你 30% 的创作时间。</text>
+
+  <!-- 温馨提示块 -->
+  <rect x="340" y="284" width="262" height="48" rx="8" fill="#fef9f0" stroke="#f5c97a" stroke-width="1.5"/>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="14" fill="#b8860b" x="354" y="305">小贴士：全程本地运行，</text>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="14" fill="#b8860b" x="354" y="324">草稿不上传服务器。</text>
+
+  <!-- 装饰花纹分隔 -->
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="14" text-anchor="middle" fill="#e8c4a0" x="471" y="350">— ✦ —</text>
+
+  <!-- 底部作者行 -->
+  <circle cx="352" cy="368" r="10" fill="#f8c8a0"/>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="13" fill="#a0856c" x="368" y="372">@life_author · 2024-04</text>
+
+  <!-- 右侧说明文字 -->
+  <text class="caption" x="473" y="394">暖色背景 · 宽字距 · 手账装饰风</text>
+
+  <!-- 中间 VS 标志 -->
+  <circle cx="320" cy="216" r="22" fill="#fefefe" stroke="#d0d7de" stroke-width="1.5"/>
+  <text font-family="'Microsoft YaHei','PingFang SC',sans-serif" font-size="16" font-weight="700" fill="#555" text-anchor="middle" dominant-baseline="central" x="320" y="216">VS</text>
+</svg>

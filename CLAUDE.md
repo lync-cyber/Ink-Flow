@@ -29,8 +29,8 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 外部参考材料 | `content/references/` |
 | 文章产物 | `content/articles/{slug}/` |
 | 运行状态 | `runtime/pipeline-states/{slug}.json` |
-| 排版适配器（与独立 repo 对接） | `framework/tools/_adapters/`（Python · PlatformAdapter 接口） |
-| 排版契约（兩端共识） | `framework/contracts/wechat-typeset-v1.schema.json` |
+| 排版适配器（与独立 repo 对接） | `framework/tools/_adapters/`（Python · PlatformAdapter v2 接口） |
+| 排版契约（兩端共识） | `framework/contracts/wechat-typeset-v2.schema.json` |
 | 本地排版工具（独立 repo） | https://github.com/lync-cyber/wechat-typeset （约定 clone 到 Ink-Flow 同级目录） |
 
 ## 工作区结构（单篇文章）
@@ -75,8 +75,8 @@ content/articles/{slug}/
 - **写文章**: 告诉 Claude 主题 → 自动启动 pipeline
 - **分析风格**: "分析风格"、"提取风格 DNA" → profile 模式，从你的文章提取风格
 - **学习进修**: "学习这篇文章"、"参考这个模板" → study 模式，分析外部材料改进规则
-- **文章排版方案**: "给这篇排版"、"排版方案"、"挑主题"、"选 variant" → 自动触发 `typeset` pipeline 阶段（typesetter agent），或手动 `typeset-authoring` skill → 产出 `intermediate/09-typeset-plan.md` + `export/08-typeset/wechat/annotated.md`。
-- **本地排版**: 独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 的 launcher（clone 到 Ink-Flow 同级目录）→ 启 `127.0.0.1:7788` → 粘贴 `annotated.md` → 选主题 → 一键复制富文本 → 粘贴到公众号后台。Ink-Flow 这端通过 `framework/tools/_adapters/cli.py` 读对方 `dist/api/capabilities.json` 做能力对账，无 HTTP 强依赖。
+- **文章排版方案**: "给这篇排版"、"排版方案"、"挑 persona"、"选签名容器" → 自动触发 `typeset` pipeline 阶段（typesetter agent），或手动 `typeset-authoring` skill → 产出 `intermediate/09-typeset-plan.md` + `export/08-typeset/wechat/annotated.md`。
+- **本地排版**: 独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 的 launcher（clone 到 Ink-Flow 同级目录）→ 启 `127.0.0.1:7788` → 粘贴 `annotated.md` → 选 persona → 一键复制富文本 → 粘贴到公众号后台。Ink-Flow 这端通过 `framework/tools/_adapters/cli.py` 读对方 `dist/api/capabilities.json` + 调 `scripts/wechat-typeset-cli.ts` 做 render dry-run，无 HTTP 强依赖。
 - **格式校验**: "跑一下 lint"、"检查格式" → 运行 `.claude/skills/quality-linting/scripts/lint.py`
 - **内容排期**: "排期"、"内容日历" → 生成发布计划
 - **发布准备**: "发布清单"、"运营清单" → 发布前后检查清单
@@ -98,6 +98,33 @@ brief → research → outline [CP1] → draft ∥ figures → audit → polish 
 ```
 
 `publish` 出平台无关的 Markdown；`typeset` 基于 adapter 能力清单产出平台相关的排版方案与 annotated 版本。
+
+## typeset 阶段：方式 A 集成（容器/主题知识外部化）
+
+Ink-Flow **不维护**容器名、variant id、persona id 的离线字典——所有权威知识都在
+sibling repo `wechat-typeset/skills/wechat-typeset/` 的 SKILL 与 `docs/container-syntax.md`
+里。typesetter agent 在运行时通过 `cli.py docs` 拿绝对路径再 Read，避免副本漂移。
+
+三步上手：
+
+```bash
+# 1. 同级目录 clone + build（产出 capabilities.json 与 CLI）
+git clone https://github.com/lync-cyber/wechat-typeset.git ../wechat-typeset
+cd ../wechat-typeset && npm ci && npm run build
+
+# 2. 回 Ink-Flow，能力清单自动可用
+python framework/tools/_adapters/cli.py health         # ok=true + version 即通过
+python framework/tools/_adapters/cli.py capabilities --cache
+python framework/tools/_adapters/cli.py docs          # 返回 SKILL 绝对路径给 agent Read
+
+# 3. 跑或重排文章 typeset
+#    自动路径：pipeline 到 typeset 阶段自动分派 typesetter agent
+#    手动路径：说"给 {slug} 排版" → typeset-authoring skill 转派 typesetter agent
+```
+
+CP3 三态：`passed`（conform+validate 全通过）/ `degraded`（ok 但带 issues，如图片待手动上传）
+/ `failed`（health/conform/validate 任一失败）。meta.json 里的 `adapter_version` 不允许字面值
+`unknown`，契约 v2 在 adapter 层就拒绝。
 
 ## 文件地图
 

@@ -4,7 +4,7 @@
 # 视觉字段（配色/字体/variant 选择）不在此文件；排版决策按文章粒度在 pipeline 产出：
 #   content/articles/{slug}/intermediate/09-typeset-plan.md（由 typesetter agent 或 typeset-authoring skill 生成）
 # 真正渲染由独立 repo wechat-typeset 承担：https://github.com/lync-cyber/wechat-typeset
-# Ink-Flow 通过 framework/tools/_adapters/ 接入（见 framework/contracts/wechat-typeset-v1.schema.json）
+# Ink-Flow 通过 framework/tools/_adapters/ 接入（见 framework/contracts/wechat-typeset-v2.schema.json）
 # ============================================================
 
 version: "6.0"
@@ -30,6 +30,16 @@ columns:
     default_opening: blunt
     default_cta: bookmark
     suggested_components: [data_chart]
+    typeset:
+      # wechat-typeset persona 推荐（typesetter agent 用作 AskUserQuestion 首选项排序）
+      # 真实合法 id 以 sibling repo capabilities.personas 为准，本字段只排"推荐顺序"
+      persona_candidates:
+        primary: academic-frontier
+        alternates: [default, industry-observer]
+        reasons:
+          academic-frontier: "abstract / see-also 容器适合论文摘要+延伸阅读，学术感最贴"
+          default: "保守退路，写得太轻量时用中性底色不抢戏"
+          industry-observer: "偏应用落地、带工业评论口吻的论文解读适合"
     frequency: "2-3/月"
     best_time: "周三/四 20:30-21:30"
     kpi_targets:
@@ -64,6 +74,14 @@ columns:
     default_opening: contrast
     default_cta: share
     suggested_components: [comparison_table]
+    typeset:
+      persona_candidates:
+        primary: industry-observer
+        alternates: [business-finance, default]
+        reasons:
+          industry-observer: "multi-column compare + see-also 矩阵原生支持，趋势稿适用"
+          business-finance: "ledger compare / accent 锐利适合带财经指标的趋势稿"
+          default: "对 newsletter 风格可以退到中性"
     frequency: "周报+突发"
     best_time: "周一 07:30-08:30"
     kpi_targets:
@@ -97,6 +115,14 @@ columns:
     default_opening: pain_point
     default_cta: bookmark_try
     suggested_components: [flow_chart]
+    typeset:
+      persona_candidates:
+        primary: tech-explainer
+        alternates: [tech-geek, default]
+        reasons:
+          tech-explainer: "header-bar 代码块 + note admonition + see-also 延伸，教程/产品文档类首选"
+          tech-geek: "manpage-log / frame-brackets 签名偏重，适合 RFC 评论 / 架构随笔"
+          default: "非技术读者向推广稿可退回中性"
     frequency: "2-4/月"
     best_time: "周二/四 21:00-22:00"
     kpi_targets:
@@ -132,6 +158,14 @@ columns:
     default_opening: story
     default_cta: comment
     suggested_components: []
+    typeset:
+      persona_candidates:
+        primary: people-story
+        alternates: [literary-humanism, life-aesthetic]
+        reasons:
+          people-story: "pullquote-card 巨号 serif 引号 + dropcap 是人物稿签名动作"
+          literary-humanism: "纯文学随笔向（回忆/书评/散文）用衬线 + 宽段"
+          life-aesthetic: "生活场景偏多、饮食旅行类写作用暖米柔和"
     frequency: "1/月"
     best_time: "周六上午/周日晚"
     kpi_targets:

@@ -360,6 +360,57 @@ def rule_forbidden_blocks(lines: list[str], config: dict, result: LintResult):
                        f"检测到禁用的 ::: 容器语法 ({tag})；请改用标准 Markdown 或 GFM Alerts")
 
 
+def rule_annotated_hygiene(lines: list[str], config: dict, result: LintResult):
+    """规则 A+: 针对 annotated.md 的结构校验（typeset 阶段产物）。
+
+    与 rule_forbidden_blocks 镜像互补：
+      - forbidden_blocks 运行在 publish 阶段，禁 ::: 出现
+      - annotated_hygiene 运行在 annotated.md（typeset 阶段产物），允许 :::，但禁止：
+          * `<!-- variant=... -->` HTML 注释（不被解析）
+          * `{key="value"}` JSX 属性（不被解析）
+          * frontmatter 里 `typeset:` 孤儿块（wechat-typeset 不消费）
+          * ::: open 行用驼峰 camelCase 容器名
+    只在 config.rules.annotated_hygiene.enabled=true 时运行（默认 false）。
+    """
+    cfg = config["rules"].get("annotated_hygiene", {})
+    if not cfg.get("enabled", False):
+        return
+    severity = cfg.get("severity", "error")
+    in_frontmatter = False
+    seen_first_dash = False
+    for ctx in iter_lines(lines):
+        # 手动追踪 frontmatter 检测 typeset: 孤儿
+        if ctx.stripped == "---":
+            if not seen_first_dash:
+                in_frontmatter = True
+                seen_first_dash = True
+                continue
+            if in_frontmatter:
+                in_frontmatter = False
+                continue
+        if in_frontmatter and re.match(r"^\s*typeset\s*:", ctx.text):
+            result.add("A2", severity, ctx.line_num,
+                       "annotated.md frontmatter 不应含 typeset: 孤儿块（wechat-typeset 不消费）")
+            continue
+        if in_frontmatter or ctx.in_code_block:
+            continue
+        # HTML 注释 variant
+        if re.search(r"<!--\s*variant\s*=", ctx.text):
+            result.add("A3", severity, ctx.line_num,
+                       "<!-- variant=... --> HTML 注释不会被解析；删除后在 ::: open 行写 variant=xxx")
+        # JSX 属性 {key="value"}
+        open_match = re.match(r"^:{3,}\s*([a-zA-Z][\w-]*)", ctx.stripped)
+        if open_match:
+            name = open_match.group(1)
+            if re.search(r"\{[^}]*=[^}]*\}", ctx.text):
+                result.add("A4", severity, ctx.line_num,
+                           f"::: {name} 使用了 {{key=\"value\"}} JSX 语法；改成 key=value 写在 name 之后")
+            # 驼峰命名检测（wechat-typeset 容器名是 kebab-case）
+            if re.search(r"[a-z][A-Z]", name):
+                result.add("A5", severity, ctx.line_num,
+                           f"容器名 {name!r} 是驼峰；wechat-typeset 容器一律 kebab-case（如 quote-card / section-title）")
+
+
 def rule_gfm_alerts(lines: list[str], config: dict, result: LintResult):
     """规则 N: GFM Alert 语法校验
 
@@ -829,6 +880,13 @@ def run_lint(file_path: str, column: str = "", platform: str = "",
     path = Path(file_path)
     lines = path.read_text(encoding="utf-8").splitlines()
 
+    # 文件名 annotated.md → typeset 阶段产物，自动开启 annotated_hygiene 规则，
+    # 同时关掉 forbidden_blocks（annotated 允许合法 ::: 容器）。
+    if path.name == "annotated.md":
+        rules_cfg.setdefault("annotated_hygiene", {})["enabled"] = True
+        rules_cfg.setdefault("annotated_hygiene", {}).setdefault("severity", "error")
+        rules_cfg.setdefault("forbidden_blocks", {})["enabled"] = False
+
     # 自动检测栏目
     if not column:
         fm = parse_frontmatter(lines)
@@ -842,6 +900,8 @@ def run_lint(file_path: str, column: str = "", platform: str = "",
     # 跨平台基础规则（默认开；平台段可关闭）
     if is_on("forbidden_blocks"):
         rule_forbidden_blocks(lines, config, result)
+    if is_on("annotated_hygiene", default=False):
+        rule_annotated_hygiene(lines, config, result)
     if is_on("gfm_alerts"):
         rule_gfm_alerts(lines, config, result)
     if is_on("typography"):
