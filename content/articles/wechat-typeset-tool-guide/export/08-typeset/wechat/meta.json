@@ -1,42 +1,41 @@
 {
   "adapter": "wechat-typeset",
-  "adapter_version": "unknown",
-  "contract_version": "1.0",
-  "theme": "tech-explainer",
-  "signature": {
-    "kind": "admonition",
-    "variant": "terminal",
-    "anchor": "section-04-important"
-  },
-  "variants": {
-    "admonition": "terminal",
-    "quote": "classic",
-    "compare": "ledger",
-    "steps": "timeline-dot",
-    "divider": "rule",
-    "codeBlock": "header-bar"
-  },
-  "components": [
-    "admonition-terminal",
-    "admonition-accent-bar",
-    "quote-classic",
-    "compare-ledger",
-    "steps-timeline-dot",
-    "divider-rule",
-    "codeBlock-header-bar"
+  "adapter_version": "0.1.0",
+  "contract_version": "2.0",
+  "persona": "tech-explainer",
+  "signature": { "container": "tip", "variant": "terminal" },
+  "variant_overrides": [
+    { "container": "quote-card", "variant": "classic" },
+    { "container": "compare", "variant": "ledger" },
+    { "container": "steps", "variant": "timeline-dot" }
   ],
   "conform": {
-    "ok": null,
-    "reason": "capabilities.json missing — sibling repo dist/api/capabilities.json not built; ids validated manually against src/variants/registry.ts + src/themes/*/persona.spec.ts"
+    "ok": false,
+    "violations": [
+      "image src '../intermediate/04b-figure/wechat/fig-01.png' is a local/relative path; upload to CDN or 公众号素材库 before typeset",
+      "image src '../intermediate/04b-figure/wechat/fig-02.png' is a local/relative path; upload to CDN or 公众号素材库 before typeset",
+      "image src '../intermediate/04b-figure/wechat/fig-03.png' is a local/relative path; upload to CDN or 公众号素材库 before typeset",
+      "image src '../intermediate/04b-figure/wechat/fig-04.png' is a local/relative path; upload to CDN or 公众号素材库 before typeset"
+    ]
   },
-  "render": {
-    "degraded": true,
-    "output": "render.html",
-    "note": "v1 placeholder; user runs launcher at 127.0.0.1:7788 and pastes annotated.md"
+  "validate": {
+    "ok": true,
+    "wordCount": 2848,
+    "readingTime": 10,
+    "htmlLength": 24566,
+    "issues": [
+      {
+        "kind": "local_image_manual_upload",
+        "note": "4 images reference relative paths ../intermediate/04b-figure/wechat/fig-0{1..4}.png; user will insert images manually inside wechat-typeset launcher after pasting annotated.md. CP3 is degraded (not failed) by design — validate dry-run passes; conform only flags the image src policy."
+      }
+    ]
   },
-  "generated_at": "2026-04-21",
+  "cp3_status": "degraded",
+  "generated_at": "2026-04-21T03:25:00Z",
   "source": {
     "publish_md": "content/articles/wechat-typeset-tool-guide/export/08-wechat-publish.md",
-    "outline_visual_signature": "content/articles/wechat-typeset-tool-guide/intermediate/03-outline/wechat.md"
+    "outline": "content/articles/wechat-typeset-tool-guide/intermediate/03-outline/wechat.md",
+    "brief": "content/articles/wechat-typeset-tool-guide/intermediate/01-brief.md",
+    "capabilities": "runtime/typeset-capabilities.json"
   }
 }

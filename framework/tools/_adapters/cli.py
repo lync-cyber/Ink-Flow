@@ -7,6 +7,9 @@
   docs           列出 sibling repo 内 SKILL / 参考文档的**绝对路径**（agent 直接 Read，无离线副本）
   validate       对 annotated.md 做 dry-run：fence 语法 + 真实 render 能否成功
   conform        校验 plan 是否只用合规 id（persona / container / variant）
+  semantic-map   交叉校验 framework/contracts/semantic-blocks-v1.yaml 与 capabilities：
+                 每个 gfm_alert_map.*.container 与 structured_blocks[*].container
+                 都必须在 capabilities.containers[*].id 内，否则 exit 1
 
 示例：
   python framework/tools/_adapters/cli.py health
@@ -49,6 +52,7 @@ from _adapters.base import Capabilities  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CACHE_FILE = REPO_ROOT / "runtime" / "typeset-capabilities.json"
+SEMANTIC_BLOCKS_FILE = REPO_ROOT / "framework" / "contracts" / "semantic-blocks-v1.yaml"
 
 
 def _emit(obj: dict, *, pretty: bool = True) -> None:
@@ -162,6 +166,90 @@ def cmd_conform(args: argparse.Namespace) -> int:
     return 0 if not violations else 1
 
 
+def cmd_semantic_map(args: argparse.Namespace) -> int:
+    """交叉校验 semantic-blocks-v1.yaml 与 capabilities：
+    - gfm_alert_map.*.container      ∈ capabilities.containers[*].id
+    - structured_blocks[*].container ∈ capabilities.containers[*].id
+    - 对 variantized 容器若 kind 声明不一致则告警
+    - 对 admonition / free 等 kind 字段与 capabilities 对齐
+    """
+    try:
+        import yaml  # noqa: WPS433 — adapter 运行时懒加载
+    except ImportError:
+        print("[semantic-map] PyYAML not installed; run `pip install pyyaml`", file=sys.stderr)
+        return 3
+
+    if not SEMANTIC_BLOCKS_FILE.exists():
+        print(f"[semantic-map] missing {SEMANTIC_BLOCKS_FILE}", file=sys.stderr)
+        return 3
+
+    data = yaml.safe_load(SEMANTIC_BLOCKS_FILE.read_text(encoding="utf-8")) or {}
+
+    if CACHE_FILE.exists() and not args.no_cache:
+        caps_payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+    else:
+        adapter = get_adapter(args.adapter)
+        caps_payload = adapter.capabilities(timeout=args.timeout).raw
+    caps = Capabilities.from_json(caps_payload)
+    container_ids = caps.container_ids()
+
+    violations: list[str] = []
+
+    gfm = data.get("gfm_alert_map", {}) or {}
+    for alert_type, spec in gfm.items():
+        cid = (spec or {}).get("container")
+        if not cid:
+            violations.append(f"gfm_alert_map.{alert_type}: missing 'container'")
+            continue
+        if cid not in container_ids:
+            violations.append(
+                f"gfm_alert_map.{alert_type}: container '{cid}' not in capabilities "
+                f"(available {len(container_ids)}; run `cli.py capabilities --cache` to refresh)"
+            )
+            continue
+        declared_kind = (spec or {}).get("kind")
+        actual_kind = (caps.container(cid) or None) and caps.container(cid).kind
+        if declared_kind and actual_kind and declared_kind != actual_kind:
+            violations.append(
+                f"gfm_alert_map.{alert_type}: declared kind='{declared_kind}' but "
+                f"capabilities says kind='{actual_kind}' for container '{cid}'"
+            )
+
+    structured = data.get("structured_blocks", []) or []
+    for idx, block in enumerate(structured):
+        bid = block.get("id", f"#{idx}")
+        cid = block.get("container")
+        if not cid:
+            violations.append(f"structured_blocks[{bid}]: missing 'container'")
+            continue
+        if cid not in container_ids:
+            violations.append(
+                f"structured_blocks[{bid}]: container '{cid}' not in capabilities"
+            )
+            continue
+        fence = block.get("fence")
+        kind = block.get("kind")
+        actual_kind = caps.container(cid).kind if caps.container(cid) else None
+        if kind and actual_kind and kind != actual_kind:
+            violations.append(
+                f"structured_blocks[{bid}]: declared kind='{kind}' but "
+                f"capabilities says kind='{actual_kind}' for container '{cid}'"
+            )
+        # compare 必须 :::: 外层（contract notes）；其他容器 :::
+        if cid == "compare" and fence != "::::":
+            violations.append(
+                f"structured_blocks[{bid}]: compare must use fence '::::' (contract v2)"
+            )
+
+    _emit({
+        "ok": len(violations) == 0,
+        "semantic_blocks_file": str(SEMANTIC_BLOCKS_FILE.relative_to(REPO_ROOT)),
+        "capabilities_containers": sorted(container_ids),
+        "violations": violations,
+    })
+    return 0 if not violations else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="adapter-cli",
@@ -203,6 +291,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--markdown", help="optional annotated.md path; checks image src policy")
     sp.add_argument("--no-cache", action="store_true")
     sp.set_defaults(func=cmd_conform)
+
+    sp = sub.add_parser(
+        "semantic-map",
+        help="cross-validate semantic-blocks-v1.yaml against capabilities",
+    )
+    sp.add_argument("--no-cache", action="store_true",
+                    help="force-fetch capabilities instead of reading runtime cache")
+    sp.set_defaults(func=cmd_semantic_map)
 
     return p
 

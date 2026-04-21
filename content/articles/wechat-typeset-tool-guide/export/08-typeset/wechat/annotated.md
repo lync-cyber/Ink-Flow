@@ -5,10 +5,6 @@ issue: 1
 date: "2026-04-21"
 tags: [公众号, 排版, 效率工具, AI]
 tldr: "用 AI 做主题，用一键复制粘贴出文章——公众号排版值得一次性解决。"
-typeset:
-  theme: tech-explainer
-  adapter: wechat-typeset
-  contract: "1.0"
 ---
 
 # 微信公众号排版神器 wechat-typeset：从排版痛苦到一键美化
@@ -21,8 +17,7 @@ typeset:
 
 复制，粘贴进公众号后台。一看，间距歪了。回去再调一轮，再粘一次。这种来回大概要折腾 20 到 30 分钟。
 
-<!-- variant=classic -->
-::: quoteCard
+::: quote-card variant=classic
 排版从不产生内容价值，却每周吃掉你一两小时。
 :::
 
@@ -52,8 +47,7 @@ typeset:
 
 这跟市面上其他"AI + 排版"的路子完全不同。壹伴的 AI 偏重文字内容（改写、扩写等），wechat-typeset 的 AI 是帮你**做主题**——一个管内容，一个管外观，是两件事。
 
-<!-- variant=accent-bar kind=tip -->
-::: admonition {variant="accent-bar" kind="tip"}
+::: tip 小贴士
 如果你在用 Claude Code 或 InkFlow 写作流水线，排版这一步会在生成草稿之后自动触发，连打开浏览器都不用。
 :::
 
@@ -83,8 +77,7 @@ wechat-typeset 不是这个思路。它的每套主题是一整套**视觉人格
 
 除了主题之外，工具还提供了 20 多种"内容组件"——步骤卡、金句卡、对比块、提示框等等。这些组件会跟着你选的主题走。你选了科技极客风，金句卡就是科技极客版。换成文学人文，同一个金句卡变成衬线、米色底。
 
-<!-- variant=classic -->
-::: quoteCard
+::: quote-card variant=classic
 主题不是换皮，是换一个人。
 :::
 
@@ -100,8 +93,7 @@ wechat-typeset 不是这个思路。它的每套主题是一整套**视觉人格
 
 wechat-typeset 把这条路堵死了。它的硬纪律是一条：**预览窗里看到的，就是你粘贴后公众号里的样子**。一致，零误差。
 
-<!-- variant=terminal kind=important SIGNATURE -->
-::: admonition {variant="terminal" kind="important"}
+::: tip variant=terminal 硬纪律
 预览里是什么样，粘贴进去就是什么样。这是工具的硬纪律，不是口号。
 :::
 
@@ -119,8 +111,7 @@ wechat-typeset 把这条路堵死了。它的硬纪律是一条：**预览窗里
 
 说实用的部分。整个上手流程 10 分钟之内，第一篇就能用上。
 
-<!-- variant=timeline-dot -->
-::: steps {variant="timeline-dot"}
+::: steps variant=timeline-dot
 **第一步**：打开终端，粘贴下面两行命令启动工具。
 
 ```bash
@@ -139,22 +130,20 @@ cd wechat-typeset && npm ci && npm run preview
 
 跟同类工具对比：
 
-<!-- variant=ledger -->
-::: compare {variant="ledger"}
+:::: compare variant=ledger
 | 工具 | 收费 | AI 能力 |
 |------|------|---------|
 | Markdown Nice | 免费 | 无 |
 | doocs/md | 免费开源 | 无 |
 | 壹伴助手 | 付费订阅 | AI 写文字 |
 | **wechat-typeset** | **免费开源** | **AI 做主题** |
-:::
+::::
 
 Markdown Nice 和 doocs/md 都稳定好用，但主题同质化，也没有 AI 能力。壹伴对非技术用户最友好，缺点是要付费。而且它的 AI 帮的是写文字的忙，不是排版。
 
 wechat-typeset 的交换条件很清楚：**免费开源、唯一的 AI 主题生成工具，代价是你需要在电脑上跑那两行启动命令**。一次性的事，不用每次都做。启动之后让它在后台挂着就行，草稿自动存在浏览器，刷新不丢。
 
-<!-- variant=accent-bar kind=note -->
-::: admonition {variant="accent-bar" kind="note"}
+::: note 环境要求
 工具需要电脑装过 Node.js（版本 18 以上）。没装过的话，去 nodejs.org 下一个安装包，点下一步就行，不用配置什么。
 :::
 

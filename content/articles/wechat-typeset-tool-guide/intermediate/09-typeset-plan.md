@@ -1,79 +1,84 @@
 ---
 slug: wechat-typeset-tool-guide
-platform: wechat
 adapter: wechat-typeset
-adapter_version: unknown  # health 降级：sibling repo dist/api/capabilities.json 缺失
-contract_version: "1.0"
+adapter_version: "0.1.0"
+contract_version: "2.0"
+persona: tech-explainer
+signature:
+  container: tip
+  variant: terminal
+variant_overrides:
+  - container: quote-card
+    variant: classic
+  - container: compare
+    variant: ledger
+  - container: steps
+    variant: timeline-dot
 generated_at: 2026-04-21
 ---
 
-# 排版方案 · wechat-typeset-tool-guide
+# 微信公众号排版神器 wechat-typeset：从排版痛苦到一键美化 · 排版方案
 
-## 适配器健康状态
+## Persona 选型
 
-- `python framework/tools/_adapters/cli.py health` 返回 `ok=false`：sibling repo（`C:/Users/hlin/LocalWork/GitRepo/wechat-typeset/`）已 clone 且存在 `dist/`，但 `dist/api/capabilities.json` 尚未生成。
-- 降级路径：本方案的 variants/components id 均从源码 `src/variants/registry.ts`、`src/themes/*/persona.spec.ts`、`src/components-lib/registry.ts` 静态推断，所有 id 与 v1 契约保持一致。
-- 用户需补跑：`cd ../wechat-typeset && npm run build`（或让该 repo 在 build 期产出 `dist/api/capabilities.json`）后再执行 `conform` 自检。
+| 来源 | persona id | 理由 | 历史：同栏目此前用过几次 |
+|---|---|---|---|
+| 栏目推荐（columns.yaml primary） | tech-explainer | header-bar 代码块 + accent-bar admonition + see-also 延伸，教程/产品文档类首选；与本文"工具使用指南"气质完全对齐 | 0 |
+| 栏目推荐（alternate） | tech-geek | manpage-log / frame-brackets 签名偏重，适合 RFC 评论与架构随笔——本文受众是"非技术读者"，这套过于工程师圈层 | 0 |
+| 栏目推荐（alternate） | default | 保守退路，中性家族；缺少"这是个技术工具"的气质标识，记忆点弱 | 0 |
 
-## 主题
+**最终**：选 `tech-explainer`。理由一句话：文章定位是"教非技术读者用一个开发者工具"，`tech-explainer` 的 Stripe Docs / MDN 家族正是这种"手把手跟做"气质——既保留技术工具底色，又不把读者吓跑。与栏目 primary 一致，不需要反转说明。
 
-- **id**: `tech-explainer`（技术教程指南）
-- **候选对比**:
-  - `tech-geek`：深色终端签名过重，与"科普+推广"、"非技术读者"的定位冲突。
-  - `tech-explainer`：基调克制、教程向，`codeBlock=header-bar` 对 clone 命令展示清晰、`divider=rule` 不抢戏、标题层级节奏感强。
-  - `default`：合格但无记忆点，缺乏"工具教程"的气质标识。
-- **结论**: 选 `tech-explainer`。它在"工具化、功能性优先"的要求与"保留一点 tech 气质"之间做了最好的折中。
+## 签名元素（唯一）
 
-## 签名元素（全文唯一"最亮眼视觉"）
+- **容器**：`tip`
+- **变体**：`terminal`（VT220 黑底琥珀字 manpage 终端风，由 admonition 四态共享 variant 清单提供）
+- **落点**：Section 04（"粘贴进去，样式永远不会'塌'"）原文第二段的 `> [!IMPORTANT]`——"预览里是什么样，粘贴进去就是什么样。这是工具的硬纪律，不是口号。"
+- **为什么是它**：全文唯一需要"一眼记住"的硬断言。tech-explainer 主题的默认 admonition 是 `accent-bar`（克制），此处用 `variant=terminal` 刻意反转成"终端一条命令"式视觉，完成三件事：
+  1. 在 accent-bar 的节奏里制造一次强断点，读者目光会停
+  2. 与文章主题（一个开发者工具）在视觉气质上共振
+  3. 不挤占同栏目未来文章的签名——terminal 在 tech-explainer 里是反常规用法，一次就够
+- **撞车检查**：同栏目（tech）此前无已排版文章（`ai-taowa-shidai` 尚未进入 CP3）。本签名为本栏目首次占位；后续同栏目 tech-explainer 稿件应避免再用 `tip=terminal` 作为签名，保持此组合的稀缺性。
 
-- **kind**: `admonition`
-- **variant**: `terminal`（黑底绿字 manpage 终端风）
-- **作用点**: `> [!IMPORTANT]`（Section 4 的"硬纪律"一句）。
-- **理由**: 这是全文唯一需要"一眼记住"的断言——"预览所见即粘贴所得"。用 terminal variant 让它成为视觉锚点，同时在 `tech-explainer` 主题下也自然延续"这是个开发者工具"的底色。
-- **同账号/同栏目撞车检查**: 本栏目（tech）此前无已排版文章，本签名为首次占位，后续同栏目应避免再次使用 `admonition=terminal` 作为签名。
+## Variant 组合
 
-## Variant 组合（6 类）
-
-| kind | variant | 选择理由（why） |
-|------|---------|---------|
-| admonition | `terminal`（签名）/ `accent-bar`（非签名默认） | 签名点用 terminal；TIP / NOTE 用主题默认 accent-bar，不抢戏 |
-| quote | `classic` | 大纲签名候选；文内 2 处 `:::quoteCard` 都是"一句话金句"场景，classic 的居中 bgSoft 最贴这种用途；避免 frame-brackets 在非技术受众里显得过分造作 |
-| compare | `ledger` | 大纲签名候选；竞品 4 行 × 3 列本就是账表型对比，ledger 的横向分隔最克制，不盖过文字 |
-| steps | `timeline-dot` | 大纲签名候选；Section 5 的"三步上手"是时间线而非编号选择题，timeline-dot 的圆点 + 连线比 number-circle 更匹配"依次完成" |
-| divider | `rule`（主题默认） | tech-explainer 默认；3 处 `---` 都是节间断点，不应该被花纹分隔抢走注意力 |
-| codeBlock | `header-bar`（主题默认） | Section 5 的 clone 命令需要显式告诉读者"这是 bash 命令"——header-bar 的语言标签正好 |
-
-## 组件库预设
-
-以下 id 均来自 sibling repo 源码；`admonition-terminal` 对应 `src/variants/admonition/terminal.ts`、`admonition-accent-bar` 对应 `accent-bar.ts`，其余类推。
-
-- `admonition-terminal`（签名 · `> [!IMPORTANT]`）
-- `admonition-accent-bar`（默认 · `> [!TIP]` / `> [!NOTE]`）
-- `quote-classic`（2 处 `::: quoteCard`）
-- `compare-ledger`（Section 5 竞品对比表）
-- `steps-timeline-dot`（Section 5 三步上手）
-- `divider-rule`（3 处 `---`，由主题默认供给，无需显式标注）
-- `codeBlock-header-bar`（Section 5 bash 代码块，主题默认）
+| 容器 | 变体 | 理由 |
+|---|---|---|
+| tip (signature) | `terminal` | 见上；仅用于 Section 04 的 IMPORTANT 断言 |
+| tip (other) / note / warning / info | `accent-bar`（主题默认，不写 variant） | 非签名 admonition 一律回归主题默认，给 signature 让路；Section 02 的"TIP（pipeline 自动触发）"与 Section 05 的"NOTE（Node.js 版本提示）"均走默认 |
+| quote-card | `classic` | 两处金句卡都是"一句话结论"场景；tech-explainer 默认 `column-rule` 偏文档引注，过轻；`classic` 居中大字号 + 引号装饰贴"截图级金句"用途 |
+| compare | `ledger`（override 主题默认 `column-card`） | Section 05 的 4 行 × 3 列本就是账表型对比；`ledger` 的横向分隔克制不抢戏，与 tech-explainer 的 docs 气质兼容；`column-card` 会让表格看起来像信息卡片，失焦 |
+| steps | `timeline-dot`（override 主题默认 `number-circle`） | Section 05 "三步上手"是"依次完成的时间线"，不是"三选一的编号选择题"；`timeline-dot` 的圆点 + 连线更贴时序 |
+| divider | `rule`（主题默认，不写 variant） | 7 处 `---` 都是节间断点，朴素横线即可；花纹（wave/flower）会抢走标题注意力 |
+| section-title | `bordered`（主题默认，不写 variant） | H2 节标题在 tech-explainer 下自动套用带边装饰；无需干预 |
 
 ## 改写点索引（逐行定位）
 
-以 `export/08-wechat-publish.md` 行号为锚。annotated 版本仅增加容器标签与 `<!-- variant=... -->` 注释，不改动任何正文字。
+以 `export/08-wechat-publish.md` 行号为锚。annotated.md 仅**包**容器，不改动任何正文字数（除新增 `:::` 行外每段字符完全一致）。
 
-| # | 原文行号 | 原文骨架 | annotated 改写 |
-|---|---------|---------|----------------|
-| 1 | 20-22 | `::: quoteCard` ... `:::` | 包装不变，前置 `<!-- variant=classic -->` |
-| 2 | 50-51 | `> [!TIP]` ... | 转换为 `::: admonition {variant="accent-bar" kind="tip"}` ... `:::` |
-| 3 | 79-81 | `::: quoteCard` ... `:::` | 包装不变，前置 `<!-- variant=classic -->` |
-| 4 | 95-96 | `> [!IMPORTANT]` ... | 转换为 `::: admonition {variant="terminal" kind="important"}` ... `:::`（**签名点**） |
-| 5 | 112-117 | Section 5 三步 + bash 代码块 | 在 `**第一步**` 到 `**第三步**` 三段外层包 `::: steps {variant="timeline-dot"}` ... `:::`；bash 代码块保留原状（主题默认 header-bar 自动应用） |
-| 6 | 129-134 | 竞品对比 `\| table \|` | 外层包 `::: compare {variant="ledger"}` ... `:::` |
-| 7 | 140-141 | `> [!NOTE]` ... | 转换为 `::: admonition {variant="accent-bar" kind="note"}` ... `:::` |
-| 8 | 32 / 53 / 83 / 106 / 143 / 157 / 165 | 7 处 `---` | 不改（divider-rule 由主题默认应用） |
+| # | publish 行号 | 原骨架 | annotated 改写 |
+|---|---|---|---|
+| 1 | 20–22 | `::: quoteCard` ... `:::` | 改为 `::: quote-card variant=classic` ... `:::`（修正容器名 camelCase→kebab-case + 显式 variant） |
+| 2 | 50–51 | `> [!TIP]` 一段 | 改为 `::: tip` ... `:::`（走主题默认 accent-bar，不写 variant） |
+| 3 | 79–81 | `::: quoteCard` ... `:::` | 改为 `::: quote-card variant=classic` ... `:::` |
+| 4 | 95–96 | `> [!IMPORTANT]` 一段 | **签名**：改为 `::: tip variant=terminal` ... `:::`（contract 里无 "important" 四态，统一收敛到 tip；variant=terminal 让它成为视觉锚点） |
+| 5 | 112–117 | Section 5 三段 `**第N步**` + bash 代码块 | 外层包 `::: steps variant=timeline-dot` ... `:::`（bash 代码块保留在容器内；header-bar 代码块是 persona 默认，自动应用） |
+| 6 | 129–134 | 竞品对比表 `\| 工具 \| 收费 \| AI 能力 \|` | 外层包 `:::: compare variant=ledger` ... `::::`（四冒号，容器内仍是 GFM 表格；persona 的 `compare` 为 variantized kind，主题会把表格格式化为账本样式） |
+| 7 | 140–141 | `> [!NOTE]` 一段 | 改为 `::: note` ... `:::`（note 是 free kind 容器，无 variant；走主题默认样式） |
+| 8 | 32 / 53 / 83 / 106 / 143 / 157 / 165 | 7 处 `---` | 不改（divider=rule 由主题默认自动应用；写 `::: divider` 反而多此一举） |
 
-## Constraints 自检（手工）
+## 图片 src 策略
 
-- [x] 所有引用 id 存在于 sibling repo 源码（等价于能力清单）：themes `tech-explainer` ✓；variants `admonition/terminal,accent-bar`、`quote/classic`、`compare/ledger`、`steps/timeline-dot`、`divider/rule`、`codeBlock/header-bar` ✓
-- [x] 签名唯一：全文只有 Section 4 `> [!IMPORTANT]` 使用 `admonition=terminal`；其他 2 处 admonition 走默认 `accent-bar`
-- [x] 纯 GFM 产物不污染：改写只落到 `export/08-typeset/wechat/annotated.md`，`export/08-wechat-publish.md` 不变
-- [x] 字数不动：annotated 与 publish 版本正文逐段字数一致，差异仅在 `:::` 容器行与 `<!-- -->` 注释
-- [x] 微信硬约束：无新增段落超 120 字；无 `<style>`/`<script>`；无 `position:`/`@keyframes`
+annotated.md 内的 4 张图片仍指向相对路径 `../intermediate/04b-figure/wechat/fig-0{1..4}.png`。`conform --markdown` 会报 `image src is a local/relative path`。
+
+处理方式（本次选第 2 条）：
+1. ~~上传到 CDN / GitHub / 公众号素材库换 https 链接~~（用户本次未授权上传流程）
+2. **粘贴时人工补图**：用户在 wechat-typeset launcher 粘贴 annotated.md 后，在预览里手动插入 4 张图片到对应位置。meta.json 的 `validate.issues` 里留一条 `kind: "local_image_manual_upload"` 备忘，CP3 视为 `degraded` 而非 `failed`。
+
+## 自检
+
+- [ ] conform ok=true （待 ⑥ 跑）
+- [ ] validate ok=true（issues: []）（待 ⑦ 跑）
+- [x] 全文字数与 publish 相等（除容器行外每段字符逐字相同）
+- [ ] 所有图片 src 为 http(s) 或 data: — **本次放行为 degraded**，issues 记 `local_image_manual_upload`
+- [x] publish.md 未被改动（annotated 是旁路派生，不污染上游）
