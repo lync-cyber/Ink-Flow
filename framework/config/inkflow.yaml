@@ -19,7 +19,7 @@ model_allocation:
   writer: opus
   illustrator: sonnet
   auditor: opus
-  polisher: opus        # 升级：polisher 在 audit 基础上做高质量改写，sonnet 容易改坏
+  polisher: opus        # 在 audit 基础上做高质量改写，需要强判断
   publisher: sonnet
   style-analyzer: sonnet  # 由 style-learning skill 调用；风格 DNA 提取，不在 pipeline 主链
 

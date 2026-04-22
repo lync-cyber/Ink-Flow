@@ -12,8 +12,8 @@
 说明：
   主题 / variant / 组件选择由用户在 wechat-typeset 本地编辑器（127.0.0.1:7788）
   运行时完成，pipeline 不做决策。
-  容器 / variant 的静态合法性校验已合并到 .claude/skills/quality-linting/scripts/lint.py
-  的 rule_container_whitelist（W1-W4），不再由本 CLI 承担。
+  容器 / variant 的静态合法性校验由 .claude/skills/quality-linting/scripts/lint.py
+  的 rule_container_whitelist（W1-W4）承担。
 
 退出码：
   0   成功

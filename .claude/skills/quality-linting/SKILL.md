@@ -60,4 +60,4 @@ lint.py 的配置读取链：
 - **W3** `pros` / `cons` 必须嵌在 `:::: compare` 内（外层冒号数严格多于内层）
 - **W4** 容器开合冒号数必须配对，无孤立闭合行或未闭合容器
 
-此规则取代旧版的"`:::` 一律禁用"——wechat 作为 wechat-typeset 契约承接方，允许 25 个合法容器。
+wechat 平台允许 25 个合法容器（wechat-typeset 契约白名单）；其他平台的 `:::` 行由 `forbidden_blocks` 规则拦截。

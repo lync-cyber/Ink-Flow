@@ -2,7 +2,7 @@
 name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
-model: sonnet
+model: opus
 dependencies:
   artifacts:
     - content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md

@@ -22,7 +22,7 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 用途 | 路径 |
 |------|------|
 | 项目配置 | `framework/config/inkflow.yaml` |
-| 栏目业务配置 | `framework/config/columns.yaml`（骨架/tone/KPI；视觉已剥离） |
+| 栏目业务配置 | `framework/config/columns.yaml`（骨架/tone/KPI；不含视觉字段） |
 | 产物布局 | `framework/config/artifact-layout.yaml` |
 | 风格档案（个人化） | `content/styles/default/style-profile.md` |
 | 外部参考材料 | `content/references/` |
@@ -104,8 +104,8 @@ brief → research → atoms → outline [CP1] → draft ∥ figures → audit �
 
 - **atoms**：平台无关的内容原子（claims / evidence / cases / …），分叉点前最后一次统一产物
 - **outline 起每平台独立**：按 `brief.target_platforms` 扇出
-- **writer（wechat 分支）直接写 `:::` 容器**：不需要后续 typeset 阶段二次改写
-- **auditor**：capability-conformance 静态校验（容器 id / variant / 嵌套配对）合并入此阶段，由 lint.py W1-W4 规则承担
+- **writer（wechat 分支）直接写 `:::` 容器**：产物即最终投递格式
+- **auditor**：capability-conformance 静态校验（容器 id / variant / 嵌套配对）由 lint.py W1-W4 规则承担
 - **publisher**：直接交付 `08-wechat-publish.md`；用户在 wechat-typeset 本地工具挑主题复制
 
 ## 文件地图

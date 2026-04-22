@@ -18,7 +18,7 @@
   → 校验 stage.per_platform == true 且 {p} ∈ brief.target_platforms
   → 找"同平台后继链"：
        - 后继 stage 也是 per_platform → 只重置该平台子状态
-       - 后继 stage 非 per_platform 且 run_if 与 {p} 相关（如 typeset 仅 wechat）→ 纳入
+       - 后继 stage 非 per_platform 且 run_if 与 {p} 相关 → 纳入
        - 否则跳过
   → AskUserQuestion 强调"其他平台不受影响"
   → 重置 state.stages.{si}.platforms.{p}.status=pending；清当平台 output；重跑

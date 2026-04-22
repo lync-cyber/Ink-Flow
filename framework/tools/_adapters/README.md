@@ -25,10 +25,10 @@ adapter 负责：
 - ✅ `health()` — 探测对方 dist 是否就绪
 - ✅ `capabilities()` — 拉 capabilities.json 回来
 
-adapter **不负责**（历史职责已迁移）：
-- ❌ 主题 / variant / 组件的"决策式"校验 → 改由 `lint.py rule_container_whitelist`（W1-W4）承担
-- ❌ 服务端渲染 → 渲染由用户在 wechat-typeset 本地编辑器完成
-- ❌ annotated.md / render.html / 09-typeset-plan.md 等"排版方案"产物 → writer 直接在 draft 阶段写 `::: 容器`
+adapter **不负责**：
+- ❌ 主题 / variant / 组件的"决策式"校验 — 由 `lint.py rule_container_whitelist`（W1-W4）承担
+- ❌ 服务端渲染 — 渲染由用户在 wechat-typeset 本地编辑器完成
+- ❌ 排版方案中间产物 — writer 直接在 draft 阶段写 `::: 容器`，无中间形态
 
 ## 新增平台三步
 

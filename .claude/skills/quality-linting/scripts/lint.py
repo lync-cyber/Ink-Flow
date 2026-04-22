@@ -105,17 +105,13 @@ def _merge_data_sources(config: dict) -> dict:
             words.extend(phrases.get(group, []) or [])
         rules.setdefault("forbidden_patterns", {})["words"] = words
 
-    # platform-limits.yaml v3：多平台结构。这里只做 wechat 默认注入；
+    # platform-limits.yaml 多平台结构。默认注入 wechat；
     # 其他平台由 _merge_platform_rules 按 --platform 选段覆盖。
     platform_doc = _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
     if platform_doc:
         platforms_section = platform_doc.get("platforms", {}) or {}
         wechat_cfg = platforms_section.get("wechat", {}) or {}
-        # 兜底：若是旧版 v2 扁平结构（无 platforms 段），整段当 wechat
-        if not platforms_section and platform_doc.get("paragraph"):
-            wechat_cfg = platform_doc
         _apply_platform_thresholds(rules, wechat_cfg)
-        # 把整份 doc 存到 config，供 _merge_platform_rules 按平台抽取
         config["_platform_limits_doc"] = platform_doc
 
     return config

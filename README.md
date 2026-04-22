@@ -115,7 +115,7 @@ brief → research → outline → draft ∥ figures → audit → polish → pu
 | writer | opus | draft | 逐 section 写作（标准 Markdown + GFM Alerts） |
 | illustrator | sonnet | figures | 品牌色驱动生成 SVG/Mermaid 配图 |
 | auditor | opus | audit | 审校（只审不改） |
-| polisher | sonnet | polish | 基于审校报告去 AI 味润色 |
+| polisher | opus | polish | 基于审校报告去 AI 味润色（opus：改写需高判断） |
 | publisher | sonnet | publish | 格式校验 + 标准化 + 多格式导出 |
 | style-analyzer | sonnet | — | 风格 DNA 提取（由 style-learning skill 调用） |
 

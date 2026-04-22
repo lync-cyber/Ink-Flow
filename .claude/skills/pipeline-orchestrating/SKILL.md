@@ -20,18 +20,18 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 |------|------|------|
 | 新建文章 | 用户提供了主题 | 进入 Brief 创建（orchestrator §2） |
 | 继续 pipeline | 存在未完成的 `runtime/pipeline-states/*.json` | 从上次暂停处继续（orchestrator §3） |
-| 重跑阶段 | "重跑 {stage}" | 详见 `content/references/rerun-and-dryrun.md` |
-| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `content/references/rerun-and-dryrun.md` |
+| 重跑阶段 | "重跑 {stage}" | 详见 `.claude/skills/pipeline-orchestrating/references/rerun-and-dryrun.md` |
+| 预览 / dry-run | "预览"、"dry-run"、"检查配置" | 详见 `.claude/skills/pipeline-orchestrating/references/rerun-and-dryrun.md` |
 | 运营操作 | "排期"、"数据分析"、"发布清单" | 提示触发对应运营 skill（不进入 pipeline） |
 | 学习进修 | "学习"、"进修"、"对标" | 提示触发 style-learning skill（study 模式） |
 
 ## Pipeline 阶段
 
 ```
-brief → research → atoms → outline [CP1] → draft ∥ figures → audit → polish [CP2] → publish → typeset [CP3，仅 wechat]
+brief → research → atoms → outline [CP1] → draft ∥ figures → audit → polish [CP2] → publish [CP3]
 ```
 
-per_platform: outline / draft / figures / audit / polish / publish 按 `brief.target_platforms` 并行派发；typeset 仅对 wechat 运行。每个阶段由独立 subagent 执行，skill 和 style 文件由各 agent 自行读取。
+per_platform: outline / draft / figures / audit / polish / publish 按 `brief.target_platforms` 并行派发。每个阶段由独立 subagent 执行，skill 和 style 文件由各 agent 自行读取。wechat 分支的 `:::` 容器由 writer 在 draft 阶段直接产出，publisher 交付 `export/08-wechat-publish.md` 后由用户在本地 [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 编辑器挑主题复制。
 
 ### Post-Polish 复核（polish checkpoint 前）
 
@@ -43,8 +43,10 @@ per_platform: outline / draft / figures / audit / polish / publish 按 `brief.ta
 
 ## 辅助参考文件（由 orchestrator 按需读取）
 
-- `content/references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
-- `content/references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
-- `content/references/error-handling.md` — 四层错误处理策略（L1-L4）
-- `content/references/validation-rules.md` — 7 种验证类型参考
-- `content/references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式
+- `.claude/skills/pipeline-orchestrating/references/brief-template.md` — Brief frontmatter 模板与栏目 ID 映射
+- `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md` — Checkpoint 交互文案与审核要点
+- `.claude/skills/pipeline-orchestrating/references/error-handling.md` — 四层错误处理策略（L1-L4）
+- `.claude/skills/pipeline-orchestrating/references/validation-rules.md` — 7 种验证类型参考
+- `.claude/skills/pipeline-orchestrating/references/rerun-and-dryrun.md` — Rerun 和 Dry-Run 模式
+- `.claude/skills/pipeline-orchestrating/references/interrupt-recovery.md` — 中断恢复机制
+- `.claude/skills/pipeline-orchestrating/references/pipeline-state-schema.md` — State 文件 schema

@@ -19,7 +19,7 @@
 #   08 publish (wechat/plain/teaser)  [CP3]
 #
 # wechat 产物包含 ::: 容器 + 5 行内扩展；用户粘贴到 wechat-typeset 本地编辑器
-# 切主题复制。pipeline 不再有独立的 typeset 阶段（已合并到 writer + publisher）。
+# 切主题复制。
 # ============================================================
 
 version: "2.1"

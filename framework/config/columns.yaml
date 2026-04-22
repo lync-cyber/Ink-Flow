@@ -164,7 +164,7 @@ columns:
     platforms_config: "framework/config/columns/story.platforms.yaml"
 
 # ============================================================
-# 开头策略（原 opening-crafting skill 内容）
+# 开头策略
 # writer 在写第一个 section 时按 brief.opening_style 选择
 # ============================================================
 opening_strategies:
@@ -209,7 +209,7 @@ content_type_fallback:
   quick_take: question
 
 # ============================================================
-# 正向替换规则（原 writing-guiding skill 内容）
+# 正向替换规则
 # polisher 使用；与 forbidden-phrases 互补：redline 说"禁止什么"，此处说"改成什么"
 # ============================================================
 phrase_replacements:

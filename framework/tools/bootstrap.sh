@@ -65,7 +65,7 @@ command -v git >/dev/null 2>&1 || error "需要 git，请先安装"
 TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || { mkdir -p "$TARGET_DIR" && cd "$TARGET_DIR" && pwd; })"
 
 # 检测模式
-INKFLOW_CONFIG="$TARGET_DIR/config/inkflow.yaml"
+INKFLOW_CONFIG="$TARGET_DIR/framework/config/inkflow.yaml"
 if [ -f "$INKFLOW_CONFIG" ]; then
     existing_mode=$(grep 'workspace_mode:' "$INKFLOW_CONFIG" 2>/dev/null | awk '{print $2}' || echo "unknown")
     if [ "$existing_mode" = "content" ]; then
@@ -92,14 +92,24 @@ info "框架版本: $SOURCE_VERSION"
 
 # ── 框架文件清单 ──────────────────────────────────────
 # 这些目录/文件属于框架层，拉取时复制、升级时覆盖
-FRAMEWORK_DIRS=(".claude/agents" ".claude/skills" ".claude/rules" "tools")
+FRAMEWORK_DIRS=(
+    ".claude/agents"
+    ".claude/skills"
+    ".claude/rules"
+    ".claude/scripts"
+    "framework/tools"
+    "framework/contracts"
+    "framework/config/columns"
+)
 FRAMEWORK_FILES=(
     "framework/config/inkflow.yaml"
     "framework/config/columns.yaml"
     "framework/config/artifact-layout.yaml"
+    "framework/config/platform-lint-rules.yaml"
     "framework/config/markdown-extensions.md"
     ".claude/settings.json"
     "CLAUDE.md"
+    "VERSION"
 )
 
 # ── 同步框架文件 ─────────────────────────────────────
@@ -129,13 +139,13 @@ if [ "$UPGRADE_MODE" = true ]; then
     # ── 升级模式：仅更新版本号 ────────────────────────
     OLD_VERSION=$(grep 'inkflow_version:' "$INKFLOW_CONFIG" 2>/dev/null | awk '{print $2}' | tr -d '"' || echo "unknown")
     info "升级: $OLD_VERSION → $SOURCE_VERSION"
-    sed -i "s/^inkflow_version:.*/inkflow_version: \"$SOURCE_VERSION\"/" "$TARGET_DIR/config/inkflow.yaml"
+    sed -i "s/^inkflow_version:.*/inkflow_version: \"$SOURCE_VERSION\"/" "$INKFLOW_CONFIG"
     info "框架文件已更新，用户内容未受影响"
 else
     info "框架文件已拉取到 $TARGET_DIR"
     echo ""
     echo "  下一步：在 Claude Code 中打开该目录，说「初始化工作区」完成项目配置"
-    echo "  或手动创建 content/articles/、workspace/ 等目录并修改 framework/config/inkflow.yaml 的 workspace_mode 为 content"
+    echo "  或手动创建 content/articles/、runtime/pipeline-states/ 等目录并修改 framework/config/inkflow.yaml 的 workspace_mode 为 content"
 fi
 
 info "完成！"

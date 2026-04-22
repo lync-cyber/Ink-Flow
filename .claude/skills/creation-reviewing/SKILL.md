@@ -41,8 +41,8 @@ IF len(brief.target_platforms) > 1:
 
 - AI 初稿: `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`
 - 用户终审: `content/articles/{slug}/export/07-final/{platform}.md`
-  （若用户又在 typeset 后手动改过，**额外** diff
-   `content/articles/{slug}/export/08-typeset/wechat/annotated.md`；仅 wechat）
+  （若用户在终审后又改了 publisher 产物，**额外** diff
+   `content/articles/{slug}/export/08-{platform}-publish.md`）
 
 用 Read tool 分别读取两个文件，直接对比分析：
 - 新增段落数、删除段落数、修改段落数、净字数变化

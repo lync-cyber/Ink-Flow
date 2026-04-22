@@ -24,8 +24,7 @@
     "figures":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
     "audit":    { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
     "polish":   { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
-    "publish":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
-    "typeset":  { ... }
+    "publish":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." }
   }
 }
 ```
@@ -33,9 +32,6 @@
 `per_platform: true` 的阶段不再持有扁平状态字段，状态下沉到
 `stages.{stage}.platforms.{platform}`。`overall_status ∈
 {all_completed, partial, failed}`（来自 `orchestrator/fanout.md` § 状态存储）。
-
-`typeset` 仅 wechat 触发；非 wechat pipeline 在 publish 完成后即结束，`stages.typeset`
-字段可不存在或为 `{"status": "skipped", "skipped_reason": "wechat ∉ target_platforms"}`。
 
 ## meta — 全局元数据
 

@@ -26,7 +26,7 @@ dependencies:
 - `content/articles/{slug}/intermediate/02-research-memo.md` — 事实源（不修改）
 - `framework/config/columns.yaml` — 找到 `columns.{content_column}.platforms`，取各平台 `atom_selection` 白名单，用于决定每个原子的 `platforms:` 字段
 
-## 产物
+## Format
 
 写入 `content/articles/{slug}/intermediate/02-atoms/`：
 
@@ -103,7 +103,7 @@ length_chars: 28             # 原子正文字符数（不含 frontmatter）
 5. 写 `index.md`，包含白名单表、原子清单、覆盖检查
 6. 自检：每个 target_platform 至少命中 `atom_selection` 要求的 type；否则在 index.md 末尾写 `## 警告` 块
 
-## Validation 契约（orchestrator 独立校验）
+## Exit Criteria
 
 - 必存在 10 个文件：index.md + 9 个 type 文件
 - 每个 atom 正文前必须有合法 frontmatter（5 字段齐全）
