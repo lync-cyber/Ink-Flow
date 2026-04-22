@@ -1,0 +1,106 @@
+# ============================================================
+# 微信公众号容器语法白名单（单一事实来源 · lint 消费）
+# 消费者：.claude/skills/quality-linting/scripts/lint.py rule_container_whitelist
+# 人类可读版：.claude/agents/_shared/wechat-containers.md
+# 源：https://github.com/lync-cyber/wechat-typeset/blob/main/docs/container-syntax.md
+# ============================================================
+
+version: "1.0"
+
+# 25 个合法容器 id（kebab-case，精确匹配）
+containers:
+  # 文章结构
+  - intro
+  - cover
+  - author
+  - section-title
+  - abstract
+  # 提示 (admonition)
+  - tip
+  - warning
+  - info
+  - danger
+  - note
+  # 内容
+  - quote-card
+  - highlight
+  - compare
+  - pros       # 必须嵌在 :::: compare 内
+  - cons       # 必须嵌在 :::: compare 内
+  - steps
+  - key-number
+  # 导航
+  - divider
+  - footer-cta
+  - recommend
+  - see-also
+  # 媒体
+  - qrcode
+  - mpvoice
+  - mpvideo
+  # 兜底
+  - free
+
+# 签名容器（主题可在 signatureContainers 里声明）—— 信息性，lint 不校验
+signature_containers:
+  - intro
+  - cover
+  - author
+  - section-title
+  - abstract
+  - tip
+  - warning
+  - info
+  - danger
+  - note
+  - quote-card
+  - highlight
+  - compare
+  - steps
+  - key-number
+  - footer-cta
+  - recommend
+  - see-also
+  - qrcode
+  - mpvoice
+  - mpvideo
+
+# 必须嵌套的容器（直接顶层使用即违规）
+must_nest:
+  pros: compare
+  cons: compare
+
+# 行内扩展（5 个）
+inline_extensions:
+  - pattern: '=='      # 高亮
+    name: mark
+  - pattern: '~~'      # 删除线（GFM 原生）
+    name: strikethrough
+  - pattern: '++'      # 插入
+    name: ins
+  - pattern: '[.'      # 着重号
+    name: emphasis-dot
+  - pattern: '[~'      # 波浪下划线
+    name: wave-underline
+
+# variant 属性白名单（与 runtime/typeset-capabilities.json 的 variants 字段对齐）
+# lint 优先读 capabilities.json；若缺失则用本文件回退
+variant_whitelist:
+  admonition: [accent-bar, card-shadow, dashed-border, double-border, minimal-underline, pill-tag, terminal, ticket-notch, top-bottom-rule]
+  quote-card: [classic, column-rule, frame-brackets, magazine-dropcap]
+  compare: [column-card, ledger, stacked-row]
+  steps: [number-circle, ribbon-chain, timeline-dot]
+  divider: [dots, flower, glyph, rule, wave]
+  section-title: [bordered, cornered]
+
+# admonition 组（共享同一 variant 白名单）
+admonition_kinds:
+  - tip
+  - warning
+  - info
+  - danger
+  - note
+
+# 平台适用性
+applies_to:
+  - wechat

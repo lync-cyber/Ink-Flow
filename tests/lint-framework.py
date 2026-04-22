@@ -424,7 +424,7 @@ def check_file_cleanup(repo):
 # ============================================================
 
 # 分区 → 必填字段映射（与 columns.yaml 头部契约保持一致）
-# 视觉字段不在 columns.yaml；排版决策由 typeset-authoring skill 按文章产出
+# 视觉字段不在 columns.yaml；writer 在 draft 阶段直接写容器，主题切换由用户运行时完成
 REQUIRED_COLUMN_FIELDS = {
     "品牌标识": ["name", "personality"],
     "写作指导": ["skeleton", "tone", "default_opening", "default_cta"],
@@ -507,8 +507,10 @@ DEPRECATED_SKILLS = {
     "article-structuring": "已合并进 framework/config/columns.yaml 的 skeleton 段",
     "writing-guiding":     "已合并进 framework/config/columns.yaml 的 phrase_replacements / human_voice_techniques",
     "opening-crafting":    "已合并进 framework/config/columns.yaml 的 opening_strategies",
-    "visual-theming":      "typesetter agent / typeset-authoring skill（文章级排版方案，基于独立 repo wechat-typeset）",
-    "column-designing":    "typesetter agent / typeset-authoring skill（文章级排版方案，基于独立 repo wechat-typeset）",
+    "visual-theming":      "writer 直接写 ::: 容器 + variant；主题切换由用户在 wechat-typeset 本地编辑器运行时完成",
+    "column-designing":    "writer 直接写 ::: 容器 + variant；主题切换由用户在 wechat-typeset 本地编辑器运行时完成",
+    "typeset-authoring":   "已移除（决策层下沉到 writer + publisher；lint.py W1-W4 做静态校验）",
+    "typesetter":          "已移除（agent 已删，容器直接在 draft 阶段由 writer 产出）",
     "format-linting":      "quality-linting",
     "format-exporting":    "publisher agent（publish 阶段）",
 }

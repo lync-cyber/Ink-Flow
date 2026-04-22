@@ -41,12 +41,9 @@ AskUserQuestion:
 - [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `framework/config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备
-- [ ] **本地排版**：typeset 阶段产物齐全时（`export/08-typeset/wechat/annotated.md` + `meta.json`，`meta.json.conform.ok=true` 且 `validate.ok=true`），走以下步骤：
-  1. 启动 wechat-typeset 独立工具：`cd ../wechat-typeset && ./launcher.bat`（Windows）或 `./launcher.command`（macOS）
-  2. 浏览器打开 `http://127.0.0.1:7788/`（**必须 127.0.0.1 / localhost**；`file://` 下 Clipboard API 不可用，富文本会丢）
-  3. 粘贴 `annotated.md` → 左侧选 persona（从 `meta.json.persona` 读取）→ 点"一键复制"得到富文本
-  4. 粘贴到公众号后台草稿
-  - 未安装 wechat-typeset：见 https://github.com/lync-cyber/wechat-typeset
+- [ ] **本地排版**：启动独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset)（`npm run dev` 或 launcher），打开 `http://127.0.0.1:7788/`，将 `export/08-wechat-publish.md` 粘贴到编辑器，左侧主题抽屉挑主题，点"一键复制"得到富文本，粘贴到公众号后台
+  - **必须走 127.0.0.1 / localhost**，`file://` 下 Clipboard API 不可用、富文本会丢
+  - 主题切换在本地编辑器里完成；wechat-typeset 契约承诺 9 套主题间切换不塌版
 - [ ] **话题标签**: 添加 2-3 个精准话题标签（从 output/summary.md 提取）
 
 ### 栏目特化项

@@ -20,7 +20,7 @@ version: "2.0"
 base:
   forbidden_blocks:
     enabled: true
-    severity: error          # ::: 容器一律禁（所有平台 publisher 阶段产物）
+    severity: error          # ::: 容器默认禁；wechat 平台段显式关闭并改走 container_whitelist
   forbidden_patterns:
     enabled: true
     severity: warning        # AI 味词库，平台无关
@@ -38,6 +38,14 @@ platforms:
 
   wechat:
     # 最严：GFM Alerts + 段落字数 + CSS 安全 + SVG 可读性全开
+    # 注：wechat 平台允许 ::: 容器（契约内 25 个），校验走 container_whitelist（W1-W4）
+    forbidden_blocks:
+      enabled: false               # wechat 允许 ::: 容器；由 container_whitelist 校验 id 合法性
+    container_whitelist:
+      enabled: true
+      severity: error
+      whitelist_source: .claude/rules/domains/wechat-article/containers.yaml
+      capabilities_cache: runtime/typeset-capabilities.json    # variant id 以此为准，缺失时降级到 whitelist_source
     typography:
       enabled: true
       severity: warning

@@ -38,8 +38,7 @@ Resume 时对每个标记为 `completed` 的依赖阶段执行：
 - figures（per_platform）→ `content/articles/{slug}/intermediate/04b-figure/{platform}/figure-index.md`
 - audit（per_platform）→ `content/articles/{slug}/review/05-audit/{platform}.md`
 - polish（per_platform）→ `content/articles/{slug}/review/06-polish/{platform}.md` + `content/articles/{slug}/export/07-final/{platform}.md`
-- publish（per_platform）→ `content/articles/{slug}/export/08-{platform}-publish.md`
-- typeset（仅 wechat）→ `content/articles/{slug}/intermediate/09-typeset-plan.md` + `content/articles/{slug}/export/08-typeset/wechat/{annotated.md, meta.json}`
+- publish（per_platform）→ `content/articles/{slug}/export/08-{platform}-publish.md`（wechat 含 ::: 容器）
 
 注：per_platform 阶段的完整性校验逐平台执行——若某一个 `{platform}` 产物缺失，只重置该平台状态，不影响同阶段其他平台（对齐 `orchestrator/fanout.md` § 失败隔离）。
 **权威来源是 `framework/config/artifact-layout.yaml` 的 `paths.*`**，恢复逻辑应直接从该文件读路径模板，不要在本文档里硬编码。

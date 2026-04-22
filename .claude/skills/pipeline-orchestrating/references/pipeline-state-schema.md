@@ -321,21 +321,18 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 }
 ```
 
+CP3 现挂在 `publish` 阶段（发布确认），示例：
+
 ```json
-"typeset": {
-  "status": "completed",
-  "agent": "typesetter",
-  "started_at": "...",
-  "completed_at": "...",
+"publish": {
+  "per_platform": true,
+  "overall_status": "all_completed",
+  "agent": "publisher",
+  "platforms": { "...": "..." },
   "checkpoint": {
     "id": "CP3",
-    "status": "passed",
     "decision": "approved",
-    "persona": "tech-explainer",
-    "adapter_version": "0.1.0",
-    "conform": { "ok": true, "violations": [] },
-    "validate": { "ok": true, "issues": [] },
-    "reasons": [],
+    "modifications": [],
     "decided_at": "2026-04-04T11:35:00Z"
   }
 }
@@ -344,11 +341,9 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
 | 字段 | 说明 |
 |------|------|
 | `id` | CP1 / CP2 / CP3 |
-| `status` | **仅 CP3 必填**：`passed` / `degraded` / `failed`（见 `orchestrator/checkpoints.md` § CP3）。CP1/CP2 可省 |
-| `decision` | `approved`（直接通过）/ `approved_with_edits`（修改后通过）/ `rejected`（打回重做）/ `returned`（返回前序阶段）/ `skipped`（CP3 非 wechat 时） |
+| `decision` | `approved`（直接通过）/ `approved_with_edits`（修改后通过）/ `rejected`（打回重做）/ `returned`（返回前序阶段） |
 | `modifications` | 用户在 checkpoint 做的调整（简短描述列表），无调整则为空数组 |
 | `decided_at` | 用户做出决策的时间 |
-| `persona` / `adapter_version` / `conform` / `validate` / `reasons` | **仅 CP3**：从 meta.json 冗余落地到 state，便于复盘。`adapter_version` 严禁字面值 `unknown` |
 
 ## 完整示例（per-platform · 目标平台 = wechat + zhihu）
 
@@ -425,18 +420,8 @@ Checkpoint 不是独立阶段，而是附属于其前序阶段。记录在对应
       "platforms": {
         "wechat": { "status": "completed", "validation": { "passed": true } },
         "zhihu":  { "status": "completed", "validation": { "passed": true } }
-      }
-    },
-
-    "typeset": {
-      "status": "completed", "agent": "typesetter",
-      "checkpoint": {
-        "id": "CP3", "status": "passed", "decision": "approved",
-        "persona": "tech-explainer", "adapter_version": "0.1.0",
-        "conform": { "ok": true, "violations": [] },
-        "validate": { "ok": true, "issues": [] },
-        "reasons": [], "decided_at": "..."
-      }
+      },
+      "checkpoint": { "id": "CP3", "decision": "approved", "modifications": [] }
     }
   }
 }

@@ -90,27 +90,15 @@ dependencies:
 | 2 | case-01 | 120 | 1 段压缩 |
 | ... | ... | ... | ... |
 
-## 视觉信号（仅 wechat 平台必填；其他平台留空）
+## 视觉签名建议（仅 wechat 平台；其他平台可省略本段）
+- candidates: {至多 3 个容器 id + variant 组合，按重要度排序。从 `.claude/agents/_shared/wechat-containers.md` 的 25 容器 + variant 白名单内选，如 `section-title variant=cornered` / `admonition variant=terminal` / `quote-card variant=magazine-dropcap` / `compare variant=ledger` / `steps variant=timeline-dot` / `divider variant=glyph`}
+- rationale: {一句话说明为什么这篇最该用上面那个签名。具体、可反驳——不能是"因为是技术文所以用 tech-geek"这种套话}
 
-> **职责边界（P1-7）**：outliner 只描述"内容信号"（语义意图），不指定容器名/persona/variant id。
-> 容器/persona 选型完全归 typesetter 负责（它读 capabilities 清单 + AskUserQuestion）。
-
-- visual_signature_hint: {从枚举选 1 个：
-    tech_tutorial         — 步骤密集、代码示例多
-    tech_deep_dive        — 概念抽象、对比表格、长论证
-    academic_summary      — 论文解读、需引用规范
-    industry_alert        — 趋势判断、强冲击观点
-    story_emotional       — 个人故事、情绪曲线
-    story_career_lesson   — 职场/技术成长复盘
-    opinion_polemic       — 立场鲜明、辩论体
-  }
-- key_visual_moments: {1-3 句话描述哪些段落"视觉张力强"，typesetter 会在这些点考虑放签名容器；
-                       例："开头金句 + 第二节的 3 个对比 + 文末 callout"}
-- rationale: {一句话说明这个 hint 的依据，具体可反驳——不能是"因为是技术文所以 tech_tutorial"这种套话}
-
-注：
-- typesetter 读 hint + key_visual_moments 作为"语义信号"，再映射到 capabilities 内的 persona/container
-- 非 wechat 平台（xiaohongshu/zhihu/juejin）不经过 typeset 阶段，此段留空
+注：本字段仅是"建议"，交给 writer 决定是否采纳。真正的主题 / variant 切换
+    由用户在 wechat-typeset 本地编辑器（127.0.0.1:7788）运行时完成，pipeline
+    不做最终决策。容器 id 必须在 25 个白名单内；`variant=` 值必须在
+    `runtime/typeset-capabilities.json` 的 variants 字段内（或 containers.yaml 的
+    fallback 白名单）。非 wechat 平台不支持 `:::` 容器，此段可留空。
 
 ## Section 1: {论点标题}
 - 论点: {一句话论点陈述，非描述性}

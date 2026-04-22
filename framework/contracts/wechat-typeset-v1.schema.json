@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inkflow.dev/contracts/wechat-typeset-v1.schema.json",
+  "title": "wechat-typeset Capabilities v1",
+  "description": "Contract between InkFlow (consumer) and wechat-typeset (provider). InkFlow reads this file to populate the variant whitelist consumed by lint.py rule_container_whitelist. Theme / variant / component selection is a runtime user action in the wechat-typeset editor, not a pipeline decision — hence only schemaVersion, tool, containerSyntax, and variants are mandatory here. Breaking changes require schemaVersion bump + named migration.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "tool",
+    "containerSyntax",
+    "variants"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Contract version. Always '1.0' for this file."
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+.*$",
+          "description": "Provider package.json version (SemVer)."
+        }
+      }
+    },
+    "containerSyntax": {
+      "type": "object",
+      "description": "How writer should emit ::: containers.",
+      "required": ["prefix", "allowedAttrs"],
+      "properties": {
+        "prefix": { "type": "string", "const": ":::" },
+        "allowedAttrs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["variant"]
+        }
+      }
+    },
+    "variants": {
+      "type": "object",
+      "description": "Keys are container kinds (admonition/compare/quote/...); values are supported variant ids for that kind. Consumed by lint.py rule_container_whitelist (W2).",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "x-note-for-providers": "Fields like themes/defaultVariants/components may still be produced by wechat-typeset for its own editor UI, but are ignored by InkFlow — the pipeline does not make theme or component decisions."
+}

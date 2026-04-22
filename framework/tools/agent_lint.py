@@ -5,7 +5,7 @@
 1. 每个 agent frontmatter 必含 ``name`` / ``description`` / ``allowed-tools`` / ``model``
 2. ``model`` 必须等于 ``framework/config/inkflow.yaml`` 的 ``model_allocation.{name}``
    - 缺失或漂移即为 error（防 P2 polisher: opus vs sonnet 漂移再发）
-3. orchestrator / typesetter 等"模块化 agent"（带 ``modules`` 子文件）允许在子目录有
+3. orchestrator 等"模块化 agent"（带 ``modules`` 子文件）允许在子目录有
    <agent>/<sub>.md，子文件不参与 lint
 
 只读、零副作用。

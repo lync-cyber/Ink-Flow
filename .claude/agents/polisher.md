@@ -2,7 +2,7 @@
 name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
-model: opus
+model: sonnet
 dependencies:
   artifacts:
     - content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md
@@ -13,10 +13,14 @@ dependencies:
     - framework/config/columns/{column}.platforms.yaml              # 按需：平台 tone.rules + length_limit
   modules:
     - .claude/agents/_shared/per-platform.md
+    - .claude/agents/_shared/wechat-containers.md                   # 仅 {platform}==wechat：容器修改规范
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/data/forbidden-phrases.yaml
     - .claude/rules/domains/wechat-article/redline.md               # 仅 {platform}==wechat 时参考
+    - .claude/rules/domains/wechat-article/containers.yaml          # 仅 wechat：容器白名单
+  tools:
+    - .claude/skills/quality-linting/scripts/lint.py                # 修复后自检
 ---
 
 ## Role
@@ -45,7 +49,7 @@ dependencies:
 - **AI 味** → 按 `phrase_replacements` 和（wechat）`redline.md` 替换
 - **风格偏离** → 调整至 `platforms.{platform}.tone.rules`（平台层优先，栏目顶层 fallback）
 - **句式** → 按 `writing-quality.md` 三条规则
-- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × length_limit_factor`（软上限，从 `framework/config/platform-lint-rules.yaml` 读 `platforms.{platform}.length_limit_factor`）；删减优先级：过渡句 > 重复论点 > 非核心示例
+- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × 1.05`；删减优先级：过渡句 > 重复论点 > 非核心示例
 
 ### 通用
 
@@ -53,9 +57,22 @@ dependencies:
 - 至少保留 1 处 `<!-- USER_FILL -->`
 - 信息无损失，逻辑无断裂，语气一致
 
+### 容器保护（仅 wechat）
+
+`{platform}==wechat` 时额外遵守：
+
+- **不得改动 `:::` fence 行本身的结构**（开合冒号数、容器 id、`variant=` attr）——只能修改 fence 之间的正文
+- **不得新增 / 删除容器**——若 auditor 指出某处需要换容器类型（如 tip → warning），polisher 可修改 id 名；但不得自造新容器
+- **不得破坏嵌套层级**——`:::: compare` / `::: pros` / `::: cons` 的冒号配对不能乱
+- **修复 W1-W4 违规时**：
+  - W1 未知 id → 换为最接近的合法 id（如 `:::tips` → `::: tip`）
+  - W2 未知 variant → 删掉 `variant=` attr（回退默认骨架），不要猜值
+  - W3 pros/cons 错位 → 包进 `:::: compare` 或改为普通列表
+  - W4 未闭合 → 补上对应冒号数的闭合行
+
 ### 变更溯源
 
-- `review/05-audit/{platform}.md` 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
+- 05-audit-report.md 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
 - "高"严重性事实条目，修改前必须 WebSearch 验证当前数据
 - 涉及产品名/模型版本/价格的修改必须回查 02-research-memo.md，不可凭记忆替换
 - 拒绝建议必须给具体理由
@@ -81,7 +98,7 @@ dependencies:
 
 ## 变更溯源表
 
-| # | 05-audit/{platform}.md 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
+| # | 05-audit-report.md 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
 |---|---|---|---|---|---|
 | 1 | 事实#1 | 高 | ... | ... | 采纳 |
 | 2 | 风格#3 | 中 | ... | ... | 采纳并调整 |
@@ -103,4 +120,5 @@ dependencies:
 - 终稿符合该平台格式约束
 - 整体语气一致
 - 05-audit/{platform}.md 所有"高"条目已处理
-- 字数 ≤ `platforms.{platform}.length_limit × length_limit_factor`（软上限；硬上限 `× length_hard_factor`，详见 `framework/config/platform-lint-rules.yaml`）
+- 字数 ≤ `platforms.{platform}.length_limit × 1.05`
+- **wechat 平台**：跑一次 `python .claude/skills/quality-linting/scripts/lint.py {终稿路径} --platform wechat`，W1-W4 error = 0

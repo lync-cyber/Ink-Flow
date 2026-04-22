@@ -408,65 +408,129 @@ def split_sentences(text: str) -> list[str]:
 
 
 def rule_forbidden_blocks(lines: list[str], config: dict, result: LintResult):
-    """规则 A: 禁止所有 ^::: 容器语法（粘贴到微信必失效）。"""
+    """规则 A: 禁止所有 ^::: 容器语法（除 wechat 外所有平台都禁）。
+
+    wechat 平台在 platform-lint-rules.yaml 中显式关闭本规则，改走 container_whitelist。
+    """
     for ctx in iter_lines(lines):
         if ctx.in_frontmatter or ctx.in_code_block:
             continue
         if ctx.stripped.startswith(":::"):
             tag = ctx.stripped.lstrip(":").strip() or "(close)"
             result.add("A1", "error", ctx.line_num,
-                       f"检测到禁用的 ::: 容器语法 ({tag})；请改用标准 Markdown 或 GFM Alerts")
+                       f"检测到禁用的 ::: 容器语法 ({tag})；本平台不支持，请改用标准 Markdown 或 GFM Alerts")
 
 
-def rule_annotated_hygiene(lines: list[str], config: dict, result: LintResult):
-    """规则 A+: 针对 annotated.md 的结构校验（typeset 阶段产物）。
+# ============================================================
+# 容器 parse + 白名单校验（仅 wechat 平台）
+# ============================================================
 
-    与 rule_forbidden_blocks 镜像互补：
-      - forbidden_blocks 运行在 publish 阶段，禁 ::: 出现
-      - annotated_hygiene 运行在 annotated.md（typeset 阶段产物），允许 :::，但禁止：
-          * `<!-- variant=... -->` HTML 注释（不被解析）
-          * `{key="value"}` JSX 属性（不被解析）
-          * frontmatter 里 `typeset:` 孤儿块（wechat-typeset 不消费）
-          * ::: open 行用驼峰 camelCase 容器名
-    只在 config.rules.annotated_hygiene.enabled=true 时运行（默认 false）。
+_CONTAINER_OPEN_RE = re.compile(r'^(:{3,})\s*([a-z][a-z0-9-]*)(\s+.*)?$')
+_VARIANT_ATTR_RE = re.compile(r'\bvariant\s*=\s*"?([A-Za-z0-9-]+)"?')
+
+
+def _load_container_whitelist() -> dict:
+    """读 .claude/rules/domains/wechat-article/containers.yaml"""
+    wl_file = REPO_ROOT / ".claude" / "rules" / "domains" / "wechat-article" / "containers.yaml"
+    return _load_yaml(wl_file)
+
+
+def _load_capabilities_variants() -> dict[str, list[str]] | None:
+    """读 runtime/typeset-capabilities.json 的 variants 字段（可能不存在）"""
+    caps_file = REPO_ROOT / "runtime" / "typeset-capabilities.json"
+    if not caps_file.exists():
+        return None
+    try:
+        data = json.loads(caps_file.read_text(encoding="utf-8"))
+        return {k: list(v) for k, v in (data.get("variants") or {}).items()}
+    except Exception:
+        return None
+
+
+def rule_container_whitelist(lines: list[str], config: dict, result: LintResult):
+    """规则 W: 微信 ::: 容器白名单校验
+
+    仅 wechat 平台启用（通过 platform-lint-rules.yaml 的 wechat.container_whitelist.enabled=true）。
+    校验维度：
+    - W1: 容器 id 必须在 25 个合法白名单内
+    - W2: variant=X 必须在 capabilities.json 或 containers.yaml 的 variant_whitelist 内
+    - W3: pros / cons 必须嵌在 compare 内（外层冒号数 > 内层）
+    - W4: 容器开合配对（open/close 冒号数匹配）
     """
-    cfg = config["rules"].get("annotated_hygiene", {})
-    if not cfg.get("enabled", False):
+    wl = _load_container_whitelist()
+    if not wl:
         return
-    severity = cfg.get("severity", "error")
-    in_frontmatter = False
-    seen_first_dash = False
+
+    valid_ids = set(wl.get("containers", []) or [])
+    must_nest = wl.get("must_nest", {}) or {}
+    admonition_kinds = set(wl.get("admonition_kinds", []) or [])
+    fallback_variants = wl.get("variant_whitelist", {}) or {}
+
+    runtime_variants = _load_capabilities_variants()
+    variants = runtime_variants if runtime_variants else fallback_variants
+
+    # 栈追踪嵌套：每项 (colon_count, name, line_num)
+    stack: list[tuple[int, str, int]] = []
+
     for ctx in iter_lines(lines):
-        # 手动追踪 frontmatter 检测 typeset: 孤儿
-        if ctx.stripped == "---":
-            if not seen_first_dash:
-                in_frontmatter = True
-                seen_first_dash = True
-                continue
-            if in_frontmatter:
-                in_frontmatter = False
-                continue
-        if in_frontmatter and re.match(r"^\s*typeset\s*:", ctx.text):
-            result.add("A2", severity, ctx.line_num,
-                       "annotated.md frontmatter 不应含 typeset: 孤儿块（wechat-typeset 不消费）")
+        if ctx.in_frontmatter or ctx.in_code_block:
             continue
-        if in_frontmatter or ctx.in_code_block:
+        stripped = ctx.stripped
+        if not stripped.startswith(":::"):
             continue
-        # HTML 注释 variant
-        if re.search(r"<!--\s*variant\s*=", ctx.text):
-            result.add("A3", severity, ctx.line_num,
-                       "<!-- variant=... --> HTML 注释不会被解析；删除后在 ::: open 行写 variant=xxx")
-        # JSX 属性 {key="value"}
-        open_match = re.match(r"^:{3,}\s*([a-zA-Z][\w-]*)", ctx.stripped)
-        if open_match:
-            name = open_match.group(1)
-            if re.search(r"\{[^}]*=[^}]*\}", ctx.text):
-                result.add("A4", severity, ctx.line_num,
-                           f"::: {name} 使用了 {{key=\"value\"}} JSX 语法；改成 key=value 写在 name 之后")
-            # 驼峰命名检测（wechat-typeset 容器名是 kebab-case）
-            if re.search(r"[a-z][A-Z]", name):
-                result.add("A5", severity, ctx.line_num,
-                           f"容器名 {name!r} 是驼峰；wechat-typeset 容器一律 kebab-case（如 quote-card / section-title）")
+
+        m = _CONTAINER_OPEN_RE.match(stripped)
+        if m:
+            colons = len(m.group(1))
+            name = m.group(2)
+            rest = m.group(3) or ""
+
+            if name not in valid_ids:
+                result.add("W1", "error", ctx.line_num,
+                           f"未知容器 '::: {name}'（不在 25 个合法白名单内）")
+                continue
+
+            vm = _VARIANT_ATTR_RE.search(rest)
+            if vm:
+                vid = vm.group(1)
+                if name in admonition_kinds:
+                    kind = "admonition"
+                elif name == "quote-card":
+                    kind = "quote-card" if "quote-card" in variants else "quote"
+                else:
+                    kind = name
+                allowed = variants.get(kind)
+                if allowed is None:
+                    result.add("W2", "warning", ctx.line_num,
+                               f"容器 '{name}' 不支持 variant 属性或清单缺失")
+                elif vid not in allowed:
+                    result.add("W2", "error", ctx.line_num,
+                               f"variant='{vid}' 不在 '{kind}' 合法清单（{', '.join(allowed)}）")
+
+            if name in must_nest:
+                expected_parent = must_nest[name]
+                if not stack or stack[-1][1] != expected_parent:
+                    result.add("W3", "error", ctx.line_num,
+                               f"'::: {name}' 必须嵌在 ':::: {expected_parent}' 内")
+                elif stack[-1][0] <= colons:
+                    result.add("W3", "error", ctx.line_num,
+                               f"外层 '{expected_parent}' 的冒号数必须严格多于内层 '{name}'")
+
+            stack.append((colons, name, ctx.line_num))
+        elif re.match(r'^:{3,}\s*$', stripped):
+            if not stack:
+                result.add("W4", "error", ctx.line_num, "孤立的容器闭合行（无对应 open）")
+                continue
+            close_colons = len(stripped.rstrip())
+            top_colons, top_name, top_line = stack[-1]
+            if close_colons != top_colons:
+                result.add("W4", "error", ctx.line_num,
+                           f"闭合冒号数 {close_colons} 与 '::: {top_name}' (L{top_line}) 的 {top_colons} 不匹配")
+            stack.pop()
+
+    for colons, name, line in stack:
+        result.add("W4", "error", line,
+                   f"'::: {name}' 未闭合（需要 {':' * colons} 结束）")
 
 
 def rule_gfm_alerts(lines: list[str], config: dict, result: LintResult):
@@ -940,13 +1004,6 @@ def run_lint(file_path: str, column: str = "", platform: str = "",
     path = Path(file_path)
     lines = path.read_text(encoding="utf-8").splitlines()
 
-    # 文件名 annotated.md → typeset 阶段产物，自动开启 annotated_hygiene 规则，
-    # 同时关掉 forbidden_blocks（annotated 允许合法 ::: 容器）。
-    if path.name == "annotated.md":
-        rules_cfg.setdefault("annotated_hygiene", {})["enabled"] = True
-        rules_cfg.setdefault("annotated_hygiene", {}).setdefault("severity", "error")
-        rules_cfg.setdefault("forbidden_blocks", {})["enabled"] = False
-
     # 自动检测栏目
     if not column:
         fm = parse_frontmatter(lines)
@@ -960,8 +1017,8 @@ def run_lint(file_path: str, column: str = "", platform: str = "",
     # 跨平台基础规则（默认开；平台段可关闭）
     if is_on("forbidden_blocks"):
         rule_forbidden_blocks(lines, config, result)
-    if is_on("annotated_hygiene", default=False):
-        rule_annotated_hygiene(lines, config, result)
+    if is_on("container_whitelist", default=False):
+        rule_container_whitelist(lines, config, result)
     if is_on("gfm_alerts"):
         rule_gfm_alerts(lines, config, result)
     if is_on("typography"):

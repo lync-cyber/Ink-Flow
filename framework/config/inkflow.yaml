@@ -21,7 +21,6 @@ model_allocation:
   auditor: opus
   polisher: opus        # 升级：polisher 在 audit 基础上做高质量改写，sonnet 容易改坏
   publisher: sonnet
-  typesetter: opus      # 决策密集：主题/variant/组件多维权衡 + AskUserQuestion 交互
   style-analyzer: sonnet  # 由 style-learning skill 调用；风格 DNA 提取，不在 pipeline 主链
 
 # Brief 默认字段
@@ -175,6 +174,7 @@ stages:
     agent: publisher
     per_platform: true
     parallel: true
+    checkpoint: true                 # CP3
     requires: [polish]
     output: "content/articles/{slug}/export/08-{platform}-publish.md"
     validation:
@@ -185,32 +185,8 @@ stages:
         - "<!-- USER_FILL:"
         - '<img src="\.\./'
         - '<svg[^>]* id='
-        # publisher 产物必须是纯 GFM，:::容器在 typeset 阶段加入
-        - '^:::'
-
-  # ---- typeset 仅对 wechat 运行 ----
-  # 决策：typesetter 是 wechat-only by design（详见 .claude/agents/typesetter.md
-  # 的"多平台决策"段）。其他平台 publisher 产物即终稿，不进入 typeset。
-  # 扩展路径：未来新增 typeset-able 平台时，本 stage 改为 per_platform: true
-  # + 多个 adapter；当前不预投入抽象。
-  - name: typeset
-    agent: typesetter
-    checkpoint: true                 # CP3
-    run_if: "'wechat' in brief.target_platforms"
-    requires: [publish]
-    output: "content/articles/{slug}/intermediate/09-typeset-plan.md"
-    additional_outputs:
-      - "content/articles/{slug}/export/08-typeset/wechat/annotated.md"
-      - "content/articles/{slug}/export/08-typeset/wechat/meta.json"
-    validation:
-      # plan.md 结构（与 typesetter.md § Format 对齐）
-      required_sections: ["Persona 选型", "签名元素（唯一）", "改写点索引", "自检"]
-      # adapter 侧的真实校验：health → capabilities → conform → validate（dry-run render）
-      # 任何一步不过 → CP3 status=failed；conform ok 但带 issues → CP3 status=degraded
-      platform_checks:
-        - type: capability_conformance
-          adapter_cli: framework/tools/_adapters/cli.py
-          capabilities_cache: runtime/typeset-capabilities.json
+      # wechat 产物允许 ::: 容器（25 个白名单内）；其他平台由 lint A1 拦截
+      # 容器合法性校验由 lint.py --platform wechat 的 W1-W4 规则承担（合并进 audit 阶段）
 
 # ============================================================
 # 导出格式（publish 阶段使用）
@@ -267,28 +243,25 @@ paths:
 # ============================================================
 # 排版工具接入（wechat-typeset · 独立 repo）
 #
-# 架构（P1 重构后）：
-#   wechat-typeset 作为独立 repo 存在 https://github.com/lync-cyber/wechat-typeset
-#   Ink-Flow 通过 framework/tools/_adapters/ 提供的 PlatformAdapter 接入，
-#   读对方 `dist/api/capabilities.json`（由 `npm run build` 产出）获取能力清单。
+# 架构：
+#   wechat-typeset 是独立 repo（https://github.com/lync-cyber/wechat-typeset），
+#   纯浏览器工具。Ink-Flow 侧通过 framework/tools/_adapters/ 读对方
+#   `dist/api/capabilities.json` 做"能力对账 + variant 白名单"，不做主题决策。
 #
-#   零侵入：wechat-typeset 纯浏览器工具，InkFlow 不要求它暴露 HTTP 端点；
-#          也不会去修改它的源码。唯一的合约见
-#          framework/contracts/wechat-typeset-v2.schema.json。
-#
-# 最终渲染与复制：用户在 wechat-typeset 本地编辑器里粘贴 annotated.md，
-#   一键复制到公众号后台（secure-context + Clipboard API 约束）。
+#   writer 直接写 ::: 容器（writer-contract.md 承诺的 25 容器 + 5 行内扩展），
+#   publisher 直接交付 08-wechat-publish.md，
+#   主题 / variant / 组件切换由用户在本地编辑器里运行时完成。
 # ============================================================
 typeset:
   adapter: wechat-typeset               # 可选值 / 扩展点见 framework/tools/_adapters/
-  contract: framework/contracts/wechat-typeset-v2.schema.json
-  required_version: ">=0.2.0,<0.3.0"    # adapter 会在启动时对账
+  contract: framework/contracts/wechat-typeset-v1.schema.json
+  required_version: ">=0.2.0,<0.3.0"    # adapter 在 capabilities 拉取时对账
   # dist_dir 解析优先级：
   #   1. WECHAT_TYPESET_DIR 环境变量
   #   2. 本字段（若填写）
   #   3. 约定 ../wechat-typeset/dist（Ink-Flow 的同级目录）
   dist_dir: null
-  # 本地工具启动信息（仅供运营清单提示用户；InkFlow 不会主动启动）
+  # 本地工具启动信息（publisher 完成后提示用户）
   launcher:
     repo: https://github.com/lync-cyber/wechat-typeset
     local_default_url: http://127.0.0.1:7788/

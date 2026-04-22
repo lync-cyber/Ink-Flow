@@ -1,30 +1,24 @@
 #!/usr/bin/env python3
-"""Adapter CLI — agent 通过 Bash 调用的统一入口（契约 v2）.
+"""Adapter CLI — agent 通过 Bash 调用的统一入口。
 
 子命令：
-  health         探测 adapter 目标是否在线（capabilities.json 可读 + node/npx 可用）
-  capabilities   拉取 capabilities 并写入 runtime/typeset-capabilities.json
-  docs           列出 sibling repo 内 SKILL / 参考文档的**绝对路径**（agent 直接 Read，无离线副本）
-  validate       对 annotated.md 做 dry-run：fence 语法 + 真实 render 能否成功
-  conform        校验 plan 是否只用合规 id（persona / container / variant）
-  semantic-map   交叉校验 framework/contracts/semantic-blocks-v1.yaml 与 capabilities：
-                 每个 gfm_alert_map.*.container 与 structured_blocks[*].container
-                 都必须在 capabilities.containers[*].id 内，否则 exit 1
+  health         探测 wechat-typeset dist 是否在线（读 capabilities.json 文件存在性）
+  capabilities   拉取 capabilities 并写入 runtime/typeset-capabilities.json（variant 白名单）
 
 示例：
   python framework/tools/_adapters/cli.py health
   python framework/tools/_adapters/cli.py capabilities --cache
-  python framework/tools/_adapters/cli.py docs
-  python framework/tools/_adapters/cli.py validate --input annotated.md --persona tech-explainer
-  python framework/tools/_adapters/cli.py conform --persona tech-explainer \\
-        --signature tip=terminal \\
-        --variant-override quote-card=classic --variant-override compare=ledger
+
+说明：
+  主题 / variant / 组件选择由用户在 wechat-typeset 本地编辑器（127.0.0.1:7788）
+  运行时完成，pipeline 不做决策。
+  容器 / variant 的静态合法性校验已合并到 .claude/skills/quality-linting/scripts/lint.py
+  的 rule_container_whitelist（W1-W4），不再由本 CLI 承担。
 
 退出码：
   0   成功
-  1   health 失败 / 合规校验失败 / render dry-run 失败
+  1   目标不可达 / 其它已知错误
   2   参数错误
-  3   AdapterError（能力清单缺失、repo 未 clone 等）
 """
 
 from __future__ import annotations
@@ -35,24 +29,16 @@ import os
 import sys
 from pathlib import Path
 
+# 允许脚本直接执行（`python cli.py ...`），需把上层目录入 sys.path
 HERE = Path(__file__).resolve().parent
 if str(HERE.parent) not in sys.path:
     sys.path.insert(0, str(HERE.parent))
 
-# Windows 控制台默认 cp1252 会吃中文 / emoji；JSON 输出统一走 utf-8。
-if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:  # noqa: BLE001
-        pass
-
 from _adapters import AdapterError, get_adapter  # noqa: E402
-from _adapters.base import Capabilities  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+
+REPO_ROOT = Path(__file__).resolve().parents[3]  # cli.py → _adapters → tools → framework → repo
 CACHE_FILE = REPO_ROOT / "runtime" / "typeset-capabilities.json"
-SEMANTIC_BLOCKS_FILE = REPO_ROOT / "framework" / "contracts" / "semantic-blocks-v1.yaml"
 
 
 def _emit(obj: dict, *, pretty: bool = True) -> None:
@@ -82,223 +68,20 @@ def cmd_capabilities(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_docs(args: argparse.Namespace) -> int:
-    adapter = get_adapter(args.adapter)
-    paths = adapter.docs_paths()
-    _emit({"paths": paths})
-    return 0
-
-
-def cmd_validate(args: argparse.Namespace) -> int:
-    adapter = get_adapter(args.adapter)
-    md_path = Path(args.input)
-    if not md_path.exists():
-        print(f"[validate] input not found: {md_path}", file=sys.stderr)
-        return 2
-    result = adapter.validate_markdown(
-        str(md_path),
-        persona=args.persona,
-        timeout=args.timeout,
-    )
-    _emit(
-        {
-            "ok": result.ok,
-            "persona": result.persona,
-            "wordCount": result.word_count,
-            "readingTime": result.reading_time,
-            "htmlLength": result.html_length,
-            "issues": result.issues,
-        }
-    )
-    return 0 if result.ok else 1
-
-
-def _parse_kv(items: list[str] | None) -> list[dict[str, str]]:
-    """['container=variant', ...] → [{"container": c, "variant": v}]"""
-    out: list[dict[str, str]] = []
-    for s in items or []:
-        if "=" not in s:
-            raise argparse.ArgumentTypeError(f"expected container=variant, got {s!r}")
-        c, v = s.split("=", 1)
-        out.append({"container": c.strip(), "variant": v.strip()})
-    return out
-
-
-def cmd_conform(args: argparse.Namespace) -> int:
-    caps_payload: dict
-    if CACHE_FILE.exists() and not args.no_cache:
-        caps_payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-    else:
-        adapter = get_adapter(args.adapter)
-        caps_payload = adapter.capabilities(timeout=args.timeout).raw
-    caps = Capabilities.from_json(caps_payload)
-
-    signature: dict[str, str] | None = None
-    if args.signature:
-        if "=" not in args.signature:
-            print(f"[conform] --signature expects container=variant, got {args.signature!r}", file=sys.stderr)
-            return 2
-        c, v = args.signature.split("=", 1)
-        signature = {"container": c.strip(), "variant": v.strip()}
-    overrides = _parse_kv(args.variant_override)
-
-    adapter = get_adapter(args.adapter)
-    violations = adapter.conform_plan(
-        persona_id=args.persona,
-        signature=signature,
-        variant_overrides=overrides,
-        capabilities=caps,
-    )
-
-    # 额外：图片 src 必须是 http(s) 或数据 URI（P1-6）
-    if args.markdown:
-        import re
-
-        md = Path(args.markdown).read_text(encoding="utf-8")
-        for m in re.finditer(r"!\[[^\]]*\]\(([^)]+)\)", md):
-            src = m.group(1).strip()
-            if not (src.startswith("http://") or src.startswith("https://") or src.startswith("data:")):
-                violations.append(
-                    f"image src {src!r} is a local/relative path; upload to CDN or 公众号素材库 before typeset"
-                )
-
-    _emit({"ok": len(violations) == 0, "violations": violations})
-    return 0 if not violations else 1
-
-
-def cmd_semantic_map(args: argparse.Namespace) -> int:
-    """交叉校验 semantic-blocks-v1.yaml 与 capabilities：
-    - gfm_alert_map.*.container      ∈ capabilities.containers[*].id
-    - structured_blocks[*].container ∈ capabilities.containers[*].id
-    - 对 variantized 容器若 kind 声明不一致则告警
-    - 对 admonition / free 等 kind 字段与 capabilities 对齐
-    """
-    try:
-        import yaml  # noqa: WPS433 — adapter 运行时懒加载
-    except ImportError:
-        print("[semantic-map] PyYAML not installed; run `pip install pyyaml`", file=sys.stderr)
-        return 3
-
-    if not SEMANTIC_BLOCKS_FILE.exists():
-        print(f"[semantic-map] missing {SEMANTIC_BLOCKS_FILE}", file=sys.stderr)
-        return 3
-
-    data = yaml.safe_load(SEMANTIC_BLOCKS_FILE.read_text(encoding="utf-8")) or {}
-
-    if CACHE_FILE.exists() and not args.no_cache:
-        caps_payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-    else:
-        adapter = get_adapter(args.adapter)
-        caps_payload = adapter.capabilities(timeout=args.timeout).raw
-    caps = Capabilities.from_json(caps_payload)
-    container_ids = caps.container_ids()
-
-    violations: list[str] = []
-
-    gfm = data.get("gfm_alert_map", {}) or {}
-    for alert_type, spec in gfm.items():
-        cid = (spec or {}).get("container")
-        if not cid:
-            violations.append(f"gfm_alert_map.{alert_type}: missing 'container'")
-            continue
-        if cid not in container_ids:
-            violations.append(
-                f"gfm_alert_map.{alert_type}: container '{cid}' not in capabilities "
-                f"(available {len(container_ids)}; run `cli.py capabilities --cache` to refresh)"
-            )
-            continue
-        declared_kind = (spec or {}).get("kind")
-        actual_kind = (caps.container(cid) or None) and caps.container(cid).kind
-        if declared_kind and actual_kind and declared_kind != actual_kind:
-            violations.append(
-                f"gfm_alert_map.{alert_type}: declared kind='{declared_kind}' but "
-                f"capabilities says kind='{actual_kind}' for container '{cid}'"
-            )
-
-    structured = data.get("structured_blocks", []) or []
-    for idx, block in enumerate(structured):
-        bid = block.get("id", f"#{idx}")
-        cid = block.get("container")
-        if not cid:
-            violations.append(f"structured_blocks[{bid}]: missing 'container'")
-            continue
-        if cid not in container_ids:
-            violations.append(
-                f"structured_blocks[{bid}]: container '{cid}' not in capabilities"
-            )
-            continue
-        fence = block.get("fence")
-        kind = block.get("kind")
-        actual_kind = caps.container(cid).kind if caps.container(cid) else None
-        if kind and actual_kind and kind != actual_kind:
-            violations.append(
-                f"structured_blocks[{bid}]: declared kind='{kind}' but "
-                f"capabilities says kind='{actual_kind}' for container '{cid}'"
-            )
-        # compare 必须 :::: 外层（contract notes）；其他容器 :::
-        if cid == "compare" and fence != "::::":
-            violations.append(
-                f"structured_blocks[{bid}]: compare must use fence '::::' (contract v2)"
-            )
-
-    _emit({
-        "ok": len(violations) == 0,
-        "semantic_blocks_file": str(SEMANTIC_BLOCKS_FILE.relative_to(REPO_ROOT)),
-        "capabilities_containers": sorted(container_ids),
-        "violations": violations,
-    })
-    return 0 if not violations else 1
-
-
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="adapter-cli",
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    p.add_argument(
-        "--adapter",
-        default=os.environ.get("INKFLOW_ADAPTER", "wechat-typeset"),
-        help="adapter name (default: wechat-typeset or $INKFLOW_ADAPTER)",
-    )
-    p.add_argument("--timeout", type=float, default=30.0)
+    p = argparse.ArgumentParser(prog="adapter-cli", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--adapter", default=os.environ.get("INKFLOW_ADAPTER", "wechat-typeset"),
+                   help="adapter name (default: wechat-typeset or $INKFLOW_ADAPTER)")
+    p.add_argument("--timeout", type=float, default=5.0)
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    sp = sub.add_parser("health", help="check adapter reachability")
+    sp = sub.add_parser("health", help="ping the adapter target (check dist/api/capabilities.json exists)")
     sp.set_defaults(func=cmd_health)
 
-    sp = sub.add_parser("capabilities", help="fetch capabilities.json")
+    sp = sub.add_parser("capabilities", help="fetch capabilities.json (variant whitelist for lint)")
     sp.add_argument("--cache", action="store_true", help=f"write to {CACHE_FILE.relative_to(REPO_ROOT)}")
     sp.add_argument("--print", action="store_true", help="also print to stdout when --cache")
     sp.set_defaults(func=cmd_capabilities)
-
-    sp = sub.add_parser("docs", help="list absolute paths of sibling repo SKILL/reference docs")
-    sp.set_defaults(func=cmd_docs)
-
-    sp = sub.add_parser("validate", help="fence-syntax + render dry-run via provider CLI")
-    sp.add_argument("--input", required=True)
-    sp.add_argument("--persona", required=True)
-    sp.set_defaults(func=cmd_validate)
-
-    sp = sub.add_parser("conform", help="verify plan ids against capabilities")
-    sp.add_argument("--persona", required=True)
-    sp.add_argument("--signature", help="container=variant, e.g. tip=terminal")
-    sp.add_argument(
-        "--variant-override",
-        action="append",
-        help="container=variant; repeatable",
-    )
-    sp.add_argument("--markdown", help="optional annotated.md path; checks image src policy")
-    sp.add_argument("--no-cache", action="store_true")
-    sp.set_defaults(func=cmd_conform)
-
-    sp = sub.add_parser(
-        "semantic-map",
-        help="cross-validate semantic-blocks-v1.yaml against capabilities",
-    )
-    sp.add_argument("--no-cache", action="store_true",
-                    help="force-fetch capabilities instead of reading runtime cache")
-    sp.set_defaults(func=cmd_semantic_map)
 
     return p
 
@@ -309,7 +92,7 @@ def main() -> int:
         return args.func(args)
     except AdapterError as e:
         print(f"[adapter-cli] {e}", file=sys.stderr)
-        return 3
+        return 1
 
 
 if __name__ == "__main__":

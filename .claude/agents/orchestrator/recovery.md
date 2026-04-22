@@ -45,8 +45,8 @@ state.draft.sections 数组中，从第一个非 completed 的 section 继续。
      b. 找出"同平台后继链"：
         - 从 {stage} 起，逐 stage 向后扫
         - 若后继 stage.per_platform == true → 只算该平台子状态
-        - 若后继 stage.per_platform == false（如 typeset 仅 wechat）：
-          · run_if 与 {platform} 相关时纳入（例：typeset 只在重跑 wechat 时纳入）
+        - 若后继 stage.per_platform == false：
+          · run_if 与 {platform} 相关时纳入
           · 否则跳过
      c. AskUserQuestion: "重跑 {stage}.{platform}（独立隔离），影响平台内后继 [outline.{p}, draft.{p}, ...]。
         其他平台（{others}）不受影响。确认？"
@@ -61,7 +61,6 @@ state.draft.sections 数组中，从第一个非 completed 的 section 继续。
 设计动机（C4）：
 - per-platform 失败隔离已在 fanout.md:53-57 落地；rerun 也应同等粒度
 - 重跑 polish.wechat 不应使 polish.zhihu 也变 pending（双倍 token 浪费）
-- typeset 仅 wechat → 重跑 wechat 链才纳入 typeset
 ```
 
 ## Dry-Run

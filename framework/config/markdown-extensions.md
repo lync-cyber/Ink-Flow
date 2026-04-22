@@ -2,7 +2,10 @@
 
 > **单一事实来源** — writer 输出、auditor 审校、polisher 润色、publisher 导出共用一套语法；下游 GFM 兼容排版器（如独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset)）消费此语法。
 >
-> **核心原则（publisher 产物）**：只使用**标准 Markdown + GFM Alerts**。`:::` 容器语法在 publisher 阶段禁止；typesetter 阶段会派生 annotated 副本时引入。
+> **核心原则**：
+> - 跨平台基线：只使用**标准 Markdown + GFM Alerts**
+> - **仅 wechat 平台**额外允许 `:::` 容器（25 个白名单内）+ 5 个行内扩展；详见 `.claude/agents/_shared/wechat-containers.md`
+> - 非 wechat 平台（zhihu/juejin/xiaohongshu）产物不得出现 `:::` 容器
 >
 > **职责分工**：本文件定义"能写什么"。"写什么最合适"由 writer/illustrator agent 结合
 > `framework/config/columns.yaml` 的 `suggested_components` 字段判断。
@@ -31,9 +34,11 @@
 
 ---
 
-## 2. GFM Alerts（唯一允许的"容器"扩展）
+## 2. GFM Alerts（跨平台唯一允许的"容器"扩展）
 
 **5 种类型**，由 GitHub 定义。下游 GFM 排版器（如 wechat-typeset）原生消费此语法。
+wechat 平台允许**额外**使用 25 个 `:::` 容器（见 `.claude/agents/_shared/wechat-containers.md`），
+但其他平台只允许 GFM Alerts，不允许 `:::`。
 
 ```markdown
 > [!NOTE]

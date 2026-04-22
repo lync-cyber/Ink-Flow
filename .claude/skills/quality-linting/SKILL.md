@@ -43,8 +43,21 @@ lint 不提供自动修复。安全可修项（如段落超长、CSS 白名单�
 
 lint.py 的配置读取链：
 - `.claude/skills/quality-linting/scripts/config.yaml` — 启用/严重级别控制
+- `framework/config/platform-lint-rules.yaml` — 平台差异规则（通过 `--platform` 启用）
 - `.claude/rules/data/forbidden-phrases.yaml` — 禁用词
-- `.claude/rules/data/platform-limits.yaml` — CSS 禁用/可用属性
-- `.claude/rules/data/platform-limits.yaml` — 段落/句子/SVG 字号阈值
+- `.claude/rules/data/platform-limits.yaml` — CSS 禁用/可用属性 + 段落/句子/SVG 字号阈值
+- `.claude/rules/domains/wechat-article/containers.yaml` — 微信 `:::` 容器白名单（仅 wechat 启用 `container_whitelist` 规则）
+- `runtime/typeset-capabilities.json` — wechat-typeset variant id 权威清单（由 `python framework/tools/_adapters/cli.py capabilities --cache` 生成，缺失时降级到 containers.yaml 的 `variant_whitelist`）
 
-修改规则只需改 `.claude/rules/data/*.yaml`，无需改 lint.py 或 config.yaml。
+修改规则只需改 `.claude/rules/data/*.yaml`、`platform-lint-rules.yaml` 或 `containers.yaml`，无需改 lint.py。
+
+## 容器合法性（wechat 专用）
+
+`--platform wechat` 启用 `rule_container_whitelist`（W1-W4）：
+
+- **W1** 容器 id 必须在 25 个合法白名单内
+- **W2** `variant=X` 必须在 capabilities.json（或回退白名单）对应 kind 的合法列表内
+- **W3** `pros` / `cons` 必须嵌在 `:::: compare` 内（外层冒号数严格多于内层）
+- **W4** 容器开合冒号数必须配对，无孤立闭合行或未闭合容器
+
+此规则取代旧版的"`:::` 一律禁用"——wechat 作为 wechat-typeset 契约承接方，允许 25 个合法容器。

@@ -15,7 +15,7 @@ dependencies:
     - .claude/agents/orchestrator/recovery.md
     - .claude/agents/orchestrator/brief.md
   agents_dispatched:
-    - researcher, atomizer, outliner, writer, illustrator, auditor, polisher, publisher, typesetter
+    - researcher, atomizer, outliner, writer, illustrator, auditor, polisher, publisher
 ---
 
 ## Role
@@ -99,5 +99,5 @@ FOR each stage from current to end:
 
 - 所有 stages 状态 = `completed`，或用户在 checkpoint 主动终止
 - 对每个 p ∈ `brief.target_platforms`：`content/articles/{slug}/export/08-{p}-publish.md` 存在
-- 若 wechat ∈ target_platforms：`export/08-typeset/wechat/annotated.md` 齐全
+- 若 wechat ∈ target_platforms：`08-wechat-publish.md` 含 `:::` 容器且 lint W1-W4 = 0（由 publisher 确保）
 - `runtime/pipeline-states/{slug}.json` 记录终态（含 per_platform 子状态）

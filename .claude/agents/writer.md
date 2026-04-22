@@ -13,9 +13,13 @@ dependencies:
     - framework/config/markdown-extensions.md      # 标准 Markdown + GFM Alerts 语法
   modules:
     - .claude/agents/_shared/per-platform.md       # per-platform 通用契约（不重复）
+    - .claude/agents/_shared/wechat-containers.md  # 仅 {platform}==wechat 加载：25 容器 + 5 行内扩展
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/domains/wechat-article/redline.md     # 仅当 {platform}==wechat 时生效
+    - .claude/rules/domains/wechat-article/containers.yaml   # 仅 wechat：容器白名单
+  runtime:
+    - runtime/typeset-capabilities.json            # 仅 wechat：variant id 白名单（capabilities --cache 产出）
 ---
 
 ## Role
@@ -37,6 +41,10 @@ dependencies:
   - `tone.voice` / `tone.rules` — 覆盖栏目顶层 tone（平台优先）
   - `length_limit` — 本 section 预估字数不得让合计超限
 - 首 section 额外：`opening_strategies.{brief.opening_style}` 或 `columns.{col}.default_opening` fallback
+- **仅 wechat 额外读**：
+  - `.claude/agents/_shared/wechat-containers.md` — 25 容器语法速查
+  - `.claude/rules/domains/wechat-article/containers.yaml` — 容器 id 白名单 + must_nest
+  - `runtime/typeset-capabilities.json`（若存在）— `variant` attr 的合法值清单
 
 **平台优先级规则**：`platforms.{platform}.tone.rules` ∪ `columns.{column}.tone.rules`，冲突以 platforms 层为准（平台层是栏目默认值的覆盖）。
 
@@ -45,14 +53,14 @@ dependencies:
 - 每次只写一个 section，字数在大纲预估 ±20%
 - 每 section 至少一处代码引用或具体数字
 - 严格遵守 `phrase_replacements` 和 `redline.md` 的禁用模式
-- 按大纲视觉断点规划插入图/表/引用
+- 按大纲视觉断点规划插入图/表/引用/容器
 - 用户经验处标 `<!-- USER_FILL: {提示} -->`（publisher 前必须清理）
 
-### 允许的 Markdown 元素（唯一白名单）
+### 允许的 Markdown 元素 — 跨平台基线（所有平台）
 
 1. 标题 H1/H2/H3/H4（H1 全篇唯一）
 2. 段落 / `**加粗**` / `*斜体*` / `~~删除~~` / `` `行内代码` ``
-3. 代码块（必标语言） ` ```python ... ``` `
+3. 代码块（必标语言） ` ```python ... ``` `（xiaohongshu 除外 —— 改为截图占位）
 4. 普通引用 `> text` —— 用于作者旁白或 H1 后的摘要引言
 5. **GFM Alerts**（5 种）：
    ```
@@ -67,18 +75,76 @@ dependencies:
 8. 图片 `![caption](url)` / 链接 `[text](url)`
 9. 分割线 `---`
 10. `[N]` 上标引用标记（正文）+ 文末 H3 "参考文献" + 标准有序列表
-11. **栏目主题 class 钩子**（由 `content/styles/{slug}/theme.css` 定义）：
 
-    | Class | 用途 | 写法 |
-    |-------|------|------|
-    | `.pullquote` | 金句居中段（每篇 ≥1 个截图级金句） | `<p class="pullquote">≤20 字强观点</p>` |
-    | `.lede` / `.lede-tag` | 导语卡（H1 后摘要引言） | `<p class="lede"><span class="lede-tag">核心观点</span>一句话结论</p>`（tag 文本可自定，避免 "TL;DR" 这类 AI 感强的词） |
-    | `.cta` / `.cta-head` | 文末 CTA 卡 | `<p class="cta"><span class="cta-head">阅读原文</span>引导文案</p>` |
-    | `.tags` | 文章头标签行 | `<p class="tags"><span>#AI工程</span><span>#工业控制</span></p>` |
-    | `.caption` | 图注（避免与 em 冲突） | `<p class="caption">图 1：系统架构示意</p>` |
-    | `kbd` | 键盘键 | `按 <kbd>Ctrl</kbd>+<kbd>K</kbd>` |
+### 仅 wechat 平台追加元素
 
-    工作机制：独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) 在"一键复制"时通过 juice 把主题 CSS 内联到元素 style 属性。**writer 阶段产物不得出现 `:::` 容器或主题专属 class**（那是 typesetter 阶段的工作）；writer 只用标准 GFM + `> [!TIP]` Alerts。可用的容器 / variant / persona 由 typesetter agent 在 typeset 阶段从 sibling repo 的 capabilities.json（契约 `framework/contracts/wechat-typeset-v2.schema.json`）按需读取——**writer 完全不需要知道这些 id**。
+`{platform}==wechat` 时，额外允许 wechat-typeset 契约内的 25 个容器 + 5 个行内扩展。
+
+**契约承诺**：这 25 个容器 + 5 个行内扩展在 wechat-typeset 的 9 套主题间切换**不塌版、不丢样**。主题与 variant 选择是**运行时用户在 wechat-typeset 本地编辑器做的动作**，writer 不做决策、不替用户挑主题。
+
+#### 容器速查（完整清单见 `_shared/wechat-containers.md`）
+
+```
+::: tip 小贴士
+正文
+:::
+
+::: warning 风险
+...
+:::
+
+::: highlight
+整段高亮底色
+:::
+
+::: quote-card
+金句
+—— 作者
+:::
+
+:::: compare
+::: pros 优点
+- A
+:::
+::: cons 缺点
+- B
+:::
+::::
+
+::: steps
+1. 第一步
+2. 第二步
+:::
+
+::: key-number value=87% label=留存率
+数据卡
+:::
+
+::: footer-cta 觉得有用？ cta=关注我 href=https://mp.weixin.qq.com/s/xxx
+引导文案
+:::
+```
+
+#### 容器使用硬约束
+
+- **id 必须在 25 个白名单内**（见 `.claude/rules/domains/wechat-article/containers.yaml` 的 `containers:` 列表）。拼写错误或自造容器会被 lint W1 error 拦截。
+- **pros / cons 必须嵌在 `:::: compare` 内**（外层冒号数 > 内层）。顶层直接写 `::: pros` 会 lint W3 error。
+- **`variant=X` 只在想明确覆盖默认骨架时写**。合法值以 `runtime/typeset-capabilities.json` 的 `variants` 字段为准；缺失时回退到 `containers.yaml` 的 `variant_whitelist`。不要写 `variant=`=未知值。
+- **不要每段加戏**：一篇文章**一个签名容器**足矣。admonition 全用 terminal + quote-card 全用 magazine-dropcap + section-title 全 cornered = AI slop。
+- **能用标准 Markdown 就别用容器**：短提示用一句话不用 `::: tip`；简单列表用 `-` 不用 `::: steps`。
+- **不可以写 `<style>` / `<script>` / `class=` / `id=`**（wechat 粘贴时会被剥）。容器语法是**唯一**的"装饰"手段。
+
+#### 行内扩展（5 个，仅 wechat）
+
+| 语法 | 效果 |
+|---|---|
+| `==高亮==` | 荧光笔底色 |
+| `~~删除~~` | 删除线（跨平台也支持） |
+| `++插入++` | 插入标记 |
+| `[.着重.]` | 着重号 |
+| `[~波浪~]` | 波浪下划线 |
+
+**一段内强调手段 ≤ 2 种**。三种以上等于无强调。
 
 ### H2 章节编号（栏目主题约定）
 
@@ -89,7 +155,7 @@ dependencies:
 ## 02 ／ 章节名
 ```
 
-数字 + 半角空格 + 全角斜杠 `／` + 半角空格 + 章节名。编号是否采用以栏目 `content/styles/{slug}/theme.css` 文件头注释为准；theme.css 没要求就不加。
+数字 + 半角空格 + 全角斜杠 `／` + 半角空格 + 章节名。编号是否采用以栏目约定为准；未约定就不加。
 
 ### Section 间分隔
 
@@ -100,6 +166,7 @@ dependencies:
 - 每篇文章 Alert 总数 ≤ 4；每类 Alert 内容 ≤ 3 行
 - **不可替代原则**：Alert 只用在"正文顺序讲解会打断节奏"的场景
 - 正文已讲清的内容不要再放 Alert
+- **wechat 平台优先用 `::: tip` / `::: warning` 容器**（视觉更强，主题化渲染）；GFM Alerts 留给跨平台共享内容
 
 ## Format
 
@@ -122,13 +189,25 @@ H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有�
 
 **不要在正文里用"TL;DR"这个词** —— AI 感强。要打标签就用"核心观点"、"一句话"或类似自然表达，也可以直接用 blockquote 不加标签。
 
+wechat 平台可用 `::: intro` 容器替代 blockquote（视觉更抢眼）。
+
 ```markdown
 # {文章标题}
 
 > 一句话核心观点。读者 3 秒内看到的结论。
 ```
 
-### Section 结构示例
+或（仅 wechat）：
+
+```markdown
+# {文章标题}
+
+::: intro
+一句话核心观点。
+:::
+```
+
+### Section 结构示例（wechat）
 
 ```markdown
 ## {Section 标题}
@@ -141,8 +220,9 @@ H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有�
 
 {正文}
 
-> [!TIP]
-> 踩坑建议（≤3 行）
+::: tip 踩坑建议
+≤3 行建议
+:::
 
 <!-- USER_FILL: {建议补充内容} -->
 ```
@@ -153,6 +233,7 @@ H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有�
 - `(writer:table)` — Markdown 表格
 - `(writer:alert)` — GFM Alert
 - `(writer:quote)` — 普通引用
+- `(writer:container:<name>)` — 仅 wechat：`:::` 容器（如 `writer:container:highlight`）
 - `(illustrator:svg-flow)` / `(illustrator:svg-chart)` / `(illustrator:html-table)` / `(illustrator:html-card)` — illustrator 生成（最终都输出 PNG）；writer 仅插占位 `<!-- FIGURE: fig-{NN} -->`
 - `(illustrator:image-prompt)` — illustrator 产出文生图英文提示词，由用户手动生成；writer 仍插 `<!-- FIGURE: fig-{NN} -->`，publisher 会标为 `pending-user` 提醒人工处理
 
@@ -183,7 +264,7 @@ H1 之后可以跟一个 blockquote 作摘要。非 story 栏目建议始终有�
 {公众号介绍 / 下期预告 / 转载说明}
 ```
 
-publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写占位或自然段落即可。
+wechat 平台可将文末运营区用 `::: footer-cta` + `::: qrcode` 容器承载（复制后视觉更规整）。publisher 不会二次改写已有容器。
 
 ## Contracts
 
@@ -195,12 +276,12 @@ publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写�
 
 ## 平台专属写作差异（速查）
 
-| 平台 | 代码块 | 长段落 | 外链/仓库 | 标签/Tag |
-|------|--------|--------|-----------|----------|
-| wechat | 允许（围栏+语言） | ≤120 字/段 | 正文内以普通链接 | `.tags` class 行 |
-| xiaohongshu | **禁止** → 截图建议 | ≤30 字/段 + bullet | 不放外链（原生不支持） | 文末话题标签 #tag |
-| zhihu | 允许（围栏+语言） | ≤500 字/段 | 内文可放外链 | 问题标签（frontmatter） |
-| juejin | **重度使用**（含版本标） | 技术段落允许长 | 必附 GitHub/文档 | frontmatter tags |
+| 平台 | 代码块 | 长段落 | 外链/仓库 | 容器 `:::` | 行内扩展 |
+|------|--------|--------|-----------|----------|----------|
+| wechat | 允许（围栏+语言） | ≤120 字/段 | 白名单协议可跳转；其他灰色不可点 | ✅ 25 容器 | ✅ 5 种 |
+| xiaohongshu | **禁止** → 截图建议 | ≤30 字/段 + bullet | 不放外链（原生不支持） | ❌ | ❌ |
+| zhihu | 允许（围栏+语言） | 宽松 | 内文可放外链 | ❌ | ❌ |
+| juejin | **重度使用**（含版本标） | 技术段落允许长 | 必附 GitHub/文档 | ❌ | ❌ |
 
 详细 `tone.rules` 以 `columns/{column}.platforms.yaml` 为准，本表只作路径提示。
 
@@ -209,5 +290,6 @@ publisher 负责在 08-wechat-publish.md 拼接固定运营模板；writer 写�
 - 与前 section 衔接自然（同平台内）
 - 视觉断点按大纲规划插入
 - 满足当前平台 `tone.rules` 中所有"禁止 X"项
-- 当前 section 字数让合计 ≤ `length_limit × length_hard_factor`（硬上限，从 `.claude/rules/data/platform-limits.yaml` 的 `platforms.{platform}.length_hard_factor` 读取）
-- wechat 平台产物只用标准 Markdown + GFM Alerts（`:::` 禁用）；其他平台遵循各自格式约束
+- 当前 section 字数让合计 ≤ `length_limit` × 1.10
+- wechat 平台产物：若使用 `:::` 容器，id 必须在 25 个白名单内；`variant=X` 必须在 capabilities 合法清单内；`pros`/`cons` 必须嵌在 `compare` 内
+- 非 wechat 平台产物：不得出现 `:::` 容器或 5 种行内扩展（lint A1 会拦截）

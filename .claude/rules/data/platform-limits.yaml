@@ -1,8 +1,7 @@
 # ============================================================
 # 平台数值阈值（单一事实来源 · 多平台）
 # 消费者：lint.py（typography/svg/css_safety/length_limit）、
-#         writer/auditor/polisher/publisher/illustrator agent、
-#         typeset-authoring skill
+#         writer/auditor/polisher/publisher/illustrator agent
 #
 # 设计原则：
 # - 本文件只放"数值阈值"。lint 的 enabled/severity/message 在 framework/config/platform-lint-rules.yaml
