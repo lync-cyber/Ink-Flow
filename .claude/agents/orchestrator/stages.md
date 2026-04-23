@@ -48,60 +48,10 @@ FOR each stage from current_stage to end:
   8. STATE UPDATE
      Read → 更新 status/completed_at/artifacts/duration_seconds/retries
      Write 写回 JSON。
-     追加 content/retrospectives/runs/{run_id}.log.md。
-```
-
-## Draft 分节循环（writer 专用 · 每平台内部）
-
-fanout.md 已把当前 stage 按 {platform} 分派给 writer。writer 在该平台内部仍按 section 逐段写：
-
-```
-INIT:
-  - 读 content/articles/{slug}/intermediate/03-outline/{platform}.md，计算 section 总数
-  - state.draft.{platform}.sections = [{index:1,status:pending},...]
-
-FOR each section:
-  - completed 且文件存在 → SKIP
-  - 读 section.depends_on_previous（默认 true）
-  - false → 可与前序并行；true → 等前序完成，读其最后两段作为衔接
-  - status=in_progress，started_at
-  - 调用 writer（writer 读 columns.{column}.platforms_config 子文件，
-    加载 platforms.{platform} 的 skeleton/tone/length_limit；
-    首 section 再读 opening_strategies 对应策略）
-  - 输出 → content/articles/{slug}/intermediate/04a-draft/{platform}/section-{NN}.md
-  - 校验（字数 ±20%、无 forbidden_patterns、无 platform tone 违规）
-  - status=completed
-
-所有 section 完成 → 合并为 04a-draft/{platform}/merged-draft.md
-```
-
-## Audit + Polish 子步骤（per-platform）
-
-每个平台独立完成 audit→polish 闭环：
-
-```
-FOR each platform in brief.target_platforms:
-  auditor  → review/05-audit/{platform}.md（只审不改）
-  polisher → review/06-polish/{platform}.md + export/07-final/{platform}.md
-```
-
-`auditor` 读 `columns.{column}.platforms.{platform}.tone.rules` + `kpi_targets` 做平台专属审校。
-
-## Publish 子步骤（per-platform）
-
-```
-FOR each platform in brief.target_platforms:
-  1. publisher 被 fanout.md 派发，接受 {platform} 变量
-  2. 执行：lint --platform {platform} → 语法标准化 → 多格式导出
-     - wechat 分支：保留 ::: 容器 + 5 行内扩展；lint W1-W4 守门
-     - 其他平台：剥 ::: 容器，降级为纯 GFM
-  3. 输出 → export/08-{platform}-publish.md
-  4. 若 platform == wechat：生成 teaser（export/08-teaser-120chars.md 仅产 1 次）
-所有平台完成 → 进入 CP3（发布确认）
-  - wechat 交付：提示用户在本地 wechat-typeset 编辑器粘贴、挑主题、一键复制
-  - 其他平台：直接是最终投递产物
 ```
 
 ## 校验规则参考
 
-7 种验证类型详见 `.claude/skills/pipeline-orchestrating/references/validation-rules.md`。
+7 种验证类型详见 orchestrator.md Context 段列出的 validation-rules 参考文件。
+
+per_platform 阶段（outline / draft / figures / audit / polish / publish）的执行细节见 `fanout.md`。

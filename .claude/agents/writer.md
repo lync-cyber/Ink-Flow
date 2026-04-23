@@ -82,57 +82,14 @@ dependencies:
 
 **契约承诺**：这 25 个容器 + 5 个行内扩展在 wechat-typeset 的 9 套主题间切换**不塌版、不丢样**。主题与 variant 选择是**运行时用户在 wechat-typeset 本地编辑器做的动作**，writer 不做决策、不替用户挑主题。
 
-#### 容器速查（完整清单见 `_shared/wechat-containers.md`）
-
-```
-::: tip 小贴士
-正文
-:::
-
-::: warning 风险
-...
-:::
-
-::: highlight
-整段高亮底色
-:::
-
-::: quote-card
-金句
-—— 作者
-:::
-
-:::: compare
-::: pros 优点
-- A
-:::
-::: cons 缺点
-- B
-:::
-::::
-
-::: steps
-1. 第一步
-2. 第二步
-:::
-
-::: key-number value=87% label=留存率
-数据卡
-:::
-
-::: footer-cta 觉得有用？ cta=关注我 href=https://mp.weixin.qq.com/s/xxx
-引导文案
-:::
-```
-
 #### 容器使用硬约束
 
-- **id 必须在 25 个白名单内**（见 `.claude/rules/domains/wechat-article/containers.yaml` 的 `containers:` 列表）。拼写错误或自造容器会被 lint W1 error 拦截。
-- **pros / cons 必须嵌在 `:::: compare` 内**（外层冒号数 > 内层）。顶层直接写 `::: pros` 会 lint W3 error。
-- **`variant=X` 只在想明确覆盖默认骨架时写**。合法值以 `runtime/typeset-capabilities.json` 的 `variants` 字段为准；缺失时回退到 `containers.yaml` 的 `variant_whitelist`。不要写 `variant=`=未知值。
-- **不要每段加戏**：一篇文章**一个签名容器**足矣。admonition 全用 terminal + quote-card 全用 magazine-dropcap + section-title 全 cornered = AI slop。
-- **能用标准 Markdown 就别用容器**：短提示用一句话不用 `::: tip`；简单列表用 `-` 不用 `::: steps`。
-- **不可以写 `<style>` / `<script>` / `class=` / `id=`**（wechat 粘贴时会被剥）。容器语法是**唯一**的"装饰"手段。
+完整容器语法见 `_shared/wechat-containers.md`；白名单以 `.claude/rules/domains/wechat-article/containers.yaml` 为准。硬约束 4 条：
+
+- **id 在 25 白名单内**；拼写错误或自造容器 → lint W1 error
+- **pros / cons 必须嵌在 `:::: compare` 内**（外层冒号数 > 内层）；顶层写 `::: pros` → lint W3 error
+- **`variant=X` 合法值**：优先读 `runtime/typeset-capabilities.json` 的 `variants`；缺失时回退 `containers.yaml.variant_whitelist`；不写未知值
+- **能用标准 Markdown 就别用容器**；一篇文章一个签名容器足矣；禁写 `<style>/<script>/class=/id=`
 
 #### 行内扩展（5 个，仅 wechat）
 

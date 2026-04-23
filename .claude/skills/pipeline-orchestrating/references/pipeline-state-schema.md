@@ -2,12 +2,6 @@
 
 `runtime/pipeline-states/{slug}.json` 的完整结构定义。编排器在各阶段写入状态时遵循此 schema。
 
-## 设计原则
-
-- **足够但不冗余**: 记录"发生了什么 + 花了多久 + 结果如何"，不记录实现细节
-- **可审计**: 复盘 skill 可从 state 读取阶段耗时、校验结果、重试次数，无需回溯对话
-- **可恢复**: 中断恢复逻辑所需的全部信息自包含在 state 中
-
 ## 顶层结构
 
 ```json
@@ -25,7 +19,8 @@
     "audit":    { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
     "polish":   { "per_platform": true, "platforms": { ... }, "overall_status": "..." },
     "publish":  { "per_platform": true, "platforms": { ... }, "overall_status": "..." }
-  }
+  },
+  "lifecycle": { ... }
 }
 ```
 
@@ -425,6 +420,35 @@ CP3 现挂在 `publish` 阶段（发布确认），示例：
 
 单平台场景（仅 wechat）同上——`platforms` 对象只有 `wechat` 一个键。
 
+## lifecycle — 发布后状态
+
+CP3 通过后写入；运营 skill 按契约更新。完整流转见 `.claude/agents/orchestrator/lifecycle.md`。
+
+```json
+"lifecycle": {
+  "published_at": "2026-04-23T20:00:00Z",
+  "platforms": {
+    "wechat": { "url": "https://mp.weixin.qq.com/s/xxx", "published_at": "..." },
+    "zhihu":  { "url": "...", "published_at": "..." }
+  },
+  "metrics": {
+    "d0":  { "recorded_at": null, "data": null },
+    "d1":  { "recorded_at": null, "data": null },
+    "d7":  { "recorded_at": null, "data": null }
+  },
+  "benchmark_done": false,
+  "retro_done": false
+}
+```
+
+| 字段 | 写入方 | 说明 |
+|------|--------|------|
+| `published_at` | orchestrator (CP3 approved) | ISO 时间戳 |
+| `platforms.{p}.url` | 用户在 CP3 或后续手动补 | 各平台投递地址 |
+| `metrics.dN.{recorded_at, data}` | `metrics-tracking` skill | 录入运营数据时回写 |
+| `benchmark_done` | `performance-benchmarking` skill | 完成跨文章分析后置 true |
+| `retro_done` | `creation-reviewing` skill | 复盘完成后置 true |
+
 ## 写入规则
 
 | 时机 | 写入内容 |
@@ -439,4 +463,8 @@ CP3 现挂在 `publish` 阶段（发布确认），示例：
 | Draft section | 更新 `sections[]` 对应项的 status/时间/word_count |
 | Audit 完成 | `summary` 对象（从 `review/05-audit/{platform}.md` 提取统计数字，多平台逐平台合并） |
 | Polish 完成 | `high_severity_resolved/rejected`（从变更溯源表统计） |
+| CP3 approved | `lifecycle.published_at`、初始化 `lifecycle.metrics.{d0,d1,d7}` 为 null |
+| metrics 录入 | `lifecycle.metrics.dN.{recorded_at, data}` |
+| benchmark 完成 | `lifecycle.benchmark_done = true` |
+| retro 完成 | `lifecycle.retro_done = true` |
 

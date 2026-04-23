@@ -96,4 +96,53 @@
 ## 特殊阶段
 
 - `atoms`：**不**走本模块。平台无关的共用产物
+
+## Draft 分节循环（writer 在平台内部）
+
+fanout 已按 {platform} 分派给 writer。writer 在该平台内部按 section 逐段写：
+
+```
+INIT:
+  - 读 intermediate/03-outline/{platform}.md，计算 section 总数
+  - state.draft.{platform}.sections = [{index:1, status:pending}, ...]
+
+FOR each section:
+  - completed 且文件存在 → SKIP
+  - 读 section.depends_on_previous（默认 true）
+  - false → 可与前序并行；true → 等前序完成，读其最后两段作为衔接
+  - status=in_progress, started_at
+  - 调用 writer（读 columns.{column}.platforms.{platform} 的 skeleton/tone/length_limit；
+    首 section 再读 opening_strategies 对应策略）
+  - 输出 → intermediate/04a-draft/{platform}/section-{NN}.md
+  - 校验（字数 ±20%、无 forbidden_patterns、无 platform tone 违规）
+  - status=completed
+
+所有 section 完成 → 合并为 04a-draft/{platform}/merged-draft.md
+```
+
+## Audit + Polish 子步骤
+
+每个平台独立完成 audit→polish 闭环：
+
+```
+FOR each platform in brief.target_platforms:
+  auditor  → review/05-audit/{platform}.md（只审不改）
+  polisher → review/06-polish/{platform}.md + export/07-final/{platform}.md
+```
+
+auditor 读 `platforms.{platform}.tone.rules + kpi_targets` 做平台专属审校。
+
+## Publish 子步骤
+
+```
+FOR each platform in brief.target_platforms:
+  1. publisher 接收 {platform} 变量
+  2. 执行：lint --platform {platform} → 语法标准化 → 多格式导出
+     - wechat：保留 ::: 容器 + 5 行内扩展；lint W1-W4 守门
+     - 其他平台：剥 ::: 容器，降级纯 GFM
+  3. 输出 → export/08-{platform}-publish.md
+  4. wechat 额外产：teaser / plain 等（见 publisher.md 的 Extra Outputs）
+所有平台完成 → 进入 CP3
+  - wechat 交付：提示本地 wechat-typeset 粘贴、挑主题、一键复制
+  - 其他平台：直接是最终投递产物
 ```

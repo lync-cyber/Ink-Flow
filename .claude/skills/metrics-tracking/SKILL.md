@@ -28,8 +28,18 @@ AskUserQuestion (multiSelect questions):
 
 - 追加到 `content/retrospectives/ops-metrics.csv`（不存在则创建含表头）
 - CSV 字段: slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments
-- 从 `content/articles/{slug}/intermediate/01-brief.md` 补充元数据（content_type、opening_style 等）
+- 从 `content/articles/{slug}/intermediate/01-brief.md` 补充元数据
 - 从 `framework/config/columns.yaml` 读取栏目 kpi_targets 做基础对标
+
+## Lifecycle 写回
+
+按入口选择 `dN`（用户首次录入 → d0；D+1 录入 → d1；D+7 录入 → d7），写回 `runtime/pipeline-states/{slug}.json` 的 `lifecycle.metrics.dN`：
+
+```json
+{ "recorded_at": "2026-04-23T22:00:00Z", "data": { ...本次录入的全部字段 } }
+```
+
+契约见 `.claude/agents/orchestrator/lifecycle.md`。
 
 ## 基础对标
 

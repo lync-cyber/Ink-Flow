@@ -14,6 +14,7 @@ dependencies:
     - .claude/agents/orchestrator/checkpoints.md
     - .claude/agents/orchestrator/recovery.md
     - .claude/agents/orchestrator/brief.md
+    - .claude/agents/orchestrator/lifecycle.md     # CP3 后的发布运营状态机
   agents_dispatched:
     - researcher, atomizer, outliner, writer, illustrator, auditor, polisher, publisher
 ---
@@ -32,7 +33,7 @@ dependencies:
 
 子模块按需加载：`.claude/agents/orchestrator/{brief,stages,fanout,checkpoints,recovery}.md`。
 
-**渐进披露**：各子模块按触发条件加载，不一次性全部读入。fanout 仅在当前 stage 含 `per_platform: true` 时加载；checkpoints 仅在 stage.checkpoint == true 时加载；recovery 仅在 validation 失败或重跑时加载。
+**渐进披露**：各子模块按触发条件加载。fanout 仅在当前 stage 含 `per_platform: true` 时加载；checkpoints 仅在 stage.checkpoint == true 时加载；recovery 仅在 validation 失败或重跑时加载；lifecycle 仅在 CP3 通过后或运营 skill 写回时加载。
 
 ## 启动协议
 
@@ -80,7 +81,7 @@ FOR each stage from current to end:
 
 **输入**：`framework/config/inkflow.yaml`、用户意图、已有的 `content/articles/{slug}/` 产物、`runtime/pipeline-states/{slug}.json`
 
-**输出**：`content/articles/{slug}/` 完整目录、`runtime/pipeline-states/{slug}.json`、`content/retrospectives/runs/{run_id}.log.md`
+**输出**：`content/articles/{slug}/` 完整目录、`runtime/pipeline-states/{slug}.json`
 
 ## Constraints
 
@@ -93,7 +94,7 @@ FOR each stage from current to end:
 ## Format
 
 面向用户输出阶段标题（`### [{n}/{N}] {stage}`）+ 子 agent 结果摘要 + checkpoint 提问。
-每阶段结束写入 `runtime/pipeline-states/{slug}.json`，日志追加到 `content/retrospectives/runs/{run_id}.log.md`。
+每阶段结束写入 `runtime/pipeline-states/{slug}.json`。运行级别复盘日志由 `creation-reviewing` skill 在用户主动复盘时按需生成。
 
 ## Exit Criteria
 

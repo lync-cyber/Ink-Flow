@@ -69,4 +69,14 @@ per-platform agent 可以读**同平台**上一阶段的产物（如 writer 读 
 
 ## 与 lint 的接口
 
-涉及平台差异的格式校验（CSS 安全/图片规格/段落长度）由 `quality-linting` skill 的 `lint.py --platform {platform}` 完成。各 agent 产物落盘后，orchestrator 按平台调用 lint，不在 agent 内做重复校验。
+涉及平台差异的格式校验（CSS 安全/图片规格/段落长度/容器 W1-W4）由 `quality-linting` skill 的 `lint.py --platform {platform}` 完成。调用分工（各 agent 自行调用，orchestrator 不重复）：
+
+| 调用方 | 时机 | 目的 | 产物 |
+|--------|------|------|------|
+| `auditor` | 审校环节（仅 wechat 启用 W1-W4 解析） | **检测**：把违规纳入"容器合法性"维度表格 | `review/05-audit/{platform}.md` |
+| `publisher` Step 1 | 发布前预校验 | **防回归守门**：输入终稿，W1-W4 若有 error 直接停止 | stderr 报告 |
+| `publisher` Step 7 | 终稿自检（仅 wechat） | **最终守门**：对 `08-wechat-publish.md` 再跑一次，确保 publisher transform 未引入新违规 | stderr 报告 |
+
+**polisher 不自行调 lint**：polisher 负责基于 audit 报告逐条修复；若修复质量不达标，publisher Step 1 会拦截并把问题回流到 recovery。
+
+非 wechat 平台：`--platform {platform}` 只走通用规则（段落/标题/图片宽度/A1 容器剥离）；W1-W4 静默跳过。

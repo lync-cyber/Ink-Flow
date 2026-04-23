@@ -64,7 +64,7 @@ dependencies:
   - zhihu：单视角（必须有反方观点）/ 无 comparison / 结尾套话 / `:::` 容器
   - juejin：无代码结论 / 无版本号/环境说明 / 无 GitHub 链接 / `:::` 容器
 
-维度数量可能随规则演进而调整，以 `framework/config/inkflow.yaml` 中 `audit.validation.required_sections` 为权威清单。
+维度清单以 `framework/config/inkflow.yaml` 中 `audit.validation.required_sections` 为权威。
 
 ### 容器合法性校验流程（wechat 专用）
 

@@ -1,10 +1,8 @@
 # ============================================================
-# tech 栏目 · 多平台适配层（从 columns.yaml 拆出）
+# tech 栏目 · 多平台适配层
 #
 # 消费者：outliner / writer / illustrator / auditor / polisher / publisher
-# 加载方式：columns.yaml 的 `columns.tech.platforms_config` 指向本文件
-# 渐进披露：agent 只在处理 tech 栏目 + 需要平台差异时才读取本文件，
-#          处理其他栏目不进入 context
+# 加载入口：columns.yaml 的 `columns.tech.platforms_config` 指向本文件
 # ============================================================
 
 column: tech

@@ -84,13 +84,17 @@ AskUserQuestion:
 - 分析报告写入 `content/retrospectives/performance-report.md`
 - 确认的规律保存到 Claude Code memory
 
+## Lifecycle 写回
+
+完成后对所参与分析的每个 slug，将 `runtime/pipeline-states/{slug}.json` 的 `lifecycle.benchmark_done = true`。契约见 `.claude/agents/orchestrator/lifecycle.md`。
+
 结尾询问：
 
 ```
 AskUserQuestion:
   question: "分析完成。需要执行哪个后续操作？"
   options:
+    - "运行创作复盘" — 引导触发 creation-reviewing
     - "基于分析调整排期" — 引导触发 content-planning
-    - "查看发布清单" — 引导触发 publish-preparing
     - "返回" — 结束
 ```

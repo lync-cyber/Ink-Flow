@@ -1,6 +1,5 @@
 # ============================================================
-# InkFlow 项目配置（合并了原 .inkflow.yaml + stage-contracts.yaml）
-# 单一事实来源：stages 字段既定义流程也定义合约与校验
+# InkFlow 项目配置（单一事实来源：stages 字段既定义流程也定义合约与校验）
 # ============================================================
 
 # workspace_mode: framework — 框架开发模式（content/articles/ 被 gitignore）

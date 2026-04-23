@@ -85,6 +85,7 @@ AskUserQuestion:
 
 - 用户确认的规律通过 Claude Code 原生 memory 系统持久化（feedback / project 类型）
 - 输出完整复盘报告到 `content/articles/{slug}/retro.md`
+- 写回 `runtime/pipeline-states/{slug}.json` 的 `lifecycle.retro_done = true`（契约见 `.claude/agents/orchestrator/lifecycle.md`）
 
 ### 规则晋升建议
 

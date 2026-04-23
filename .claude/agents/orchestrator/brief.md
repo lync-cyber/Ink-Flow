@@ -7,6 +7,18 @@
 
 ### Step 1 — 主题确认（若未直接给出）
 
+```
+IF 用户未提供具体主题:
+  AskUserQuestion:
+    question: "尚未指定主题。"
+    options:
+      - "查看排期推荐主题" — 触发 content-planning skill；其输出选题注入 brief.topic
+      - "我现在告诉你主题" — 等待用户输入
+      - "返回"
+ELSE:
+  直接进入 Step 2
+```
+
 ### Step 2 — 参数采集（AskUserQuestion 最多 4 题并发）
 
 ```

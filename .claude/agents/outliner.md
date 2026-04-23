@@ -90,15 +90,17 @@ dependencies:
 | 2 | case-01 | 120 | 1 段压缩 |
 | ... | ... | ... | ... |
 
-## 视觉签名建议（仅 wechat 平台；其他平台可省略本段）
-- candidates: {至多 3 个容器 id + variant 组合，按重要度排序。从 `.claude/agents/_shared/wechat-containers.md` 的 25 容器 + variant 白名单内选，如 `section-title variant=cornered` / `admonition variant=terminal` / `quote-card variant=magazine-dropcap` / `compare variant=ledger` / `steps variant=timeline-dot` / `divider variant=glyph`}
-- rationale: {一句话说明为什么这篇最该用上面那个签名。具体、可反驳——不能是"因为是技术文所以用 tech-geek"这种套话}
+## 视觉签名建议（仅 wechat；非 wechat 平台留空）
 
-注：本字段仅是"建议"，交给 writer 决定是否采纳。真正的主题 / variant 切换
-    由用户在 wechat-typeset 本地编辑器（127.0.0.1:7788）运行时完成，pipeline
-    不做最终决策。容器 id 必须在 25 个白名单内；`variant=` 值必须在
-    `runtime/typeset-capabilities.json` 的 variants 字段内（或 containers.yaml 的
-    fallback 白名单）。非 wechat 平台不支持 `:::` 容器，此段可留空。
+约束：
+- candidates 中容器 id 必须在 25 白名单内
+- `variant=` 值必须在 `runtime/typeset-capabilities.json` 的 variants 字段内，缺失时回退 `containers.yaml` 的 fallback 白名单
+- candidates 至多 3 个，按重要度排序
+- rationale 必须具体可反驳，禁止套话
+
+格式：
+- candidates: {3 个容器 id + variant 组合，如 `section-title variant=cornered` / `admonition variant=terminal` / `quote-card variant=magazine-dropcap`}
+- rationale: {一句话说明本篇适用该签名的具体依据}
 
 ## Section 1: {论点标题}
 - 论点: {一句话论点陈述，非描述性}

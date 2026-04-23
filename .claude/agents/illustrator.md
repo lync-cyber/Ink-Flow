@@ -38,7 +38,7 @@ dependencies:
   - `style_hint` — 平台风格提示（小红书色块/掘金代码截图等）
   - `inline_code_ok` — 平台原生支持代码块时可跳过代码截图
   - `code_screenshot_ok` — 平台友好代码截图格式
-- `content/styles/{slug}/theme.css`（如存在）— 提取品牌主色
+- `content/styles/{profile}/style-profile.md` 的 `palette` 字段（profile 取自 brief.style_profile，如存在）— 提取品牌主色
 - 按需读 `.claude/agents/illustrator/templates.md`（SVG/HTML/文生图模板与 fig2img 调用）
 
 **关键前提**：所有 SVG / HTML 在最终插入前都会经 `fig2img.py` 转为 PNG。无需担心平台对 CSS/SVG 属性的剥离限制。

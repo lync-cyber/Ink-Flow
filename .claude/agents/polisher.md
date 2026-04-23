@@ -19,8 +19,6 @@ dependencies:
     - .claude/rules/data/forbidden-phrases.yaml
     - .claude/rules/domains/wechat-article/redline.md               # 仅 {platform}==wechat 时参考
     - .claude/rules/domains/wechat-article/containers.yaml          # 仅 wechat：容器白名单
-  tools:
-    - .claude/skills/quality-linting/scripts/lint.py                # 修复后自检
 ---
 
 ## Role
@@ -121,4 +119,4 @@ dependencies:
 - 整体语气一致
 - 05-audit/{platform}.md 所有"高"条目已处理
 - 字数 ≤ `platforms.{platform}.length_limit × 1.05`
-- **wechat 平台**：跑一次 `python .claude/skills/quality-linting/scripts/lint.py {终稿路径} --platform wechat`，W1-W4 error = 0
+- **wechat 平台**：审校报告中所有 W1-W4 error 已按容器修复规则处理；终稿 lint 由 publisher Step 1 执行

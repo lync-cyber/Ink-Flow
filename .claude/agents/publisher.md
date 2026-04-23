@@ -71,7 +71,7 @@ dependencies:
 
 5. **导出**：
    - 主产物：`export/08-{platform}-publish.md`
-   - **仅 wechat 额外产**：`export/08-teaser-120chars.md`（120 字摘要 + 关键词 + 封面变量，供社群分发）
+   - **仅 wechat 额外产**：`export/08-teaser-120chars.md`（见下文「Extra Outputs」规则）
 
 6. **清理残留**：`<!-- USER_FILL:` / `<!-- FIGURE:` / `<!-- MEDIA:` / `TODO` 必须全部清除
 
@@ -94,6 +94,62 @@ publisher.wechat
 **主题 / variant / 组件库预设**都在本地编辑器里由用户实时切换——**wechat-typeset 契约保证 9 套主题间切换不塌版**。pipeline 不替用户决策。
 
 publisher 完成后在回显里提示用户这一交付路径。
+
+## Extra Outputs
+
+查询 `framework/config/inkflow.yaml` 的 `exports` 段，若有 `platform == {current_platform}` 或 `platform == any` 且 format ≠ 主产物的项，按下列 kind 生成。
+
+### teaser（仅 wechat · 120 字摘要）
+
+**目的**：社群分发钩子，朋友圈/微信群粘贴即可。
+
+**输入**：`export/07-final/wechat.md` 的 H1 + 前 200 字 · `intermediate/01-brief.md` 的 tldr + cta_type
+
+**规则**：
+1. 长度 = `exports.teaser.word_limit`（默认 120 中文字符含标点；超 ±10% → error）
+2. 第一句钩子：避免"今天来分享"、"本文介绍"；参考 `brief.opening_style`
+3. 末尾 CTA 与 `brief.cta_type` 对齐：
+   - `follow` → "关注后台回复关键词领取笔记"
+   - `comment` → "你怎么看？评论区聊聊"
+   - `share` → "觉得有用就转给同事"
+4. 纯文本，**无 markdown 符号**；钩子/正文/CTA 各一段，单行换行分隔
+
+**Exit**：长度 ∈ `[word_limit×0.9, word_limit×1.1]`；不含品牌套话
+
+### plain（兜底 · 剥运营区）
+
+**目的**：跨平台兜底版，剥掉 wechat 的"阅读原文 / 关于作者"等运营区。
+
+**输入**：`export/08-{platform}-publish.md`
+
+**规则**：
+1. 复制主产物到 `exports.plain_md.output` 路径
+2. 删除 `### 阅读原文` / `### 关于作者` 区块（下至下一个 H3 或 EOF）
+3. 保留 H1、tldr、所有正文 H2/H3/H4、参考文献
+4. frontmatter 保留（下游若适配会自行剥）
+
+**Exit**：lint 通过；字数 ≈ 主产物 - 运营区字数
+
+### hashtags（仅小红书）
+
+**目的**：小红书话题标签以 `#标签` 行内附加文末。
+
+**输入**：`export/07-final/xiaohongshu.md` · `brief.topic` / `brief.tags`
+
+**规则**：
+1. 数量 ∈ `[3, 5]`
+2. 每 tag `#话题词`（无空格无引号），多个以单空格分隔
+3. 选词优先级：brief.tags → 文章 H2 高频名词 → 栏目 suggested_tags
+4. 禁止：含 `!@$%` 符号 / 长度 > 10 / 纯英文且正文未出现
+5. 输出位置：附加到 `08-xiaohongshu-publish.md` 最后一行
+
+**Exit**：数量合规；无重复；每 tag 可追溯到 brief 或正文
+
+### 通用约束（所有 extra kind）
+
+- 生成失败 → 记入退出 JSON 的 `extra_outputs.errors[]`，**不**回滚主产物
+- 每份 extra 都要过 lint.py（无 TODO / 字数达标）
+- 写入前 Read 目标路径；已存在且一致 → 跳过；存在但不一致 → 覆盖并标 `overwritten: true`
 
 ## Constraints
 

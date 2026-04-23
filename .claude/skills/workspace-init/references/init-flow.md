@@ -106,8 +106,6 @@ Thumbs.db
 
 # 日志
 *.log
-content/retrospectives/runs/*.log.md
-!content/retrospectives/runs/.gitkeep
 ```
 
 关键区别：**不忽略** `content/articles/`、`content/styles/*/style-profile.md`、`content/retrospectives/ops-metrics.csv`。
