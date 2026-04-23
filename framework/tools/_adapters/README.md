@@ -17,7 +17,7 @@ InkFlow 与外部排版 / 渲染工具对接的**单一入口**。每个 adapter
 
 | name | 平台 | 对接方式 | 契约 |
 |---|---|---|---|
-| `wechat-typeset` | 微信公众号 | 文件系统（读 `dist/api/capabilities.json`） | `framework/contracts/wechat-typeset-v1.schema.json` |
+| `wechat-typeset` | 微信公众号 | 文件系统（读 `dist/api/capabilities.json`） | `framework/contracts/wechat-typeset.schema.json` |
 
 ## 职责边界
 
@@ -36,7 +36,7 @@ adapter **不负责**：
 
 ### 1. 和目标工具约定 schema
 
-在 `framework/contracts/` 新增 `zhihu-v1.schema.json`。典型字段：
+在 `framework/contracts/` 新增 `zhihu.schema.json`（版本由 schema 内 `schemaVersion` 字段承载，不入文件名）。典型字段：
 
 - `schemaVersion` / `tool.{name,version}`
 - `containerSyntax`（或该平台等效的扩展语法）
@@ -71,9 +71,9 @@ if name in ("zhihu", "zhihu-typeset"):
 ### `framework/config/inkflow.yaml`
 
 ```yaml
-typeset:
+typeset_adapter:          # 非 pipeline 阶段；仅描述与 wechat-typeset 对账所需元数据
   adapter: wechat-typeset
-  contract: framework/contracts/wechat-typeset-v1.schema.json
+  contract: framework/contracts/wechat-typeset.schema.json
   required_version: ">=0.2.0,<0.3.0"
 ```
 

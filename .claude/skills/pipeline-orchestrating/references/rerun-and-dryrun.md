@@ -4,14 +4,14 @@
 
 支持两种粒度：
 
-### 1. 全量重跑（旧语义）
+### 1. 全量重跑
 
 ```
 "重跑 {stage}"
   → 解析 stage → AskUserQuestion 确认（列出全部后继） → 全部 status=pending → 清 output → 重跑
 ```
 
-### 2. Per-platform 重跑（新语义 · C4）
+### 2. Per-platform 重跑
 
 ```
 "重跑 {stage}.{platform}" 或 "重跑 {stage} --platform {p}"
@@ -23,11 +23,6 @@
   → AskUserQuestion 强调"其他平台不受影响"
   → 重置 state.stages.{si}.platforms.{p}.status=pending；清当平台 output；重跑
   → 该 stage.overall_status 重新计算（其他平台 completed → partial）
-
-设计动机：
-- per-platform 失败已在 fanout 隔离；rerun 也应同等粒度
-- 重跑 polish.wechat 不应使 polish.zhihu 也变 pending
-- 大幅节省 token（只重跑 1 个平台而非 N 个）
 ```
 
 权威算法见 `.claude/agents/orchestrator/recovery.md` § Rerun。

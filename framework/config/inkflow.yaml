@@ -30,9 +30,7 @@ defaults:
   skip_research: false
   no_figures: false
   skip_seo: false
-  publish_timing: evening
   cta_type: follow
-  cover_style: auto
   style_profile: default
   opening_style: auto
   target_platforms: [wechat]       # 多平台分发：brief 必填；默认仅 wechat
@@ -208,13 +206,9 @@ exports:
     platform: juejin
     description: "掘金技术实战（代码优先 + 版本说明）"
     output: "content/articles/{slug}/export/08-juejin-publish.md"
-  - format: plain_md
-    platform: any
-    description: "纯净 Markdown（兜底）"
-    output: "content/articles/{slug}/export/08-plain-publish.md"
   - format: teaser
-    platform: any
-    description: "短摘要版（朋友圈/社群分发）"
+    platform: wechat
+    description: "短摘要版（朋友圈/社群分发；仅 wechat 产出）"
     output: "content/articles/{slug}/export/08-teaser-120chars.md"
     word_limit: 120
 
@@ -236,24 +230,27 @@ paths:
   state_dir: runtime/pipeline-states
   style_profile: content/styles/default/style-profile.md
   columns_config: framework/config/columns.yaml
-  markdown_extensions: framework/config/markdown-extensions.md
+  writing_contract: framework/contracts/writing-contract.md
   artifact_layout: framework/config/artifact-layout.yaml
 
 # ============================================================
-# 排版工具接入（wechat-typeset · 独立 repo）
+# 排版适配器配置（非 pipeline 阶段 · adapter-only）
+#
+# 注意：本段**不是** pipeline 的某个 stage；pipeline 终点为 publish。
+# 下列字段只描述"Ink-Flow 与下游独立 repo wechat-typeset 对账所需的元数据"。
 #
 # 架构：
 #   wechat-typeset 是独立 repo（https://github.com/lync-cyber/wechat-typeset），
-#   纯浏览器工具。Ink-Flow 侧通过 framework/tools/_adapters/ 读对方
+#   纯浏览器工具。Ink-Flow 通过 framework/tools/_adapters/ 读对方
 #   `dist/api/capabilities.json` 做"能力对账 + variant 白名单"，不做主题决策。
 #
-#   writer 直接写 ::: 容器（writer-contract.md 承诺的 25 容器 + 5 行内扩展），
+#   writer 按 framework/contracts/writing-contract.md 直接写 ::: 容器，
 #   publisher 直接交付 08-wechat-publish.md，
 #   主题 / variant / 组件切换由用户在本地编辑器里运行时完成。
 # ============================================================
-typeset:
+typeset_adapter:
   adapter: wechat-typeset               # 可选值 / 扩展点见 framework/tools/_adapters/
-  contract: framework/contracts/wechat-typeset-v1.schema.json
+  contract: framework/contracts/wechat-typeset.schema.json   # 版本承载在 schemaVersion 字段而非文件名
   required_version: ">=0.2.0,<0.3.0"    # adapter 在 capabilities 拉取时对账
   # dist_dir 解析优先级：
   #   1. WECHAT_TYPESET_DIR 环境变量

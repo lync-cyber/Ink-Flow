@@ -32,7 +32,8 @@ AskUserQuestion:
 mkdir -p {target_dir}/config
 cp -r .claude/agents .claude/skills .claude/rules tools {target_dir}/
 cp .claude/settings.json {target_dir}/.claude/settings.json
-cp framework/config/inkflow.yaml framework/config/columns.yaml framework/config/artifact-layout.yaml framework/config/markdown-extensions.md {target_dir}/config/
+cp framework/config/inkflow.yaml framework/config/columns.yaml framework/config/artifact-layout.yaml {target_dir}/config/
+cp -r framework/contracts {target_dir}/
 cp CLAUDE.md {target_dir}/CLAUDE.md
 ```
 

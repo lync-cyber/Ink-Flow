@@ -31,6 +31,10 @@ platforms:
       aspect: "16:9 或 3:2"
       formats: [svg, png]
       benchmark_chart_required: true        # 必有 benchmark 对比图
+      cover_required: true
+      cover_aspect: "2.35:1"
+      cover_size_px: [900, 383]
+      cover_format: png
 
   xiaohongshu:
     skeleton:

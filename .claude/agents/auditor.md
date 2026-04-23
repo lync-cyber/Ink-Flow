@@ -11,15 +11,18 @@ dependencies:
   config:
     - framework/config/columns.yaml                                     # 栏目顶层 tone
     - framework/config/columns/{column}.platforms.yaml                  # 按需：平台 tone.rules + kpi_targets
+  contracts:
+    - framework/contracts/writing-contract.md           # 产出物形态契约（元素/容器/模板/速查）
   modules:
     - .claude/agents/_shared/per-platform.md
-    - .claude/agents/_shared/wechat-containers.md       # 仅 {platform}==wechat：容器合法性校验依据
   rules:
     - .claude/rules/core/fact-check.md
     - .claude/rules/core/writing-quality.md
     - .claude/rules/data/forbidden-phrases.yaml        # AI 味检测依据
     - .claude/rules/domains/wechat-article/redline.md  # 仅 {platform}==wechat 时参考
     - .claude/rules/domains/wechat-article/containers.yaml   # 仅 wechat：容器白名单
+  skills:
+    - .claude/skills/title-crafting/SKILL.md           # 标题合规规则来源（与 auditor "标题合规"维度对齐）
   tools:
     - .claude/skills/quality-linting/scripts/lint.py    # capability-conformance 静态校验入口
   runtime:
@@ -57,10 +60,16 @@ dependencies:
 - **风格偏离**: 平台叠加检测——以 `platforms.{platform}.tone.rules` 为主，`columns.{column}.tone.rules` 为辅；冲突以 platforms 层为准
 - **句式问题**: 被动句过多、长句（>40字）、冗余过渡；**字数越界**（超 `length_limit × 1.10`）判为 error
 - **传播性评估**: 标题转发欲、金句密度、开头钩子强度（1-5 分量化）；**KPI 对齐**用 `platforms.{platform}.kpi_targets` 作为评分锚点
-- **容器合法性**（仅 wechat）：运行 lint.py 做 `capability-conformance` 静态校验；容器 id / variant / 嵌套配对不合规即 error
-- **平台专属红线**：
-  - wechat：容器 id 不在白名单、`variant=` 未知值、`pros/cons` 未嵌 `compare`、inline style、`<script>`/`<style>`
-  - xiaohongshu：代码块（原生不支持）/ 长段落 >30 字 / 英文缩写无解释 / `:::` 容器（原生不支持）
+- **标题合规**（与 title-crafting skill 对齐）：
+  - 长度 ≤ 15 中文字 → 越限 error
+  - 必有观点/信息增量（非纯描述性，如"X 技术详解"）→ 违规 error
+  - 标题党模式（震惊体/过度反转/绝对化承诺/空洞标签/情绪绑架/数字暴力 ≥3）→ warning
+  - 规则清单权威来源：`.claude/skills/title-crafting/SKILL.md § 检查规则`
+  - auditor 单独列一节"标题合规"报告；命中必须给修改方向
+- **容器合法性**（仅 wechat）：运行 lint.py 做 `capability-conformance` 静态校验；规则条款详见 `framework/contracts/writing-contract.md § 2.7`
+- **平台专属红线**（平台相关条款均可查 writing-contract.md § 6 平台差异速查）：
+  - wechat：见 writing-contract § 2.7 硬约束
+  - xiaohongshu：代码块（原生不支持）/ 长段落 >30 字 / 英文缩写无解释 / `:::` 容器
   - zhihu：单视角（必须有反方观点）/ 无 comparison / 结尾套话 / `:::` 容器
   - juejin：无代码结论 / 无版本号/环境说明 / 无 GitHub 链接 / `:::` 容器
 
@@ -83,11 +92,7 @@ dependencies:
      --platform wechat
    ```
 
-3. **解析 W1-W4 违规**纳入"容器合法性"维度表格：
-   - W1 容器 id 非法 → severity=error
-   - W2 variant 非法 → severity=error
-   - W3 must_nest（pros/cons）破坏 → severity=error
-   - W4 容器未闭合 / 孤立闭合 → severity=error
+3. **解析 W1-W4 违规**，原文纳入"容器合法性"维度表格（规则条款以 writing-contract § 2.7 + lint.py 输出为准；auditor 不改写 severity）。
 
 4. **非 wechat 平台**若出现 `:::` 行 → lint 规则 A1 会报 error，同样纳入"平台专属红线"维度。
 
@@ -135,12 +140,18 @@ dependencies:
 |---|---|---|---|---|
 <!-- 来源：lint.py --platform wechat 的 W1-W4；非 wechat 平台本节留空或省略 -->
 
+### 标题合规
+| # | 规则 | 原标题 | 问题 | 修改方向 | 严重性 |
+|---|---|---|---|---|---|
+<!-- 规则来源：.claude/skills/title-crafting/SKILL.md；error=长度超限/无观点，warning=标题党模式 -->
+
 ## 审校统计
 - 事实问题: {N}
 - AI 味问题: {N}
 - 风格偏离: {N}
 - 句式问题: {N}
 - 容器合法性违规: {N}（仅 wechat）
+- 标题合规违规: {N}（error: {n}, warning: {n}）
 - 传播性评分: {N}/5
 - 高严重性总数: {N}
 ```
@@ -156,5 +167,6 @@ dependencies:
 - 各维度结果完整，每问题标位置（L行号）
 - 审校统计数据完整
 - 平台专属红线（如小红书代码块）若触发一律判 error 级
-- **wechat 平台**：lint.py W1-W4 若有 error，必须列入"容器合法性"表格且标 error；polisher 必须修复
+- **wechat 平台**：lint.py 返回的 W1-W4 error 必须原文入表；规则条款查 writing-contract § 2.7
 - 总字数与 `length_limit` 对齐：`> 1.10 × limit` 判 error，`> 1.05 × limit` 判 warning
+- **标题合规**：标题长度 ≤ 15 字且非纯描述性；违规列入"标题合规"表；polisher 必须修复 error 级

@@ -83,5 +83,31 @@ AskUserQuestion:
     - "确认排期" — 保存到 content/retrospectives/content-calendar.md
     - "调整某个时间槽" — 指定修改
     - "增加/减少文章数量" — 重新平衡
-    - "为第一篇开始创作" — 触发 pipeline-orchestrating 进入 brief 创建
+    - "为第一篇开始创作" — 见下文"创作选题交接"
 ```
+
+## 创作选题交接（orchestrator 回注）
+
+用户选"为第一篇开始创作"时，按以下协议把选题交回 orchestrator：
+
+```
+AskUserQuestion:
+  question: "从排期中挑一篇作为本次 brief 的 topic？"
+  options: [排期表中日期最近的 5 个未完成选题]
+```
+
+选定后产出交接包：
+
+```json
+{
+  "handoff": "pipeline-orchestrating",
+  "brief_seed": {
+    "topic": "{排期条目的选题文本}",
+    "content_column": "{排期条目的栏目 ID}",
+    "publish_date": "{排期条目的日期}",
+    "source": "content-planning"
+  }
+}
+```
+
+orchestrator 在 `brief.md § Step 1 — 主题确认` 读到该交接包时，跳过主题 AskUserQuestion，直接把 `handoff.brief_seed` 注入 brief frontmatter 并进入 Step 2。

@@ -49,10 +49,8 @@ rules:
     enabled: true
     severity: warning
     # 词表来源：.claude/rules/data/forbidden-phrases.yaml
+    # 职责边界：
+    #   - lint 侧按词面匹配产 warning（CI / 用户手动 lint）
+    #   - auditor "AI 味检测" 维度负责语境判断，纳入审校报告
+    # pipeline 决策以 auditor 为准；lint 的 forbidden warning 不阻断 publisher。
 
-# 栏目特有覆盖（业务语义，不属于可复用 data）
-column_overrides:
-  学术前沿:
-    theme_constraints:
-      require_references: true
-      require_tldr: true

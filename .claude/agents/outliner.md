@@ -63,7 +63,7 @@ dependencies:
   - `(illustrator:html-card)` — HTML/CSS 卡片组、步骤卡、金句卡、时间线（→ 转 PNG）
   - `(illustrator:image-prompt)` — 文生图提示词（真实照片/场景插画，用户手动处理）
   - 判断原则：标准 Markdown 或 GFM Alert 可表达 → writer；需连线/精确几何 → illustrator:svg-*；文字密集的盒模型布局 → illustrator:html-*；需真实感图像 → illustrator:image-prompt
-  - 禁止任何 `mermaid` 标注；只用标准 Markdown + GFM Alerts，`:::` 容器语法禁止（详见 `framework/config/markdown-extensions.md`）
+  - 禁止任何 `mermaid` 标注；只用标准 Markdown + GFM Alerts，`:::` 容器语法禁止（详见 `framework/contracts/writing-contract.md § 1 + § 6`）
 - 开头 section 必须 3 秒内抓住注意力（标 opening_style）
 - 结尾 section 含 CTA（从 `brief.cta_type` 读）
 - 从 02-research-memo.md 继承 `[时效注意]` `[可能过时]` `[发布前刷新]` 标记

@@ -8,11 +8,16 @@
 ### Step 1 — 主题确认（若未直接给出）
 
 ```
-IF 用户未提供具体主题:
+IF 会话上下文含 content-planning handoff 包（见 content-planning/SKILL.md § 创作选题交接）:
+  brief.topic          = handoff.brief_seed.topic
+  brief.content_column = handoff.brief_seed.content_column
+  brief.publish_date   = handoff.brief_seed.publish_date
+  跳过本 Step，直接进入 Step 2（Step 2b 栏目确认可跳过）
+ELIF 用户未提供具体主题:
   AskUserQuestion:
     question: "尚未指定主题。"
     options:
-      - "查看排期推荐主题" — 触发 content-planning skill；其输出选题注入 brief.topic
+      - "查看排期推荐主题" — 触发 content-planning skill；由其 handoff 包注入 brief
       - "我现在告诉你主题" — 等待用户输入
       - "返回"
 ELSE:

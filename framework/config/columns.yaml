@@ -29,6 +29,7 @@ columns:
     personality: "克制严谨、数据与逻辑层级优先、适合大量留白"
     default_opening: blunt
     default_cta: bookmark
+    numbered_h2: false          # H2 是否手写 "NN ／ 标题" 前缀（writer 消费；详见 writing-contract § 4.2）
     suggested_components: [data_chart]
     # 未在 brief 指定 target_platforms 时，orchestrator 用这个推荐并 AskUserQuestion 确认
     # 顺序即推荐优先级；brief 的 primary_platform 默认取第一个
@@ -66,6 +67,7 @@ columns:
     personality: "简报式紧凑、信息密度高、节奏明快、适合卡片化"
     default_opening: contrast
     default_cta: share
+    numbered_h2: false
     suggested_components: [comparison_table]
     suggested_platforms: [wechat, xiaohongshu]
     frequency: "周报+突发"
@@ -100,6 +102,7 @@ columns:
     personality: "工具化、装饰最少、功能性最强；内容可为软件/硬件/工业/材料等任何可落地技术"
     default_opening: pain_point
     default_cta: bookmark_try
+    numbered_h2: true           # tech 栏目 theme.css 约定手写 "01 ／ 章节名" 前缀
     suggested_components: [flow_chart]
     suggested_platforms: [wechat, juejin, zhihu]
     frequency: "2-4/月"
@@ -136,6 +139,7 @@ columns:
     personality: "温暖有机、引言突出、段落宽松、叙事优先"
     default_opening: story
     default_cta: comment
+    numbered_h2: false
     suggested_components: []
     suggested_platforms: [wechat, xiaohongshu]
     frequency: "1/月"

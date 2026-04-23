@@ -62,11 +62,15 @@ length_chars: 28             # 原子正文字符数（不含 frontmatter）
 - **不新增事实**：只能重组 research-memo 中已有内容，缺失信息标 `source_section: 空`
 - **最小粒度**：一个原子 = 一个独立可引用单元，禁止把两个论点塞进同一个 atom
 - **平台白名单映射**：读 `columns.{column}.platforms.{p}.atom_selection`，若 atom 的 type 不在任何平台白名单中 → 不写出
+- **按 target_platforms 动态缩减**：
+  - 先计算 `active_types = ⋃ (columns.{column}.platforms.{p}.atom_selection for p in brief.target_platforms)`
+  - 只产出 `active_types` 覆盖的文件；其他 type 的文件本次不写（`index.md` 标注"未启用：不在 target_platforms 的任一 atom_selection 中"）
+  - 例：`target_platforms=[wechat]` + tech 栏目 → active_types = {claims, evidence-data, evidence-code, cases, pitfalls, comparison, actions}，跳过 `analogies` / `quotes`
 - **引用来源保留**：含数据/引言的 atom 必须在正文或 frontmatter 附 `[来源](url)`，规则同 researcher
 - **禁止 TODO / 待补充**
 - **最少产量**：
   - `claims.md` 至少 1 个 `weight: primary` 的论断
-  - `evidence-data.md` + `evidence-code.md` + `cases.md` 合计 ≥3 条
+  - `evidence-data.md` + `evidence-code.md` + `cases.md` 合计 ≥3 条（均需在 active_types 内；不在则豁免）
   - 其余文件若 research-memo 无素材可留空，但需在 `index.md` 标注"空（原因：...）"
 
 ## 交叉引用矩阵（index.md 结构）

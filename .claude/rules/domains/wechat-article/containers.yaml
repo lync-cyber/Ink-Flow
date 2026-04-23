@@ -1,7 +1,7 @@
 # ============================================================
 # 微信公众号容器语法白名单（单一事实来源 · lint 消费）
 # 消费者：.claude/skills/quality-linting/scripts/lint.py rule_container_whitelist
-# 人类可读版：.claude/agents/_shared/wechat-containers.md
+# 人类可读版：framework/contracts/writing-contract.md § 2
 # 源：https://github.com/lync-cyber/wechat-typeset/blob/main/docs/container-syntax.md
 # ============================================================
 

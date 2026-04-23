@@ -30,6 +30,10 @@ platforms:
       aspect: "16:9"
       formats: [png]
       style_hint: "真实照片/场景插画（image-prompt 主导）"
+      cover_required: true
+      cover_aspect: "2.35:1"
+      cover_size_px: [900, 383]
+      cover_format: png
 
   xiaohongshu:
     skeleton:
@@ -77,9 +81,9 @@ platforms:
       formats: [png, md]
 
   juejin:
-    # 人物故事在掘金偏"程序员职业/成长"方向；纯生活故事不建议分发到掘金
-    applicable: conditional
-    applicable_if: "brief.story_subtype in [career, technical_growth, team_incident]"
+    # 人物故事在掘金偏"程序员职业/成长"方向；纯生活故事不建议分发到掘金。
+    # 适用性判断放在 brief 采集阶段（orchestrator 据 target_platforms 决定派发），
+    # 而非用 applicable_if 表达式——该字段曾引用未采集的 brief.story_subtype 导致永假。
     skeleton:
       - "一句话结论 [atom: claims.primary]             # 职业/成长的一句话教训"
       - "背景 [atom: cases×1]                         # 技术/团队场景"

@@ -28,11 +28,12 @@ LLM 辅助内容创作工作流，基于 Claude Code 原生能力。当前领域
 | 外部参考材料 | `content/references/` |
 | 文章产物 | `content/articles/{slug}/` |
 | 运行状态 | `runtime/pipeline-states/{slug}.json` |
-| wechat 容器语法手册 | `.claude/agents/_shared/wechat-containers.md`（25 容器 + 5 行内扩展，writer/auditor/polisher/publisher 共享） |
+| wechat 容器语法手册 | `framework/contracts/writing-contract.md` § 2（25 容器 + 5 行内扩展，writer/auditor/polisher/publisher 共享） |
 | wechat 容器白名单（lint 消费） | `.claude/rules/domains/wechat-article/containers.yaml` |
 | capabilities 缓存（variant 白名单） | `runtime/typeset-capabilities.json`（由 adapter cli capabilities --cache 产出） |
 | 排版适配器（与独立 repo 对接） | `framework/tools/_adapters/`（Python · PlatformAdapter 接口；只做 capabilities 对账） |
-| 排版契约（两端共识） | `framework/contracts/wechat-typeset-v1.schema.json` |
+| 排版契约（两端共识） | `framework/contracts/wechat-typeset.schema.json`（版本承载在 `schemaVersion` 字段） |
+| 写作契约（agent 共享模板） | `framework/contracts/writing-contract.md` |
 | 本地排版工具（独立 repo） | https://github.com/lync-cyber/wechat-typeset （约定 clone 到 Ink-Flow 同级目录） |
 
 ## 工作区结构（单篇文章）

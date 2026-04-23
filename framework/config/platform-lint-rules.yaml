@@ -1,17 +1,16 @@
 # ============================================================
 # 平台 lint 规则策略（消费者：lint.py --platform）
 #
-# 职责边界（v2.0 起）：
+# 职责边界：
 # - 本文件只放"规则的开/关 / 严重级别 / 消息文案 / 关键词列表 / 平台特化模式"
 # - 数值阈值（max_paragraph_chars / max_sentence_chars / allowed_headings /
 #   length_limit_factor / length_hard_factor / svg / forbidden_css / forbidden_tags）
 #   全部由 .claude/rules/data/platform-limits.yaml 单一事实来源提供
-# - lint.py 的 _merge_platform_rules 会先读 platform-limits.yaml 注入数值，
+# - lint.py 的 _merge_platform_rules 先读 platform-limits.yaml 注入数值，
 #   再读本文件做 enabled/severity 覆盖
 #
-# 设计原则：
-# - 渐进披露：lint.py 按 --platform 参数只加载当前平台段
-# - enforce 级别：error 阻断；warning 记录不阻断
+# 加载策略：按 --platform 参数只加载当前平台段
+# enforce 级别：error 阻断；warning 记录不阻断
 # ============================================================
 
 version: "2.0"
@@ -27,6 +26,9 @@ base:
   image_references:
     enabled: true
     severity: warning
+  heading_skip_level:
+    enabled: true
+    severity: warning        # H2→H4 跳级警告；四平台共用
 
 # ============================================================
 # 平台差异段：覆盖/关闭/追加
@@ -52,6 +54,7 @@ platforms:
     gfm_alerts:
       enabled: true
       severity: warning
+      # 权威来源：framework/contracts/writing-contract.md § 3；修改同步 lint.py GFM_ALERT_TYPES
       allowed_types: [NOTE, TIP, IMPORTANT, WARNING, CAUTION]
     css_safety:
       enabled: true
@@ -121,6 +124,7 @@ platforms:
     gfm_alerts:
       enabled: true
       severity: warning
+      # 权威来源：framework/contracts/writing-contract.md § 3
       allowed_types: [NOTE, TIP, IMPORTANT, WARNING, CAUTION]
     css_safety:
       enabled: false               # 掘金投递 Markdown，无 CSS

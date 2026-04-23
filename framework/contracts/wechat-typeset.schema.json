@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://inkflow.dev/contracts/wechat-typeset-v1.schema.json",
-  "title": "wechat-typeset Capabilities v1",
+  "$id": "https://inkflow.dev/contracts/wechat-typeset.schema.json",
+  "title": "wechat-typeset Capabilities",
   "description": "Contract between InkFlow (consumer) and wechat-typeset (provider). InkFlow reads this file to populate the variant whitelist consumed by lint.py rule_container_whitelist. Theme / variant / component selection is a runtime user action in the wechat-typeset editor, not a pipeline decision — hence only schemaVersion, tool, containerSyntax, and variants are mandatory here. Breaking changes require schemaVersion bump + named migration.",
   "type": "object",
   "required": [

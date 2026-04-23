@@ -11,9 +11,10 @@ dependencies:
   config:
     - framework/config/columns.yaml                                 # phrase_replacements + 栏目顶层 tone
     - framework/config/columns/{column}.platforms.yaml              # 按需：平台 tone.rules + length_limit
+  contracts:
+    - framework/contracts/writing-contract.md                       # 产出物形态契约（容器保护规则见 § 2）
   modules:
     - .claude/agents/_shared/per-platform.md
-    - .claude/agents/_shared/wechat-containers.md                   # 仅 {platform}==wechat：容器修改规范
   rules:
     - .claude/rules/core/writing-quality.md
     - .claude/rules/data/forbidden-phrases.yaml
@@ -55,18 +56,30 @@ dependencies:
 - 至少保留 1 处 `<!-- USER_FILL -->`
 - 信息无损失，逻辑无断裂，语气一致
 
+### Brief 一致性校验
+
+polish 完成后核对下列 brief 字段是否在终稿得到体现；不一致须在变更溯源表记为 warning：
+
+| brief 字段 | 校验点 | 不一致处理 |
+|---|---|---|
+| `opening_style` | 首 section 的开头与 `opening_strategies.{style}.framework` 一致 | warning；不强制改写（写作自由度），仅记录 |
+| `cta_type` | 文末运营区或 `::: footer-cta` 内的引导语与 `follow/comment/share/mini_program/none` 匹配 | warning；不强制 |
+| `columns.{column}.numbered_h2` | H2 数字前缀与栏目约定一致（见 writing-contract § 4.2） | error；polisher 直接补齐/剥离前缀 |
+
 ### 容器保护（仅 wechat）
 
-`{platform}==wechat` 时额外遵守：
+`{platform}==wechat` 时额外遵守 writing-contract.md § 2.6（嵌套规则）+ § 2.7（硬约束速查）。
 
-- **不得改动 `:::` fence 行本身的结构**（开合冒号数、容器 id、`variant=` attr）——只能修改 fence 之间的正文
-- **不得新增 / 删除容器**——若 auditor 指出某处需要换容器类型（如 tip → warning），polisher 可修改 id 名；但不得自造新容器
-- **不得破坏嵌套层级**——`:::: compare` / `::: pros` / `::: cons` 的冒号配对不能乱
-- **修复 W1-W4 违规时**：
-  - W1 未知 id → 换为最接近的合法 id（如 `:::tips` → `::: tip`）
-  - W2 未知 variant → 删掉 `variant=` attr（回退默认骨架），不要猜值
-  - W3 pros/cons 错位 → 包进 `:::: compare` 或改为普通列表
-  - W4 未闭合 → 补上对应冒号数的闭合行
+**polisher 专属修复手法**（audit 报告中 W1-W4 命中时）：
+
+| W | 违规 | 修复手法 |
+|---|---|---|
+| W1 | 未知 id | 换为最接近的合法 id（如 `:::tips` → `::: tip`），不得自造新容器 |
+| W2 | 未知 variant | 删掉 `variant=` attr 回退默认骨架，不要猜值 |
+| W3 | pros/cons 错位 | 包进 `:::: compare` 或降级为普通列表 |
+| W4 | 未闭合 / 孤立闭合 | 补上对应冒号数的闭合行 |
+
+只能修改 fence 之间的正文；结构性改动仅限上表。
 
 ### 变更溯源
 
@@ -119,4 +132,5 @@ dependencies:
 - 整体语气一致
 - 05-audit/{platform}.md 所有"高"条目已处理
 - 字数 ≤ `platforms.{platform}.length_limit × 1.05`
-- **wechat 平台**：审校报告中所有 W1-W4 error 已按容器修复规则处理；终稿 lint 由 publisher Step 1 执行
+- **wechat 平台**：审校报告中所有 W1-W4 error 已按容器修复规则处理；终稿 lint 由 publisher 终稿守门执行
+- Brief 一致性校验：`opening_style` / `cta_type` 对齐（warning 可放行）；`numbered_h2` 严格对齐（error 必修）

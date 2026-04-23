@@ -1,10 +1,13 @@
 # orchestrator / fanout 模块
 
-> `per_platform: true` 阶段的派发与收敛算法。主文件 `orchestrator.md` 的主循环遇到这类 stage 时按下文处理。
+> `per_platform: true` 且 `len(brief.target_platforms) > 1` 时的多平台派发与收敛算法。
+> 单平台（N==1）走 `stages.md` 的单播算法（单平台快通道），不进本模块。
 
 ## 何时触发
 
-当 `framework/config/inkflow.yaml` 中当前 stage 定义含 `per_platform: true` 时走本模块；否则走 `stages.md` 的单播算法。
+- stage 定义含 `per_platform: true` 且 `len(brief.target_platforms) > 1` → 本模块
+- stage 定义含 `per_platform: true` 且 `len(brief.target_platforms) == 1` → `stages.md`（单平台快通道）
+- 不含 `per_platform` → `stages.md` 单播
 
 受影响阶段（当前为 6 个）：`outline` / `draft` / `figures` / `audit` / `polish` / `publish`。
 
@@ -35,20 +38,23 @@
 3. SPAWN
    若 stage.parallel == true:
      FOR each p in effective_platforms:
-       state.stage.{p}.status = in_progress, started_at = now
+       调 state-writer.md update_state(stage, {status:in_progress, started_at:now()}, platform=p)
      并行 Agent 调用 N 次（每次把 {platform}=p 注入 subagent 环境）
    否则串行逐个调用（极少用）
 
 4. COLLECT
-   等所有 subagent 结束：
-     对每个 p：读取该平台产物路径（从 artifact-layout 展开 {platform}→p）
-     执行 stage.validation（按平台执行，必要时调 lint.py --platform p）
-     结果汇总到 state.stage.{p}.{status, violations, duration_seconds}
+   每个 subagent return 的瞬间立即：
+     调 state-writer.md PROC validate_stage_output(stage, platform=p)（单一事实来源）
+     failed → 追加 violations[] 并转 recovery.md L2；不阻塞其他平台继续
+   所有平台处理完 → state-writer 自动重算 overall_status
 
 5. CHECKPOINT（若 stage.checkpoint == true）
    汇总所有平台的产物路径与 lint 结果 → 一次性向用户展示
-   用户一次审核 N 份产物，允许"仅重跑某一平台"（见 recovery.md § Platform-Rerun）
+   用户决议后由 checkpoints.md 内部调 state-writer 写
+   允许"仅重跑某一平台"（见 recovery.md § Platform-Rerun）
 ```
+
+§ APPLICABILITY FILTER 中剔除平台时同样调 state-writer 写 `{status:skipped, skip_reason:...}`。
 
 ## 失败隔离
 

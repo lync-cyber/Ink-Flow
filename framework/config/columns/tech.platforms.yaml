@@ -33,6 +33,10 @@ platforms:
       aspect: "16:9 或 3:2"
       formats: [svg, html, png]
       max_width_px: 640
+      cover_required: true
+      cover_aspect: "2.35:1"         # 公众号推送缩略图宽屏
+      cover_size_px: [900, 383]
+      cover_format: png
 
   xiaohongshu:
     skeleton:

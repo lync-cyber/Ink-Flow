@@ -37,8 +37,11 @@ InkFlow 是基于 Claude Code 原生能力（subagent + skill + hook + memory）
 framework/config/                            # 项目配置（纳入版本管理）
   ├── inkflow.yaml                 # 项目配置 + stage 契约
   ├── columns.yaml                 # 栏目统一配置（业务字段：骨架、tone、频率、KPI）
-  ├── artifact-layout.yaml         # 产物路径约定
-  └── markdown-extensions.md       # 允许的 Markdown 语法白名单（标准 + GFM Alerts）
+  └── artifact-layout.yaml         # 产物路径约定
+
+framework/contracts/                         # 跨 agent 共享契约（插件式版本管理）
+  ├── writing-contract.md          # 写作契约（合法元素 / 容器 / 模板 / 平台差异）
+  └── wechat-typeset.schema.json   # wechat-typeset 能力对账 JSON Schema
 
 content/styles/                            # 个人化风格档案（用户生成，升级不覆盖）
   └── {profile}/style-profile.md

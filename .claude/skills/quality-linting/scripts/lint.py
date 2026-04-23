@@ -30,6 +30,14 @@ except ImportError:
     yaml = None
 
 # ============================================================
+# 常量
+# ============================================================
+
+# GFM Alert 合法类型清单（权威来源：framework/contracts/writing-contract.md § 3）
+# 修改本清单前务必同步契约文件与 platform-lint-rules.yaml 的 allowed_types 字段
+GFM_ALERT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"]
+
+# ============================================================
 # 配置加载
 # ============================================================
 
@@ -43,7 +51,7 @@ DEFAULT_CONFIG = {
         "gfm_alerts": {
             "enabled": True,
             "severity": "warning",
-            "allowed_types": ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"],
+            "allowed_types": GFM_ALERT_TYPES,
         },
         "typography": {
             "enabled": True,
@@ -536,8 +544,7 @@ def rule_gfm_alerts(lines: list[str], config: dict, result: LintResult):
     小写或未知类型视为 warning（某些渲染器会静默降级为普通 blockquote）。
     """
     alert_cfg = config["rules"].get("gfm_alerts", {})
-    allowed = {t.upper() for t in alert_cfg.get("allowed_types",
-                                                ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"])}
+    allowed = {t.upper() for t in alert_cfg.get("allowed_types", GFM_ALERT_TYPES)}
 
     # 形如 > [!NOTE] 或 > [!tip] ；允许 blockquote 前导空格
     pattern = re.compile(r"^\s*>\s*\[!([A-Za-z]+)\]\s*$")
@@ -921,6 +928,41 @@ def rule_code_block_must_lang(lines: list[str], config: dict, result: LintResult
             in_code = not in_code
 
 
+def rule_heading_skip_level(lines: list[str], config: dict, result: LintResult):
+    """规则 P8: H2→H4 跳级检测（禁止 H2 后直接出现 H4）。
+
+    允许的层级转换：
+      任意 H1 → H2（章节）
+      H2 → H2（同级）
+      H2 → H3（下钻）
+      H3 → H3/H4（同级或下钻）
+      H3 → H2（回到章节）
+      H4 → H2/H3/H4
+
+    禁止：H2 → H4（跳过 H3）；H1 → H3/H4（跳过 H2）。
+    """
+    cfg = config["rules"].get("heading_skip_level", {})
+    severity = cfg.get("severity", "warning")
+    msg_tpl = cfg.get("message", "H{prev} 后直接出现 H{cur}，跳过了 H{missing}")
+    prev_level = 0
+    for ctx in iter_lines(lines):
+        if ctx.in_frontmatter or ctx.in_code_block:
+            continue
+        m = re.match(r"^(#{1,6})\s+", ctx.stripped)
+        if not m:
+            continue
+        cur = len(m.group(1))
+        if prev_level and cur > prev_level + 1:
+            missing = prev_level + 1
+            result.add(
+                "P8",
+                severity,
+                ctx.line_num,
+                msg_tpl.replace("{prev}", str(prev_level)).replace("{cur}", str(cur)).replace("{missing}", str(missing)),
+            )
+        prev_level = cur
+
+
 def rule_require_frontmatter_fields(lines: list[str], config: dict, result: LintResult):
     """规则 P4: frontmatter 必须字段（掘金要求 title/description/tags）"""
     cfg = config["rules"].get("require_frontmatter_fields", {})
@@ -1025,6 +1067,8 @@ def run_lint(file_path: str, column: str = "", platform: str = "",
         rule_css_safety(lines, config, result)
     if is_on("image_references"):
         rule_image_references(lines, config, result)
+    if is_on("heading_skip_level", default=True):
+        rule_heading_skip_level(lines, config, result)
     if is_on("forbidden_patterns"):
         rule_forbidden_patterns(lines, config, result)
     if is_on("article_structure"):

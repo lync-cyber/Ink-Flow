@@ -10,13 +10,15 @@ dependencies:
     - content/articles/{slug}/intermediate/04b-figure/{platform}/
   config:
     - framework/config/inkflow.yaml                      # exports 配置
-    - framework/config/markdown-extensions.md            # GFM 语法白名单
     - framework/config/columns.yaml                      # 栏目元数据
     - framework/config/columns/{column}.platforms.yaml   # 按需：figure_spec、length_limit
+  contracts:
+    - framework/contracts/writing-contract.md            # 产出物形态契约（平台差异速查见 § 6）
   modules:
     - .claude/agents/_shared/per-platform.md
   rules:
     - .claude/rules/data/platform-limits.yaml
+    - .claude/rules/data/sensitive-words.yaml           # 仅 wechat：合规 warning-only 扫描
     - .claude/rules/domains/wechat-article/platform.md   # 仅 {platform}==wechat 时生效
     - .claude/rules/domains/wechat-article/containers.yaml  # 仅 wechat：容器白名单
   tools:
@@ -29,7 +31,7 @@ dependencies:
 
 ## 职责边界
 
-- ✅ 生成平台适配的 Markdown（wechat 保留 `:::` 容器 + 5 行内扩展；zhihu/juejin/xiaohongshu 转纯 GFM / 纯文本）
+- ✅ 生成平台适配的 Markdown（平台差异以 writing-contract § 6 速查表为准）
 - ✅ wechat 产物交付后由用户在 [wechat-typeset 本地工具](https://github.com/lync-cyber/wechat-typeset) 粘贴、切主题、一键复制
 - ❌ **不**做主题 / variant 决策（那是运行时用户在 wechat-typeset 编辑器里的动作）
 - ❌ **不**负责 HTML 渲染、inline style、juice 内联化
@@ -52,30 +54,67 @@ dependencies:
 
 ## 流程
 
-1. **预校验**（lint）：
+> **lint 调用契约**：见 `.claude/agents/_shared/per-platform.md § 与 lint 的接口`（单一事实来源）。
+> publisher 在本阶段的角色为"终稿守门"，不预校验 `07-final/{platform}.md`。
+
+1. **图片占位符替换**：读 `04b-figure/{platform}/figure-index.md`，将 `<!-- FIGURE: fig-NN -->` 替换为 `![{图注}](../intermediate/04b-figure/{platform}/fig-NN.png)`；`image: pending-user` 保留占位并在退出报告列出
+
+2. **装饰 + 元信息追加**（按平台分支 · wechat 不做"语法转换"，只做运营字段补齐）：
+   - **wechat**（writer 产出已是最终投递格式；本步仅**装饰**）：frontmatter.title → `# {title}`；非 story 栏目 H1 后加 `> {tldr}`（若 writer 已用 `::: intro` 则保留不改）；**`:::` 容器 + 5 行内扩展原样保留**；参考文献 H3；文末**原创声明**区块（见下文）；文末运营区（H3 阅读原文 + H3 关于作者，可选用 `::: footer-cta` / `::: qrcode` 包装）；文末追加"建议话题"区块 `### 建议话题\n#{tag1} #{tag2} #{tag3}`（2-3 个，供用户复制到公众号后台"话题"字段）
+
+     **原创声明模板**（插在"关于作者"之前，可被 frontmatter 覆盖）：
+
+     | frontmatter 字段 | 含义 | 默认行为 |
+     |---|---|---|
+     | `original: true` | 声明原创 | 渲染「本文首发于 {公众号名}，未经授权禁止转载」 |
+     | `original: reprint` | 授权转载 | 渲染「本文转载自 {original_source}，原作者 {original_author}」，需 brief 提供这两个字段 |
+     | `original: false` | 不声明 | 省略本区块 |
+     | 缺失 | 默认为 `true` | 同 `original: true` |
+
+     渲染示例（`original: true`）：
+
+     ```markdown
+     ### 版权声明
+
+     本文首发于公众号 {account_name}，转载请在后台回复"转载"获取授权。
+     ```
+
+     `reprint` 分支渲染：
+
+     ```markdown
+     ### 版权声明
+
+     本文转载自 {original_source}，原作者 {original_author}。
+     ```
+
+     frontmatter 字段从 `intermediate/01-brief.md` 读取；`account_name` 默认取 `brief.author`。缺失且无默认值 → 在 `exports[].warnings[]` 记录并占位为 `{account_name}` 等 TODO 标记，不阻断导出
+   - **xiaohongshu**（有语法转换）：剥除 frontmatter（平台不支持）；剥除所有 `:::` 容器（仅保留容器内正文）；代码块改为截图占位 `[图 N：请截图]`；段落超过 30 字自动拆 bullet；文末追加 3-5 个话题标签 `#{topic}`
+   - **zhihu**（有语法降级）：保留 frontmatter，`tags` 字段适配知乎标签；剥除 `:::` 容器（知乎不渲染）；代码块围栏保留；参考文献保留；`> [!TIP]` 降级为普通 blockquote
+   - **juejin**（有 frontmatter 扩展）：保留 frontmatter；剥除 `:::` 容器；`description` 字段必填（取 brief.tldr）；`tags` 转 `tag: [...]`；代码块标语言强制；文末追加 GitHub/文档链接块
+
+3. **语义检查**：academic 引用可信、industry 时效标注、tech 代码可运行、story 场景具体
+
+4. **导出**：
+   - 主产物：`export/08-{platform}-publish.md`
+   - **仅 wechat 额外产**：`export/08-teaser-120chars.md`（见下文「Extra Outputs」规则）
+
+5. **清理残留**：`<!-- USER_FILL:` / `<!-- FIGURE:` / `<!-- MEDIA:` / `TODO` 必须全部清除
+
+6. **终稿守门 lint**（唯一一次）：对 `export/08-{platform}-publish.md` 执行
    ```bash
-   python .claude/skills/quality-linting/scripts/lint.py export/07-final/{platform}.md --platform {platform}
+   python .claude/skills/quality-linting/scripts/lint.py export/08-{platform}-publish.md --platform {platform}
    ```
    - error → 停止，返回 violations（含 wechat 的 W1-W4 容器合规错误）
    - warning → 记录，继续
 
-2. **图片占位符替换**：读 `04b-figure/{platform}/figure-index.md`，将 `<!-- FIGURE: fig-NN -->` 替换为 `![{图注}](../intermediate/04b-figure/{platform}/fig-NN.png)`；`image: pending-user` 保留占位并在退出报告列出
-
-3. **语法标准化**（按平台分支）：
-   - **wechat**：frontmatter.title → `# {title}`；非 story 栏目 H1 后加 `> {tldr}`（若 writer 已用 `::: intro` 则保留不改）；**保留 `:::` 容器 + 5 行内扩展原样**；参考文献 H3；文末运营区（H3 阅读原文 + H3 关于作者，可选用 `::: footer-cta` / `::: qrcode` 包装）
-   - **xiaohongshu**：**剥除 frontmatter**（平台不支持）；**剥除所有 `:::` 容器**（仅保留容器内的正文）；代码块改为截图占位 `[图 N：请截图]`；段落超过 30 字自动拆 bullet；文末追加 3-5 个话题标签 `#{topic}`
-   - **zhihu**：保留 frontmatter，`tags` 字段适配知乎标签；**不保留 `:::` 容器**（知乎不渲染）；代码块围栏保留；参考文献保留；`> [!TIP]` 降级为普通 blockquote
-   - **juejin**：保留 frontmatter；**不保留 `:::` 容器**；`description` 字段必填（取 brief.tldr）；`tags` 转 `tag: [...]`；代码块标语言强制；文末追加 GitHub/文档链接块
-
-4. **语义检查**（沿用栏目维度）：academic 引用可信、industry 时效标注、tech 代码可运行、story 场景具体
-
-5. **导出**：
-   - 主产物：`export/08-{platform}-publish.md`
-   - **仅 wechat 额外产**：`export/08-teaser-120chars.md`（见下文「Extra Outputs」规则）
-
-6. **清理残留**：`<!-- USER_FILL:` / `<!-- FIGURE:` / `<!-- MEDIA:` / `TODO` 必须全部清除
-
-7. **终稿自检**（仅 wechat）：再跑一次 lint 对 `export/08-wechat-publish.md`，确保 W1-W4 = 0
+7. **合规敏感词扫描**（仅 wechat · warning-only · 不阻断）：
+   - 读 `.claude/rules/data/sensitive-words.yaml` 的所有分组（politics / health / finance / advertising / sensitive_adult / custom）
+   - 逐组在终稿正文做字面包含检测；命中即写入退出 JSON 的 `compliance_warnings[]`：
+     ```json
+     {"category": "advertising", "word": "最", "reason": "广告法绝对化用语", "line": 42, "action": "建议换表述或删除"}
+     ```
+   - 不修改正文、不阻断导出；交由用户在发布前人工确认
+   - 词表当前为占位骨架，命中为 0 属正常；发布风险高栏目（医疗/金融）建议自行扩充
 
 ## wechat 产物交付
 
@@ -83,7 +122,7 @@ wechat 产物是 pipeline 的最终产出，直接交付用户：
 
 ```
 publisher.wechat
-  ↓ export/08-wechat-publish.md  ← 含 ::: 容器 + 5 行内扩展 + GFM
+  ↓ export/08-wechat-publish.md  ← 符合 writing-contract § 2 的 wechat 产物
 用户动作（pipeline 外）：
   1. 启动本地 wechat-typeset（https://github.com/lync-cyber/wechat-typeset）
   2. 浏览器打开 http://127.0.0.1:7788/
@@ -116,20 +155,6 @@ publisher 完成后在回显里提示用户这一交付路径。
 
 **Exit**：长度 ∈ `[word_limit×0.9, word_limit×1.1]`；不含品牌套话
 
-### plain（兜底 · 剥运营区）
-
-**目的**：跨平台兜底版，剥掉 wechat 的"阅读原文 / 关于作者"等运营区。
-
-**输入**：`export/08-{platform}-publish.md`
-
-**规则**：
-1. 复制主产物到 `exports.plain_md.output` 路径
-2. 删除 `### 阅读原文` / `### 关于作者` 区块（下至下一个 H3 或 EOF）
-3. 保留 H1、tldr、所有正文 H2/H3/H4、参考文献
-4. frontmatter 保留（下游若适配会自行剥）
-
-**Exit**：lint 通过；字数 ≈ 主产物 - 运营区字数
-
 ### hashtags（仅小红书）
 
 **目的**：小红书话题标签以 `#标签` 行内附加文末。
@@ -148,16 +173,15 @@ publisher 完成后在回显里提示用户这一交付路径。
 ### 通用约束（所有 extra kind）
 
 - 生成失败 → 记入退出 JSON 的 `extra_outputs.errors[]`，**不**回滚主产物
-- 每份 extra 都要过 lint.py（无 TODO / 字数达标）
+- extra 产物不过 lint.py（lint 在 Step 6 对主产物已完成）；自行做"无 TODO / 字数达标"自检
 - 写入前 Read 目标路径；已存在且一致 → 跳过；存在但不一致 → 覆盖并标 `overwritten: true`
 
 ## Constraints
 
-- 正文 Markdown 语法按平台分支决定（wechat 允许 `:::` + 5 行内扩展；其他平台仅 GFM + Alerts）
+- 正文 Markdown 语法差异以 writing-contract.md § 6 平台差异速查为准
 - 图表一律以 PNG 引用出现（xiaohongshu 例外，改截图占位）
 - CSS 属性遵守 `.claude/rules/data/platform-limits.yaml`（仅 wechat 严格，其他平台参考）
-- **wechat 产物**：`:::` 容器 id 必须在 25 个白名单内；`variant=X` 必须在 capabilities 合法清单内；publisher 不得自造新容器
-- **非 wechat 产物**：`:::` 容器和 5 行内扩展一律剥除
+- **wechat 产物**：遵守 writing-contract § 2.7 硬约束；publisher 不得自造新容器
 - 终稿字数 ≤ `platforms.{platform}.length_limit × 1.05`
 
 ## Format
@@ -172,11 +196,12 @@ publisher 完成后在回显里提示用户这一交付路径。
   "figures_replaced": 5,
   "pending_user_figures": 0,
   "containers_used": ["intro", "tip", "compare", "footer-cta"],
+  "compliance_warnings": [],
   "next_step": "open http://127.0.0.1:7788/ → paste 08-wechat-publish.md → pick theme → copy"
 }
 ```
 
-非 wechat 平台省略 `containers_used` 和 `next_step`（次字段仅对 wechat 有意义）。
+非 wechat 平台省略 `containers_used` / `compliance_warnings` / `next_step`（次字段仅对 wechat 有意义）。
 
 ## Contracts
 
@@ -190,8 +215,9 @@ publisher 完成后在回显里提示用户这一交付路径。
 
 - `lint --platform {platform}` 无 error
 - 无残留占位符（`<!-- USER_FILL:` / `<!-- FIGURE:` / `<!-- MEDIA:` / `TODO`）
-- **wechat 产物**：`:::` 容器 W1-W4 = 0；容器 id 在白名单内
+- **wechat 产物**：lint W1-W4 = 0（规则详见 writing-contract § 2.7）
 - **非 wechat 产物**：无 `:::` 行（lint A1 守门）
 - 字数 ≤ `length_limit × 1.05`
 - 平台图像格式满足 `figure_spec.formats` 白名单
 - 运营元数据（摘要/关键词/标签）完整
+- **wechat 产物**：`compliance_warnings[]` 字段存在（允许为空数组，但必须输出）

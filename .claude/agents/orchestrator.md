@@ -15,8 +15,8 @@ dependencies:
     - .claude/agents/orchestrator/recovery.md
     - .claude/agents/orchestrator/brief.md
     - .claude/agents/orchestrator/lifecycle.md     # CP3 后的发布运营状态机
-  agents_dispatched:
-    - researcher, atomizer, outliner, writer, illustrator, auditor, polisher, publisher
+    - .claude/agents/orchestrator/state-writer.md  # state.json 写回硬契约（所有模块共用）
+    - .claude/agents/orchestrator/ask-user.md      # AskUserQuestion 调用协议 + 纯文本降级
 ---
 
 ## Role
@@ -48,26 +48,30 @@ dependencies:
 | "重跑 {stage}" | → 模块 `recovery.md` § Rerun |
 | "预览 / dry-run / 检查配置" | → 模块 `recovery.md` § Dry-Run |
 | "排期 / 数据分析 / 发布清单 / 学习材料" | 提示用户触发对应 skill，不进入 pipeline |
-| 意图不明 | `AskUserQuestion`（见下） |
+| 意图不明 | 调 `ask-user.md` `ask_user`（见下） |
 
 ```
-AskUserQuestion:
-  question: "你想做什么？"
-  options:
-    - "新建文章"
-    - "继续未完成的文章"
-    - "重跑某个阶段"
-    - "预览 pipeline"
-    - "学习参考材料"
+ask_user(
+  question="你想做什么？",
+  options=["新建文章", "继续未完成的文章", "重跑某个阶段", "预览 pipeline", "学习参考材料"],
+)
 ```
+
+所有 orchestrator 与用户的结构化交互一律经 `ask-user.md` 的 `ask_user`，失败自动降级纯文本询问。
 
 ## 主循环
 
 ```
 初始化 state → 读 framework/config/inkflow.yaml 的 stages 列表
+single_platform = len(brief.target_platforms) == 1   # 单平台快通道标记
+
 FOR each stage from current to end:
     IF stage.per_platform == true:
-        → 调用 fanout.md（按 brief.target_platforms 并行派发 + 收敛）
+        IF single_platform:
+            → 调用 stages.md 单播算法；{platform} 注入为 brief.target_platforms[0]
+              state 仍写到 stages.{stage}.platforms.{p} 维持 schema 一致
+        ELSE:
+            → 调用 fanout.md（按 brief.target_platforms 并行派发 + 收敛）
     ELSE:
         → 调用 stages.md 的通用算法（单播）
     IF stage.checkpoint == true:

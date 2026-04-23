@@ -1,4 +1,4 @@
-"""skill_lint — 校验 .claude/skills/*/SKILL.md 的契约一致性 (P2-1).
+"""skill_lint — 校验 .claude/skills/*/SKILL.md 的契约一致性。
 
 只读、零副作用。根据 .claude/skills/_template/SKILL.md 定下的契约执行：
 
