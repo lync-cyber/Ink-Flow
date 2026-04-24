@@ -21,6 +21,21 @@ related:
 > Profile 层是 Ink-Flow 的"创作设定插件层"。通用内核只暴露**槽位**，Profile 提供**槽位填料**，orchestrator 按阶段挑料注入 subagent。
 > 本文件是协议原件；`profile.schema.json` 是其机器可读投影，二者冲突以本文件为准。
 
+## 目录
+
+- [0 · 名词表](#0--名词表)
+- [1 · Profile Pack 目录](#1--profile-pack-目录)
+- [2 · profile.yaml Manifest](#2--profileyaml-manifest)
+- [3 · Slot 字段规格](#3--slot-字段规格)
+  - [字段归属分层约定](#字段归属分层约定)
+- [4 · 合成（Resolver）算法](#4--合成resolver算法)
+- [5 · 绑定（Lock）](#5--绑定lock)
+- [6 · 注入（Inject）](#6--注入inject)
+- [7 · Agent 消费约定](#7--agent-消费约定)
+- [8 · Extractor 产物契约](#8--extractor-产物契约)
+- [9 · 升级规则](#9--升级规则)
+- [10 · 非目标](#10--非目标)
+
 ---
 
 ## 0 · 名词表

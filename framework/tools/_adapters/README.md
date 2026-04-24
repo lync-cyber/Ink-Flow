@@ -1,5 +1,7 @@
 # Platform Adapters
 
+> **Adapter 只搬 capabilities，不碰渲染。** 主题切换和富文本复制在用户侧的本地编辑器完成，与 InkFlow 无关。
+
 InkFlow 与外部排版 / 渲染工具对接的**单一入口**。每个 adapter 是一个薄壳，负责
 把对方 repo 的 **capabilities 清单** 拉到 InkFlow 侧（缓存到
 `runtime/typeset-capabilities.json`），供 lint.py 消费。
@@ -47,6 +49,7 @@ adapter **不负责**：
 新建 `zhihu.py`，继承 `base.PlatformAdapter`，实现：
 
 ```python
+# 示例（以知乎适配器为例）
 class ZhihuAdapter(PlatformAdapter):
     name = "zhihu"
     contract_version = "1.0"
