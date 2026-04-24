@@ -17,7 +17,7 @@
 
 ### 颜色
 
-- 优先 `content/styles/{profile}/style-profile.md` 的 `palette` 字段（profile 取自 brief.style_profile）；缺失时用默认 `#2d2d2d` / `#555555` / `#f0f0f0`
+- 优先 `runtime/profile-resolved/typesetting.yaml.palette` 字段（若当前 Profile 声明）；缺失时用默认 `#2d2d2d` / `#555555` / `#f0f0f0`
 - 禁止 emoji 节点
 
 ### 连线/箭头示例

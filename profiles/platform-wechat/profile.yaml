@@ -1,0 +1,28 @@
+apiVersion: inkflow.profile/v1
+id: platform-wechat
+version: 0.2.0
+title: "平台 · 微信公众号"
+author: inkflow-core
+description: |
+  微信公众号平台契约层：容器白名单 + 行内扩展 + CSS 安全约束 + 移动端段落硬约束。
+  与独立 repo wechat-typeset (>=0.2.0,<0.3.0) 的 container-syntax 对齐。
+  任何 wechat 写作 Profile 都应 extends 这个包以获得容器/variant 白名单。
+
+extends:
+  - base-generic-chinese@^1.0.0
+
+appliesTo:
+  platforms: [wechat]
+
+slots:
+  typesetting: { file: typesetting.yaml, kind: yaml }
+  constraints: { file: constraints.yaml, kind: yaml }
+  # principles / voice 继承自 base，不覆盖
+
+compatibility:
+  inkflowKernel: ">=2.0.0,<3.0.0"
+  typeset:
+    wechat-typeset: ">=0.2.0,<0.3.0"
+
+provenance:
+  extractedBy: manual

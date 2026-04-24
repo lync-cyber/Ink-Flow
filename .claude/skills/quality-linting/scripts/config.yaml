@@ -1,12 +1,12 @@
 # InkFlow Markdown Lint 配置
-# 只保留规则开关和严重级别；所有数据（禁用词、CSS 属性、阈值）来自 .claude/rules/data/*.yaml
-# lint.py 在加载时合并 data 文件，构造完整配置
+# 只保留规则开关和严重级别；所有数据（禁用词、CSS 属性、阈值）来自 runtime/profile-resolved/*
+# lint.py 在加载时合并 Profile 合成产物，构造完整配置。
 
 rules:
   forbidden_blocks:
     enabled: true
     severity: error
-    # 任何 ^::: 容器语法均视为错误（粘贴到微信必失效）
+    # 任何 ^::: 容器语法视为错误（非 wechat 平台粘贴必失效；wechat 由 container_whitelist 接管）
 
   gfm_alerts:
     enabled: true
@@ -21,7 +21,7 @@ rules:
   typography:
     enabled: true
     severity: warning
-    # 阈值来源：.claude/rules/data/platform-limits.yaml
+    # 阈值来源：runtime/profile-resolved/typesetting.yaml#/paragraph,sentence,heading
 
   theme_constraints:
     enabled: true
@@ -34,7 +34,7 @@ rules:
   css_safety:
     enabled: true
     severity: error
-    # 属性/值/标签黑名单来源：.claude/rules/data/platform-limits.yaml
+    # 属性/值/标签黑名单来源：runtime/profile-resolved/typesetting.yaml#/cssSafety
 
   article_structure:
     enabled: true
@@ -43,14 +43,13 @@ rules:
   svg_readability:
     enabled: true
     severity: error
-    # 字号阈值来源：.claude/rules/data/platform-limits.yaml 的 svg 段
+    # 字号阈值来源：runtime/profile-resolved/typesetting.yaml#/svg
 
   forbidden_patterns:
     enabled: true
     severity: warning
-    # 词表来源：.claude/rules/data/forbidden-phrases.yaml
+    # 词表来源：runtime/profile-resolved/constraints.yaml#/forbidden/phrases
     # 职责边界：
     #   - lint 侧按词面匹配产 warning（CI / 用户手动 lint）
     #   - auditor "AI 味检测" 维度负责语境判断，纳入审校报告
     # pipeline 决策以 auditor 为准；lint 的 forbidden warning 不阻断 publisher。
-

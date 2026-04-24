@@ -1,0 +1,38 @@
+apiVersion: inkflow.profile/v1
+id: lync-wechat-tech
+version: 1.0.0
+title: "Lync · 微信公众号（四栏目）"
+author: lync@example.com
+description: |
+  微信公众号作者 Lync 的完整创作设定：四栏目（academic / industry / tech / story）
+  骨架与 tone、AI 味替换词表、微信平台专属容器契约的绑定组合。
+  供 Ink-Flow 主工作流扇出 outliner / writer / auditor / polisher / publisher 时使用。
+
+extends:
+  - base-generic-chinese@^1.0.0
+  - platform-wechat@~0.2.0
+
+appliesTo:
+  platforms: [wechat]
+  columns: [academic, industry, tech, story]
+  contentTypes: [tutorial, deep_dive, opinion, quick_take]
+
+slots:
+  principles:  { file: principles.md,    kind: markdown }
+  voice:       { file: voice.md,         kind: markdown }
+  constraints: { file: constraints.yaml, kind: yaml }
+  # typesetting 由 platform-wechat 提供，本 Profile 不覆盖
+
+routing:
+  planning:  [principles, constraints]
+  drafting:  [voice, principles, examples]
+  polishing: [typesetting, constraints, voice]
+  auditing:  [principles, voice, typesetting, constraints]
+
+compatibility:
+  inkflowKernel: ">=2.0.0,<3.0.0"
+  typeset:
+    wechat-typeset: ">=0.2.0,<0.3.0"
+
+provenance:
+  extractedBy: manual

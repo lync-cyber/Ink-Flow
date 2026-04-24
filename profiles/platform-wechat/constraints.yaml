@@ -1,0 +1,39 @@
+slot: constraints
+version: 0.2.0
+
+# 微信平台硬约束 — 与 base 合并后生效
+forbidden:
+  patterns:
+    - regex: '<style'
+      reason: "微信编辑器剥离 <style> 标签"
+    - regex: '<script'
+      reason: "微信编辑器剥离 <script> 标签"
+    - regex: '\bclass="'
+      reason: "微信不支持 class，只能 inline style"
+    - regex: '\s+id="'
+      reason: "微信剥离 id 属性"
+
+length:
+  target: 2800
+  min: 1800
+  max: 4000
+  hardFactor: 1.2
+  softFactor: 1.1
+
+containerHardRules:
+  # 对应 lint.py W1-W4
+  W1: "容器 id 必须精确匹配 typesetting.containers.whitelist"
+  W2: "variant=X 必须在 typesetting.containers.variants / capabilities.json 白名单内"
+  W3: "pros / cons 必须嵌套在 :::: compare 内"
+  W4: "冒号配对闭合（外层严格多于内层）"
+
+# 合规敏感词（publisher 的 wechat 分支 warning-only 扫描；
+# 各分组为占位骨架，需按业务领域补充外部权威合规资料）
+compliance:
+  sensitiveWords:
+    politics: []
+    health: []
+    finance: []
+    advertising: []
+    sensitive_adult: []
+    custom: []

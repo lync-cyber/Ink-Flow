@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-04-24T03:52:57.420241+00:00",
+  "resolved": [
+    {
+      "id": "base-generic-chinese",
+      "version": "1.0.0",
+      "path": "profiles/base-generic-chinese"
+    },
+    {
+      "id": "platform-wechat",
+      "version": "0.2.0",
+      "path": "profiles/platform-wechat"
+    },
+    {
+      "id": "lync-wechat-tech",
+      "version": "1.0.0",
+      "path": "profiles/lync-wechat-tech"
+    }
+  ],
+  "provenance": {
+    "principles": [
+      "base-generic-chinese@1.0.0",
+      "lync-wechat-tech@1.0.0"
+    ],
+    "voice": [
+      "base-generic-chinese@1.0.0",
+      "lync-wechat-tech@1.0.0"
+    ],
+    "typesetting": [
+      "base-generic-chinese@1.0.0",
+      "platform-wechat@0.2.0"
+    ],
+    "constraints": [
+      "base-generic-chinese@1.0.0",
+      "platform-wechat@0.2.0",
+      "lync-wechat-tech@1.0.0"
+    ]
+  },
+  "apiVersion": "inkflow.profile/v1"
+}

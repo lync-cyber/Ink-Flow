@@ -15,7 +15,7 @@
 
 - `brief.target_platforms`：非空数组，至少 1 个，元素 ∈ `framework/config/artifact-layout.yaml` 的 `platforms` 枚举
 - 当前 stage 定义（含 `output`、`validation`、`parallel` 字段）
-- `columns.{content_column}.platforms_config` 子文件（按需加载）
+- `runtime/profile-resolved/constraints.yaml` 的 `columnPlatforms.{content_column}.{platform}` 段（平台适配）
 
 ## 派发算法
 
@@ -23,16 +23,14 @@
 1. LOAD PLATFORMS
    platforms = brief.target_platforms
    column    = brief.content_column
-   读 columns.yaml → 取 columns.{column}.platforms_config 指针
-   读该子文件 → 得到 platforms.{p} 对每个 p 的配置
+   读 runtime/profile-resolved/constraints.yaml
+   → cp = constraints.columnPlatforms.{column}
+   → 得到 cp.{p} 对每个 p 的配置（skeleton / tone / lengthLimit / atomSelection / figureSpec / kpiTargets）
 
 2. APPLICABILITY FILTER
    FOR each p in platforms:
-     cfg = platforms.{p}
-     若 cfg 不存在 → 报错（栏目未配置该平台），终止
-     若 cfg.applicable == "conditional":
-       按 cfg.applicable_if 表达式求值（读 brief frontmatter）
-       false → 从本次 fan-out 剔除 p，日志记录 "skipped: reason=<表达式不满足>"
+     cfg = cp.{p}
+     若 cfg 不存在 → 报错（当前 Profile 未为该栏目声明此平台），终止
    effective_platforms = 剩余
 
 3. SPAWN
@@ -54,7 +52,6 @@
    允许"仅重跑某一平台"（见 recovery.md § Platform-Rerun）
 ```
 
-§ APPLICABILITY FILTER 中剔除平台时同样调 state-writer 写 `{status:skipped, skip_reason:...}`。
 
 ## 失败隔离
 
@@ -75,7 +72,7 @@
         "wechat":      {"status":"completed","output":"...","duration_seconds":42},
         "xiaohongshu": {"status":"completed","output":"...","duration_seconds":38},
         "zhihu":       {"status":"failed","violations":[...],"retries":1},
-        "juejin":      {"status":"skipped","reason":"applicable_if 不满足"}
+        "juejin":      {"status":"skipped","reason":"Profile 未声明该栏目-平台组合"}
       },
       "overall_status": "partial"     // all_completed | partial | failed
     }
@@ -117,8 +114,8 @@ FOR each section:
   - 读 section.depends_on_previous（默认 true）
   - false → 可与前序并行；true → 等前序完成，读其最后两段作为衔接
   - status=in_progress, started_at
-  - 调用 writer（读 columns.{column}.platforms.{platform} 的 skeleton/tone/length_limit；
-    首 section 再读 opening_strategies 对应策略）
+  - 调用 writer（读 constraints.columnPlatforms.{column}.{platform} 的 skeleton/tone/lengthLimit；
+    首 section 再读 principles.md 的"开头策略"小节中对应 brief.opening_style 的那段）
   - 输出 → intermediate/04a-draft/{platform}/section-{NN}.md
   - 校验（字数 ±20%、无 forbidden_patterns、无 platform tone 违规）
   - status=completed
@@ -136,7 +133,7 @@ FOR each platform in brief.target_platforms:
   polisher → review/06-polish/{platform}.md + export/07-final/{platform}.md
 ```
 
-auditor 读 `platforms.{platform}.tone.rules + kpi_targets` 做平台专属审校。
+auditor 读 `constraints.columnPlatforms.{column}.{platform}.tone.rules` + `kpiTargets` 做平台专属审校。
 
 ## Publish 子步骤
 

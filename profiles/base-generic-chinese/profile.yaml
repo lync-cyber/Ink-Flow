@@ -1,0 +1,26 @@
+apiVersion: inkflow.profile/v1
+id: base-generic-chinese
+version: 1.0.0
+title: "基座 · 通用中文自媒体"
+author: inkflow-core
+description: |
+  平台无关、栏目无关的中文自媒体写作基座。
+  所有 Profile 都应 extends 这个包，获得通用的写作原则、句式规范、禁用词底线。
+
+slots:
+  principles:  { file: principles.md,    kind: markdown }
+  voice:       { file: voice.md,         kind: markdown }
+  typesetting: { file: typesetting.yaml, kind: yaml }
+  constraints: { file: constraints.yaml, kind: yaml }
+
+routing:
+  planning:  [principles, constraints]
+  drafting:  [voice, principles]
+  polishing: [typesetting, constraints, voice]
+  auditing:  [principles, voice, typesetting, constraints]
+
+compatibility:
+  inkflowKernel: ">=2.0.0,<3.0.0"
+
+provenance:
+  extractedBy: manual

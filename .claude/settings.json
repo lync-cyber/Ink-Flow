@@ -12,5 +12,18 @@
       "AskUserQuestion",
       "TodoWrite"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python framework/tools/profile_resolver.py --refresh-if-stale 3600 --quiet"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -54,9 +54,9 @@ IF 用户消息显式指定 target_platforms（如"写给公众号 + 知乎"）:
   直接填入 brief.target_platforms
   primary_platform = 列表第一个
 ELSE:
-  读 framework/config/columns.yaml 的 columns.{content_column}.suggested_platforms
+  读 runtime/profile-resolved/constraints.yaml 的 columns.{content_column}.suggestedPlatforms
   AskUserQuestion:
-    question: "推荐的目标平台: {suggested_platforms}，确认或调整？"
+    question: "推荐的目标平台: {suggestedPlatforms}，确认或调整？"
     options:
       - "采用推荐"
       - "只发 wechat"
@@ -66,8 +66,7 @@ ELSE:
 
 约束：
 - `target_platforms` 非空，元素 ∈ `framework/config/artifact-layout.yaml` 的 `platforms`
-- 某个 `{platform}` 若在 `columns.{col}.platforms_config` 里声明 `applicable: conditional` 且
-  `applicable_if` 不满足，fanout 时会跳过——此处不做硬阻断，让用户先定意图。
+- 某个 `{platform}` 若当前 Profile 未在 `constraints.columnPlatforms.{col}` 下为其声明配置，fanout 时会跳过并在状态中记录原因——此处不做硬阻断，让用户先定意图。
 
 ### Step 3 — 生成 brief
 
@@ -101,7 +100,7 @@ AskUserQuestion:
   options:
     - "查看发布清单" — publish-preparing skill
     - "运行创作复盘" — creation-reviewing skill
-    - "分析写作风格" — style-learning skill（profiling 分支）
-    - "学习参考材料" — style-learning skill（studying 分支）
+    - "提取 Profile / 生成 profile / 从样本学风格" — profile-extracting skill
+    - "切换 profile / 叠加 overlay" — profile-injecting skill
     - "开始新文章"
 ```

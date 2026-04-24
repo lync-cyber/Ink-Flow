@@ -29,7 +29,7 @@ AskUserQuestion (multiSelect questions):
 - 追加到 `content/retrospectives/ops-metrics.csv`（不存在则创建含表头）
 - CSV 字段: slug, column, content_type, opening_style, publish_time, completion_rate, bookmark_rate, share_rate, open_rate, comments
 - 从 `content/articles/{slug}/intermediate/01-brief.md` 补充元数据
-- 从 `framework/config/columns.yaml` 读取栏目 kpi_targets 做基础对标
+- 从 `runtime/profile-resolved/constraints.yaml` 的 `columns.{col}.kpiTargets` 读取栏目 KPI 做基础对标
 
 ## Lifecycle 写回
 

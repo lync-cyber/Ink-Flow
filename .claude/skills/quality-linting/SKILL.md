@@ -11,7 +11,7 @@ allowed-tools: Read, Bash, Glob, AskUserQuestion
 
 # 格式 Lint
 
-对文章做确定性格式校验，基于 `.claude/skills/quality-linting/scripts/config.yaml` 规则 + `.claude/rules/data/*.yaml` 数据源。
+对文章做确定性格式校验，基于当前绑定 Profile 的合成快照 `runtime/profile-resolved/*` 作为规则数据源。
 
 ## 执行流程
 
@@ -37,27 +37,26 @@ python .claude/skills/quality-linting/scripts/lint.py {target_file_or_dir}
 ### 4. 修复建议（可选）
 
 lint 不提供自动修复。安全可修项（如段落超长、CSS 白名单违规）列出定位信息后由用户手动修改；
-涉及语义的修改（如禁用词替换）引导用户进入 style-learning 或手动改写。
+涉及语义的修改（如禁用词替换）引导用户进入 profile-extracting（调整当前 Profile 的 constraints.yaml）或手动改写。
 
 ## 规则来源
 
 lint.py 的配置读取链：
-- `.claude/skills/quality-linting/scripts/config.yaml` — 启用/严重级别控制
+- `.claude/skills/quality-linting/scripts/config.yaml` — 启用/严重级别控制（可选，缺省用 DEFAULT_CONFIG）
 - `framework/config/platform-lint-rules.yaml` — 平台差异规则（通过 `--platform` 启用）
-- `.claude/rules/data/forbidden-phrases.yaml` — 禁用词
-- `.claude/rules/data/platform-limits.yaml` — CSS 禁用/可用属性 + 段落/句子/SVG 字号阈值
-- `.claude/rules/domains/wechat-article/containers.yaml` — 微信 `:::` 容器白名单（仅 wechat 启用 `container_whitelist` 规则）
-- `runtime/typeset-capabilities.json` — wechat-typeset variant id 权威清单（由 `python framework/tools/_adapters/cli.py capabilities --cache` 生成，缺失时降级到 containers.yaml 的 `variant_whitelist`）
+- `runtime/profile-resolved/constraints.yaml` — 禁用词、字数区间、栏目元数据
+- `runtime/profile-resolved/typesetting.yaml` — CSS 禁用属性、段落/句子/SVG 阈值、`:::` 容器白名单 + variant 白名单
+- `runtime/typeset-capabilities.json` — wechat-typeset variant id 运行时清单（由 `python framework/tools/_adapters/cli.py capabilities --cache` 生成，缺失时使用 Profile 的静态 variant 白名单）
 
-修改规则只需改 `.claude/rules/data/*.yaml`、`platform-lint-rules.yaml` 或 `containers.yaml`，无需改 lint.py。
+修改规则只需编辑当前 Profile 的 slot 文件（`profiles/{id}/constraints.yaml` / `typesetting.yaml`）并重跑 `python framework/tools/profile_resolver.py`，无需改 lint.py。
 
 ## 容器合法性（wechat 专用）
 
 `--platform wechat` 启用 `rule_container_whitelist`（W1-W4）：
 
-- **W1** 容器 id 必须在 25 个合法白名单内
-- **W2** `variant=X` 必须在 capabilities.json（或回退白名单）对应 kind 的合法列表内
-- **W3** `pros` / `cons` 必须嵌在 `:::: compare` 内（外层冒号数严格多于内层）
+- **W1** 容器 id 必须在当前 Profile 的 `typesetting.containers.whitelist` 内
+- **W2** `variant=X` 必须在 `runtime/typeset-capabilities.json`（或 Profile `typesetting.containers.variants`）对应 kind 的合法列表内
+- **W3** Profile `typesetting.containers.mustNest` 指定的嵌套关系必须满足
 - **W4** 容器开合冒号数必须配对，无孤立闭合行或未闭合容器
 
-wechat 平台允许 25 个合法容器（wechat-typeset 契约白名单）；其他平台的 `:::` 行由 `forbidden_blocks` 规则拦截。
+Profile 声明了 `containers.whitelist` 的平台启用 W1-W4；其他平台（白名单为空）的 `:::` 行由 `forbidden_blocks` 规则拦截。

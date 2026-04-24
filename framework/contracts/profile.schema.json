@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inkflow.local/schemas/profile.schema.json",
+  "title": "InkFlow Profile Manifest",
+  "description": "Machine-readable projection of framework/contracts/profile-protocol.md",
+  "type": "object",
+  "required": ["apiVersion", "id", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "inkflow.profile/v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+      "description": "kebab-case, globally unique within a workspace"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([+-].+)?$",
+      "description": "semver"
+    },
+    "title": { "type": "string" },
+    "author": { "type": "string" },
+    "description": { "type": "string" },
+    "extends": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*[a-z0-9](@[~^]?[0-9.]+([+-].+)?)?$",
+        "description": "id or id@version-range (^1.0.0 / ~0.2.0 / 1.0.0)"
+      }
+    },
+    "appliesTo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "platforms": { "type": "array", "items": { "type": "string" } },
+        "columns":   { "type": "array", "items": { "type": "string" } },
+        "contentTypes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "principles":  { "$ref": "#/$defs/slot" },
+        "voice":       { "$ref": "#/$defs/slot" },
+        "typesetting": { "$ref": "#/$defs/slot" },
+        "constraints": { "$ref": "#/$defs/slot" }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "description": "stage -> list of slot ids to inject",
+      "propertyNames": {
+        "enum": ["planning", "drafting", "polishing", "auditing"]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["principles", "voice", "typesetting", "constraints", "examples"]
+        }
+      }
+    },
+    "examples": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goodRefs": { "type": "array", "items": { "type": "string" } },
+        "badRefs":  { "type": "array", "items": { "type": "string" } },
+        "maxShots": { "type": "integer", "minimum": 0, "maximum": 5 }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "inkflowKernel": { "type": "string" },
+        "typeset": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extractedBy": {
+          "type": "string",
+          "enum": ["manual", "goal", "sample"]
+        },
+        "goal":    { "type": ["object", "null"] },
+        "samples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path":   { "type": "string" },
+              "sha256": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "required": ["file", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["markdown", "yaml"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,422 @@
+slot: constraints
+version: 1.0.0
+
+# 与 base-generic-chinese 合并：base 的通用禁用词 + 下列微信/个人专属
+forbidden:
+  # 正向替换规则（polisher 使用）
+  phraseReplacements:
+    "换言之": "说白了"
+    "需要注意的是": ["我踩过的坑是", "容易忽略的是"]
+    "这充分说明了": "直接陈述判断"
+    "从实验结果来看": "实验跑了 3 遍，结果都是..."
+    "研究表明": ["{研究者}发现", "我们测了一下，发现"]
+    "可以发现": "直接说发现了什么"
+    "通过以上介绍": "删掉"
+    "相信读者已经了解": "删掉"
+    "我们可以看到": "直接描述看到的"
+    "效果非常显著": "给具体数字（快了 40% / 减少 2/3 代码量）"
+
+  # 句式层面禁用（需 LLM 语境判断，lint 不做；auditor 在"AI 味检测"使用）
+  sentencePatterns:
+    opening:
+      - "定义概念：'X 是一种...'"
+      - "宏观背景：'随着 X 的发展...'"
+      - "流水账：'今天我们来聊聊...'"
+      - "宣言式：'X 正在改变...'"
+    middle:
+      - "三段式排比"
+      - "机械 首先-其次-最后"
+      - "代码后'可以看到'"
+    closing:
+      - "空洞总结（综上所述）"
+      - "展望套话（未来，随着）"
+      - "号召式（希望本文对你有所帮助）"
+
+# ============================================================
+# 栏目默认与 KPI（按 brief.content_column 读取相应段）
+# orchestrator / outliner / auditor 都可查
+# ============================================================
+columns:
+  academic:
+    name: "学术前沿"
+    personality: "克制严谨、数据与逻辑层级优先、适合大量留白"
+    defaultOpening: blunt
+    defaultCta: bookmark
+    numberedH2: false
+    suggestedPlatforms: [wechat, zhihu]
+    frequency: "2-3/月"
+    bestTime: "周三/四 20:30-21:30"
+    kpiTargets:
+      completionRate: 0.40
+      bookmarkRate: 0.05
+      shareRate: 0.03
+    titleGuidance: "提炼核心发现，避免照搬论文标题。范例：'{发现} 意味着 {影响}'"
+
+  industry:
+    name: "行业趋势"
+    personality: "简报式紧凑、信息密度高、节奏明快、适合卡片化"
+    defaultOpening: contrast
+    defaultCta: share
+    numberedH2: false
+    suggestedPlatforms: [wechat, xiaohongshu]
+    frequency: "周报+突发"
+    bestTime: "周一 07:30-08:30"
+    kpiTargets:
+      openRate: 0.15
+      shareRate: 0.08
+    titleGuidance: "判断型或冲突型。范例：'X 正在发生，{角色} 需要准备了'"
+
+  tech:
+    name: "技术专题"
+    personality: "工具化、装饰最少、功能性最强"
+    defaultOpening: pain_point
+    defaultCta: bookmark_try
+    numberedH2: true  # H2 手写 "01 ／ 标题" 前缀
+    suggestedPlatforms: [wechat, juejin, zhihu]
+    frequency: "2-4/月"
+    bestTime: "周二/四 21:00-22:00"
+    kpiTargets:
+      completionRate: 0.35
+      bookmarkRate: 0.08
+    titleGuidance: "实用框架型。范例：'X 实战：{解决什么}'"
+
+  story:
+    name: "人物故事"
+    personality: "温暖有机、引言突出、段落宽松、叙事优先"
+    defaultOpening: story
+    defaultCta: comment
+    numberedH2: false
+    suggestedPlatforms: [wechat, xiaohongshu]
+    frequency: "1/月"
+    bestTime: "周六上午/周日晚"
+    kpiTargets:
+      shareRate: 0.10
+      minComments: 15
+    titleGuidance: "第一人称、对话感。范例：'我为什么放弃了 X'"
+
+# 栏目名别名（brief.content_column 兼容）
+columnAliases:
+  personal: story
+  人物故事: story
+  学术前沿: academic
+  行业趋势: industry
+  技术专题: tech
+
+# ============================================================
+# 栏目 × 平台适配矩阵
+# 消费者：outliner (skeleton / atom_selection / length_limit / kpi / tone.rules)
+#        writer (tone.rules / voice)
+#        auditor (tone.rules / kpi)
+#        polisher (tone.rules)
+#        illustrator (figure_spec)
+#        atomizer (atom_selection)
+# ============================================================
+columnPlatforms:
+
+  # ================ academic ================
+  academic:
+    wechat:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "问题背景 [atom: cases + analogies]"
+        - "核心方法 [atom: evidence-data + analogies]"
+        - "关键结果 [atom: evidence-data.hero + comparison]"
+        - "对工业界的启示 [atom: actions]"
+        - "收尾（要点表格 / 阅读原文）"
+      tone:
+        voice: "客观但有判断力"
+        rules:
+          - "禁止照搬论文摘要 → 改为「你的判断 + 数据证据」"
+          - "禁止单独列公式 → 改为「公式 + 一句类比解释」"
+          - "禁止'具有一定前景' → 改为量化判断（调试时间减半）"
+      kpiTargets: { completionRate: 0.40, bookmarkRate: 0.05, shareRate: 0.03 }
+      atomSelection: [claims, evidence-data, analogies, comparison, actions]
+      lengthLimit: 1800
+      figureSpec:
+        aspect: "16:9 或 3:2"
+        formats: [svg, png]
+        benchmarkChartRequired: true
+        coverRequired: true
+        coverAspect: "2.35:1"
+        coverSizePx: [900, 383]
+        coverFormat: png
+    xiaohongshu:
+      skeleton:
+        - "封面金句 [atom: quotes×1]"
+        - "核心发现 [atom: claims.primary + evidence-data.hero]"
+        - "一句话解读 [atom: analogies×1-2]"
+        - "适合谁 [atom: actions×1]"
+        - "话题标签"
+      tone:
+        voice: "学霸干货感、第二人称"
+        rules:
+          - "禁止原始公式 → 改为 emoji 流程图或类比"
+          - "禁止长段落 → 改为短句 + 分行"
+          - "禁止英文缩写无解释 → 缩写(中文展开) 首次出现必标"
+      kpiTargets: { saveRate: 0.10, followRate: 0.02 }
+      atomSelection: [quotes, claims, analogies, actions]
+      lengthLimit: 500
+      figureSpec: { aspect: "3:4 竖版", formats: [png], coverRequired: true, styleHint: "论文封面 + 核心数字大字 + 极简图标" }
+    zhihu:
+      skeleton:
+        - "结论先行 [atom: claims.primary]"
+        - "研究背景 [atom: cases + analogies]"
+        - "方法与结果 [atom: evidence-data + comparison + evidence-code]"
+        - "与已有工作的对比 [atom: comparison]"
+        - "对工业界的启示 + 延伸问题 [atom: actions]"
+      tone:
+        voice: "严谨、可引用、不张扬"
+        rules:
+          - "禁止口语化 → 改为学术中性表述"
+          - "禁止单引来源 → 改为「[作者年份] 表明...」引用格式"
+          - "禁止结论无 benchmark → 改为附 SOTA 对比表"
+      kpiTargets: { upvoteRate: 0.10, collectRate: 0.06 }
+      atomSelection: [claims, evidence-data, evidence-code, cases, analogies, comparison, actions]
+      lengthLimit: 4000
+      figureSpec: { aspect: 任意, formats: [md, png], inlineFormulaOk: true }
+    juejin:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "论文解决的工程问题 [atom: cases]"
+        - "核心算法的工程实现 [atom: evidence-code]"
+        - "和现有库对比 [atom: comparison]"
+        - "复现环境与资源链接 [atom: actions]"
+      tone:
+        voice: "论文 → 工程实现，去学术味"
+        rules:
+          - "禁止原始数学证明 → 改为伪代码 + 参数表"
+          - "禁止无 GitHub 链接 → 必附开源实现"
+          - "禁止无运行环境 → 必附 Python/CUDA 版本"
+      kpiTargets: { likeRate: 0.04, bookmarkRate: 0.08 }
+      atomSelection: [claims, evidence-code, cases, comparison, actions]
+      lengthLimit: 2500
+      figureSpec: { aspect: 任意, formats: [md, png], inlineCodeOk: true }
+
+  # ================ industry ================
+  industry:
+    wechat:
+      skeleton:
+        - "一句话判断 [atom: claims.primary]"
+        - "发生了什么 [atom: evidence-data + cases]"
+        - "为什么重要 [atom: analogies + comparison]"
+        - "谁会受影响 [atom: cases + actions]"
+        - "行动建议 [atom: actions]"
+        - "收尾"
+      tone:
+        voice: "有立场、不中立"
+        rules:
+          - "禁止'面临一定挑战' → 改为「X 将被边缘化，Y 获益」"
+          - "禁止单信号综述 → 改为「三个独立信号指向同一方向」"
+          - "禁止无时间戳数据 → 必标 (YYYY-MM) 时效"
+      kpiTargets: { openRate: 0.15, shareRate: 0.08 }
+      atomSelection: [claims, evidence-data, cases, analogies, comparison, actions]
+      lengthLimit: 1200
+      figureSpec: { aspect: "16:9 或 3:2", formats: [svg, html, png], coverRequired: true, coverAspect: "2.35:1", coverSizePx: [900, 383], coverFormat: png }
+    xiaohongshu:
+      skeleton:
+        - "封面金句 [atom: quotes×1]"
+        - "三个信号 [atom: evidence-data×3]"
+        - "你该怎么做 [atom: actions×2-3]"
+        - "话题标签"
+      tone:
+        voice: "危机感 + 行动感"
+        rules:
+          - "禁止中性 → 改为「X 正在被淘汰」这类有冲击力表述"
+          - "禁止无数字 → 每条信号带一个精确数字"
+          - "禁止结尾平淡 → 改为'快存，不然下次刷不到'之类的保存钩子"
+      kpiTargets: { saveRate: 0.15, followRate: 0.04 }
+      atomSelection: [quotes, evidence-data, claims, actions]
+      lengthLimit: 450
+      figureSpec: { aspect: "3:4 竖版", formats: [png], coverRequired: true, styleHint: "红黄冲突色 + 三栏对比大字" }
+    zhihu:
+      skeleton:
+        - "结论先行 [atom: claims.primary]"
+        - "信号汇总 [atom: evidence-data×3+]"
+        - "影响链分析 [atom: comparison + analogies]"
+        - "不同角色的应对 [atom: cases + actions]"
+        - "反方意见 [atom: pitfalls]"
+        - "总结 + 延伸问题"
+      tone:
+        voice: "分析师风格、辩证"
+        rules:
+          - "禁止单来源结论 → 改为「≥3 来源共振」引用规范"
+          - "禁止无反驳 → 必有至少 1 个反方观点并回应"
+          - "禁止结尾煽情 → 改为延伸问题"
+      kpiTargets: { upvoteRate: 0.09, collectRate: 0.05 }
+      atomSelection: [claims, evidence-data, cases, analogies, pitfalls, comparison, actions]
+      lengthLimit: 3000
+    juejin:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "技术信号 [atom: evidence-data + evidence-code]"
+        - "工程影响 [atom: cases + actions]"
+        - "迁移建议 [atom: actions]"
+        - "延伸阅读"
+      tone:
+        voice: "工程师视角的趋势判断"
+        rules:
+          - "禁止商业语言（市占/融资） → 改为技术指标（性能/DX/生态）"
+          - "禁止无代码示例 → 必附新旧写法对比片段"
+          - "禁止无迁移成本评估 → 必含工作量估算"
+      kpiTargets: { likeRate: 0.05, bookmarkRate: 0.07 }
+      atomSelection: [claims, evidence-code, evidence-data, cases, comparison, actions]
+      lengthLimit: 1800
+      figureSpec: { inlineCodeOk: true, codeComparisonOk: true }
+
+  # ================ tech ================
+  tech:
+    wechat:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "问题定义 [atom: cases + pitfalls×1]"
+        - "方案详解 [atom: evidence-code + evidence-data]"
+        - "性能验证 [atom: evidence-data.hero]"
+        - "避坑要点 [atom: pitfalls×2-3]"
+        - "收尾 [atom: actions]"
+      tone:
+        voice: "实用、直接，像给同事讲经验"
+        rules:
+          - "禁止描述型标题 → 改为动作型（X 实战：解决 Y）"
+          - "禁止连续 3 行无代码的技术段落 → 改为 2 行 + 代码块"
+          - "禁止'可以看到' → 直接描述看到的"
+      kpiTargets: { completionRate: 0.35, bookmarkRate: 0.08 }
+      atomSelection: [claims, evidence-data, evidence-code, cases, pitfalls, comparison, actions]
+      lengthLimit: 1500
+      figureSpec: { aspect: "16:9 或 3:2", formats: [svg, html, png], maxWidthPx: 640, coverRequired: true, coverAspect: "2.35:1", coverSizePx: [900, 383], coverFormat: png }
+    xiaohongshu:
+      skeleton:
+        - "封面金句 [atom: quotes×1]"
+        - "痛点场景 [atom: cases×1]"
+        - "干货清单 [atom: actions + pitfalls 混选 3-5 条]"
+        - "行动 CTA + 话题标签"
+      tone:
+        voice: "干脆、有标签感、第二人称"
+        rules:
+          - "禁止代码块 → 改为截图建议（// 贴截图：配置第 X 行）"
+          - "禁止段落超过 30 字 → 改为 bullet"
+          - "禁止未解释的英文术语 → 改为一句大白话定义"
+          - "禁止结尾煽情 → 改为 3 个话题标签"
+      kpiTargets: { saveRate: 0.12, followRate: 0.03 }
+      atomSelection: [quotes, cases, actions, pitfalls]
+      lengthLimit: 500
+      figureSpec: { aspect: "3:4 竖版", formats: [png], coverRequired: true, styleHint: "色块 + 大字 + 无代码截图" }
+    zhihu:
+      skeleton:
+        - "结论先行 [atom: claims.primary]"
+        - "问题定义 [atom: cases + analogies]"
+        - "方案详解 [atom: evidence-code + evidence-data + comparison]"
+        - "反对意见 [atom: pitfalls]"
+        - "总结 + 延伸问题"
+      tone:
+        voice: "深入、辩证、不卖弄"
+        rules:
+          - "禁止单一视角 → 改为至少 2 种观点对比（必引 comparison）"
+          - "禁止结论无过程 → 改为「结论 + 3 条证据链」"
+          - "禁止结尾'希望对你有所帮助' → 改为延伸问题"
+      kpiTargets: { upvoteRate: 0.08, collectRate: 0.04 }
+      atomSelection: [claims, evidence-data, evidence-code, cases, analogies, pitfalls, comparison, actions]
+      lengthLimit: 3500
+      figureSpec: { aspect: 任意, formats: [md, png], inlineCodeOk: true }
+    juejin:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "背景问题 [atom: cases×1]"
+        - "核心实现 [atom: evidence-code + 分步骤]"
+        - "踩坑与解决 [atom: pitfalls]"
+        - "完整示例 + 仓库链接 [atom: actions]"
+      tone:
+        voice: "工程师对工程师，代码优先"
+        rules:
+          - "禁止无代码结论 → 改为「代码片段 + 1 行注释」"
+          - "禁止空话 → 改为版本号/依赖清单/环境说明"
+          - "禁止结尾煽情 → 改为 GitHub/文档链接"
+      kpiTargets: { likeRate: 0.06, bookmarkRate: 0.10 }
+      atomSelection: [claims, evidence-code, cases, pitfalls, comparison, actions]
+      lengthLimit: 2500
+      figureSpec: { aspect: 任意, formats: [md, png], inlineCodeOk: true, codeScreenshotOk: true }
+
+  # ================ story ================
+  story:
+    wechat:
+      skeleton:
+        - "一句话核心观点 [atom: claims.primary]"
+        - "故事/场景 [atom: cases×1-3]"
+        - "反思与分析 [atom: analogies + pitfalls]"
+        - "我现在怎么做 [atom: actions]"
+        - "给同行的建议 [atom: actions]"
+        - "收尾"
+      tone:
+        voice: "对话感，像给朋友聊天"
+        rules:
+          - "禁止「笔者」 → 改为「我」"
+          - "禁止'某次项目' → 改为「2024 年某个深夜...」具体场景"
+          - "禁止软化观点（'可能有一些局限性'） → 改为「X 不好」"
+      kpiTargets: { shareRate: 0.10, minComments: 15 }
+      atomSelection: [claims, cases, analogies, pitfalls, actions]
+      lengthLimit: 2200
+      figureSpec: { aspect: "16:9", formats: [png], styleHint: "真实照片/场景插画", coverRequired: true, coverAspect: "2.35:1", coverSizePx: [900, 383], coverFormat: png }
+    xiaohongshu:
+      skeleton:
+        - "封面金句 [atom: quotes×1]"
+        - "场景切片 [atom: cases×1]"
+        - "关键转折 [atom: claims.primary]"
+        - "给同类人的话 [atom: actions]"
+        - "话题标签"
+      tone:
+        voice: "日记感、私密感"
+        rules:
+          - "禁止说教 → 改为分享"
+          - "禁止泛泛共鸣 → 必有 1 个具体细节（时间/地点/对话）"
+          - "禁止结尾硬抽金句 → 改为留白 + 提问"
+      kpiTargets: { saveRate: 0.08, engagementRate: 0.15 }
+      atomSelection: [quotes, cases, claims, actions]
+      lengthLimit: 400
+      figureSpec: { aspect: "3:4 竖版", formats: [png], coverRequired: true, styleHint: "真实感照片 / 手写字 / 暖色调" }
+    zhihu:
+      skeleton:
+        - "结论先行 [atom: claims.primary]"
+        - "故事展开 [atom: cases×2-3]"
+        - "深层分析 [atom: analogies + pitfalls]"
+        - "我的做法与反思 [atom: actions]"
+        - "给读者的开放式问题"
+      tone:
+        voice: "真诚、有反思深度"
+        rules:
+          - "禁止鸡汤 → 改为具体场景 + 可复现行为"
+          - "禁止单角度 → 补一段'但反过来想'的自我质疑"
+          - "禁止结尾'希望有所帮助' → 改为真诚提问"
+      kpiTargets: { upvoteRate: 0.12, commentRate: 0.10 }
+      atomSelection: [claims, cases, analogies, pitfalls, actions]
+      lengthLimit: 3500
+      figureSpec: { formats: [png, md] }
+    juejin:
+      skeleton:
+        - "一句话结论 [atom: claims.primary]"
+        - "背景 [atom: cases×1]"
+        - "经过 + 关键决策 [atom: cases + pitfalls]"
+        - "复盘 [atom: actions]"
+        - "给同行的 checklist"
+      tone:
+        voice: "复盘感、技术落点"
+        rules:
+          - "禁止纯情感抒发 → 必有 1 个技术/流程层面的改进"
+          - "禁止不具名描述 → 必有技术栈/规模/时长具体信息"
+          - "禁止结尾煽情 → 改为 checklist 或流程图"
+      kpiTargets: { likeRate: 0.05, bookmarkRate: 0.08 }
+      atomSelection: [claims, cases, pitfalls, actions]
+      lengthLimit: 2000
+
+# ============================================================
+# 总量控制
+# ============================================================
+contentMix:
+  monthlyTarget: "7-10"
+  maxPerDay: 1
+
+# 字数区间（覆盖 base 默认 · 微信中长文）
+length:
+  target: 2800
+  min: 2200
+  max: 3600
+  hardFactor: 1.2
+  softFactor: 1.1

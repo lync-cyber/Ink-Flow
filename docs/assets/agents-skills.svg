@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img" aria-label="InkFlow Agent 与 Skill 架构">
+  <defs>
+    <style>
+      .bg        { fill: #FFFFFF; }
+      .title     { font: 600 15px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1F2328; }
+      .subtitle  { font: 12px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", sans-serif; fill: #656D76; }
+      .col-h     { font: 600 13px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", sans-serif; fill: #1F2328; letter-spacing: 0.04em; }
+      .col-tag   { font: 600 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #0969DA; letter-spacing: 0.1em; }
+      .grp       { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #656D76; letter-spacing: 0.06em; }
+      .agent     { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #1F2328; }
+      .desc      { font: 11px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", sans-serif; fill: #1F2328; }
+      .mono      { font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #1F2328; }
+      .muted     { font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #656D76; }
+      .box       { fill: #FFFFFF; stroke: #D0D7DE; stroke-width: 1; }
+      .box-grp   { fill: #F6F8FA; stroke: #D0D7DE; stroke-width: 1; }
+      .divider   { stroke: #D0D7DE; stroke-width: 1; fill: none; }
+      .arrow     { stroke: #8C959F; stroke-width: 1; fill: none; }
+      .arrowhead { fill: #8C959F; }
+    </style>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="arrowhead"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="960" height="620"/>
+
+  <text x="24" y="32" class="title">Agent 与 Skill 架构</text>
+  <text x="24" y="50" class="subtitle">Agent 负责在独立上下文里执行一步生产；Skill 负责在主会话识别意图、组织流程、发布触发词。</text>
+
+  <!-- ───── Agent 列（左） ───── -->
+  <rect x="24" y="76" width="470" height="528" rx="8" class="box"/>
+  <text x="44" y="102" class="col-tag">AGENTS · 独立上下文子进程</text>
+  <text x="44" y="122" class="col-h">8 个 subagent · 按 pipeline 顺序排列</text>
+
+  <!-- orchestrator -->
+  <text x="44" y="158" class="grp">L3 · 编排</text>
+  <rect x="44" y="168" width="430" height="48" rx="6" class="box-grp"/>
+  <text x="58" y="188" class="agent">orchestrator</text>
+  <text x="58" y="206" class="desc">管理全生命周期 · 唯一能调用 Agent tool · 三检查点求确认</text>
+
+  <!-- research -->
+  <text x="44" y="244" class="grp">L1 · 内容生产</text>
+
+  <rect x="44" y="254" width="430" height="42" rx="6" class="box"/>
+  <text x="58" y="272" class="agent">researcher</text>
+  <text x="58" y="288" class="desc">针对 brief 做定向调研，收集事实 / 代码 / 对比材料</text>
+
+  <rect x="44" y="306" width="430" height="42" rx="6" class="box"/>
+  <text x="58" y="324" class="agent">atomizer</text>
+  <text x="58" y="340" class="desc">拆 research-memo 为原子池（claims/evidence/cases/…）</text>
+
+  <rect x="44" y="358" width="430" height="42" rx="6" class="box"/>
+  <text x="58" y="376" class="agent">outliner</text>
+  <text x="58" y="392" class="desc">生成结构化大纲 · 每 section 含论点 / 字数 / 视觉断点</text>
+
+  <rect x="44" y="410" width="210" height="42" rx="6" class="box"/>
+  <text x="58" y="428" class="agent">writer</text>
+  <text x="58" y="444" class="desc">逐 section 写正文 · 严格风格约束</text>
+
+  <rect x="264" y="410" width="210" height="42" rx="6" class="box"/>
+  <text x="278" y="428" class="agent">illustrator</text>
+  <text x="278" y="444" class="desc">生成 SVG / HTML / 图片配图</text>
+
+  <!-- review / publish -->
+  <text x="44" y="480" class="grp">L1 · 审改发布</text>
+
+  <rect x="44" y="490" width="210" height="42" rx="6" class="box"/>
+  <text x="58" y="508" class="agent">auditor</text>
+  <text x="58" y="524" class="desc">只审不改 · 输出审校报告</text>
+
+  <rect x="264" y="490" width="210" height="42" rx="6" class="box"/>
+  <text x="278" y="508" class="agent">polisher</text>
+  <text x="278" y="524" class="desc">按审校报告逐项修复 · 去 AI 味</text>
+
+  <rect x="44" y="542" width="430" height="42" rx="6" class="box"/>
+  <text x="58" y="560" class="agent">publisher</text>
+  <text x="58" y="576" class="desc">Markdown 标准化 · 按平台导出 · 生成运营元数据</text>
+
+  <!-- ───── Skill 列（右） ───── -->
+  <rect x="510" y="76" width="426" height="528" rx="8" class="box"/>
+  <text x="530" y="102" class="col-tag">SKILLS · 主会话意图入口</text>
+  <text x="530" y="122" class="col-h">12 个 skill · 按用途分 5 组</text>
+
+  <!-- pipeline -->
+  <text x="530" y="158" class="grp">写作流程</text>
+
+  <rect x="530" y="168" width="390" height="38" rx="6" class="box-grp"/>
+  <text x="544" y="186" class="mono">pipeline-orchestrating</text>
+  <text x="544" y="200" class="muted">写文章总入口 · 创建 brief · 推进阶段 · 重跑某段</text>
+
+  <rect x="530" y="212" width="190" height="38" rx="6" class="box"/>
+  <text x="544" y="230" class="mono">title-crafting</text>
+  <text x="544" y="244" class="muted">outline 后自动调用</text>
+
+  <rect x="730" y="212" width="190" height="38" rx="6" class="box"/>
+  <text x="744" y="230" class="mono">quality-linting</text>
+  <text x="744" y="244" class="muted">lint.py · publisher 调用</text>
+
+  <!-- profile -->
+  <text x="530" y="276" class="grp">Profile 管理</text>
+
+  <rect x="530" y="286" width="190" height="38" rx="6" class="box-grp"/>
+  <text x="544" y="304" class="mono">profile-extracting</text>
+  <text x="544" y="318" class="muted">goal / sample 两种模式</text>
+
+  <rect x="730" y="286" width="190" height="38" rx="6" class="box-grp"/>
+  <text x="744" y="304" class="mono">profile-injecting</text>
+  <text x="744" y="318" class="muted">full / overlay / stack</text>
+
+  <!-- workspace -->
+  <text x="530" y="350" class="grp">工作区</text>
+
+  <rect x="530" y="360" width="390" height="38" rx="6" class="box"/>
+  <text x="544" y="378" class="mono">workspace-init</text>
+  <text x="544" y="392" class="muted">新建内容工作区 · 升级框架版本</text>
+
+  <!-- planning / publishing ops -->
+  <text x="530" y="420" class="grp">排期与发布</text>
+
+  <rect x="530" y="430" width="190" height="38" rx="6" class="box"/>
+  <text x="544" y="448" class="mono">content-planning</text>
+  <text x="544" y="462" class="muted">栏目频率 · 内容日历</text>
+
+  <rect x="730" y="430" width="190" height="38" rx="6" class="box"/>
+  <text x="744" y="448" class="mono">publish-preparing</text>
+  <text x="744" y="462" class="muted">发布前后检查清单</text>
+
+  <!-- analytics / retro -->
+  <text x="530" y="494" class="grp">数据与复盘</text>
+
+  <rect x="530" y="504" width="190" height="38" rx="6" class="box"/>
+  <text x="544" y="522" class="mono">metrics-tracking</text>
+  <text x="544" y="536" class="muted">录入阅读 / 分享 / 评论</text>
+
+  <rect x="730" y="504" width="190" height="38" rx="6" class="box"/>
+  <text x="744" y="522" class="mono">performance-benchmarking</text>
+  <text x="744" y="536" class="muted">对照 KPI · 多维交叉分析</text>
+
+  <rect x="530" y="548" width="390" height="38" rx="6" class="box"/>
+  <text x="544" y="566" class="mono">creation-reviewing</text>
+  <text x="544" y="580" class="muted">对比初稿与终稿 · 提炼可复用规则</text>
+</svg>

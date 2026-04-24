@@ -1,0 +1,14 @@
+apiVersion: inkflow.profile/v1
+activeProfile: lync-wechat-tech
+resolved:
+- id: base-generic-chinese
+  version: 1.0.0
+  path: profiles/base-generic-chinese
+- id: platform-wechat
+  version: 0.2.0
+  path: profiles/platform-wechat
+- id: lync-wechat-tech
+  version: 1.0.0
+  path: profiles/lync-wechat-tech
+resolvedAt: '2026-04-24T03:52:57.421222+00:00'
+lockfileVersion: 1

@@ -28,7 +28,7 @@ AskUserQuestion:
 
 1. `content/articles/{slug}/intermediate/01-brief.md` — 栏目、内容类型、CTA 类型
 2. `content/articles/{slug}/export/08-wechat-publish.md` — 文章成品
-3. `framework/config/columns.yaml` — 栏目 best_time、kpi_targets
+3. `runtime/profile-resolved/constraints.yaml` — 栏目 `columns.{col}.bestTime`、`kpiTargets`
 4. Claude Code memory — 历史习得的最佳发布时间（若有）
 
 ## 发布前清单
@@ -37,7 +37,7 @@ AskUserQuestion:
 
 ### 通用项
 
-- [ ] **发布时间**: 推荐 {best_time}（来自 columns.yaml 或 orchestrator memory）
+- [ ] **发布时间**: 推荐 {bestTime}（来自 Profile constraints.columns 或 orchestrator memory）
 - [ ] **标题终审**: 确认标题 ≤15 字、有观点/信息增量
 - [ ] **摘要检查**: 确认摘要不超过 `framework/config/inkflow.yaml` 的 `exports.summary.word_limit`，含核心关键词
 - [ ] **封面检查**: 确认封面图已准备

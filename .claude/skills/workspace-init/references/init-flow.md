@@ -29,11 +29,12 @@ AskUserQuestion:
 
 **本地来源**（当前在 framework 目录）：
 ```bash
-mkdir -p {target_dir}/config
-cp -r .claude/agents .claude/skills .claude/rules tools {target_dir}/
-cp .claude/settings.json {target_dir}/.claude/settings.json
-cp framework/config/inkflow.yaml framework/config/columns.yaml framework/config/artifact-layout.yaml {target_dir}/config/
-cp -r framework/contracts {target_dir}/
+mkdir -p {target_dir}/framework/config {target_dir}/framework/contracts
+cp -r .claude/agents .claude/skills .claude/rules .claude/settings.json {target_dir}/.claude/
+cp -r framework/tools {target_dir}/framework/
+cp framework/config/inkflow.yaml framework/config/artifact-layout.yaml framework/config/platform-lint-rules.yaml {target_dir}/framework/config/
+cp -r framework/contracts/. {target_dir}/framework/contracts/
+cp -r profiles {target_dir}/
 cp CLAUDE.md {target_dir}/CLAUDE.md
 ```
 
@@ -48,27 +49,23 @@ bash framework/tools/bootstrap.sh {target_dir} {repo_url}
 
 ```
 content/articles/                     ← .gitkeep
-content/retrospectives/                        ← runs/.gitkeep + study-reports/.gitkeep
-content/references/                   ← content/articles/（抓取的外部文章落地处）
-content/styles/default/               ← style-profile.md 模板（首次 style-learning profile 模式覆盖）
-runtime/pipeline-states/    ← .gitkeep
+content/retrospectives/               ← runs/.gitkeep
+content/references/                   ← articles/ 抓取的外部文章落地处
+profiles/                             ← Profile 包目录（已包含 base-generic-chinese / platform-wechat）
+runtime/pipeline-states/              ← .gitkeep
+runtime/profile-resolved/             ← 由 profile_resolver.py 首次绑定后生成
 ```
 
-`content/styles/default/style-profile.md` 的初始模板内容：
+### 初始 Profile 绑定
 
-```markdown
-# 风格 DNA: default
+初始化完成后引导用户绑定默认 Profile：
 
-> 这是占位档案。运行"分析风格"或 style-learning profile 模式后会被填充。
-
-## 句式模式
-（待生成）
-
-## 段落结构
-（待生成）
-
-## 视觉节奏
-（待生成）
+```
+建议执行：
+  /profile use lync-wechat-tech          # 或任一 profiles/ 下的 id
+或从零起一套：
+  /profile extract goal                   # 目标驱动
+  /profile extract sample <参考文章>     # 样本驱动
 ```
 
 ## Step 4 — 生成内容模式 framework/config/inkflow.yaml
@@ -109,7 +106,7 @@ Thumbs.db
 *.log
 ```
 
-关键区别：**不忽略** `content/articles/`、`content/styles/*/style-profile.md`、`content/retrospectives/ops-metrics.csv`。
+关键区别：**不忽略** `content/articles/`、`profiles/`、`content/retrospectives/ops-metrics.csv`。
 
 ## Step 6 — 初始化 git 仓库
 

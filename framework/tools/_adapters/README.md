@@ -81,7 +81,7 @@ typeset_adapter:          # 非 pipeline 阶段；仅描述与 wechat-typeset �
 
 由 `python framework/tools/_adapters/cli.py capabilities --cache` 写入。
 被 `lint.py` 的 `rule_container_whitelist` 读取，用作 `variant=X` 合法性白名单。
-缺失时 lint.py 降级到 `.claude/rules/domains/wechat-article/containers.yaml` 的 `variant_whitelist`。
+缺失时 lint.py 降级到 Profile 合成产物 `runtime/profile-resolved/typesetting.yaml.containers.variants`。
 
 ## Adapter 失败降级矩阵
 

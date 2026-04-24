@@ -137,7 +137,7 @@ Brief 阶段确定后一次写入，后续阶段只读。
     {
       "type": "forbidden_patterns",
       "detail": "发现禁用句式「随着 X 的发展」（第 12 行）",
-      "source": ".claude/rules/domains/wechat-article/redline.md"
+      "source": "runtime/profile-resolved/constraints.yaml#/forbidden/patterns"
     }
   ]
 }

@@ -32,7 +32,9 @@ AskUserQuestion:
 
 ## 不破坏的承诺
 
-- 永不覆盖用户内容层文件（content/articles/、content/styles/*/style-profile.md、
+- 永不覆盖用户内容层文件（content/articles/、profiles/{user-defined}/、
   content/retrospectives/ops-metrics.csv 等）
+- **profiles/ 处理**：`profiles/base-generic-chinese/` 与 `profiles/platform-wechat/` 视为框架包，升级命令可覆盖；
+  用户自建的 Profile（如 `profiles/lync-wechat-tech/`、Extractor 产出）永不覆盖
 - 永不动 .claude/settings.local.json
 - runtime/pipeline-states/ 仅同步 .gitkeep 占位

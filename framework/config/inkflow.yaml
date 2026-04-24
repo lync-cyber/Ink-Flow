@@ -20,7 +20,6 @@ model_allocation:
   auditor: opus
   polisher: opus        # 在 audit 基础上做高质量改写，需要强判断
   publisher: sonnet
-  style-analyzer: sonnet  # 由 style-learning skill 调用；风格 DNA 提取，不在 pipeline 主链
 
 # Brief 默认字段
 defaults:
@@ -31,7 +30,6 @@ defaults:
   no_figures: false
   skip_seo: false
   cta_type: follow
-  style_profile: default
   opening_style: auto
   target_platforms: [wechat]       # 多平台分发：brief 必填；默认仅 wechat
   primary_platform: wechat         # 决定 research 深度基准；必须 ∈ target_platforms
@@ -112,10 +110,9 @@ stages:
     section_output: "content/articles/{slug}/intermediate/04a-draft/{platform}/section-{N}.md"
     validation:
       section_tolerance: 0.20
-      merged_word_count_from: "columns.{column}.platforms.{platform}.length_limit"
+      merged_word_count_from: "runtime/profile-resolved/constraints.yaml#/columnPlatforms/{column}/{platform}/lengthLimit"
       forbidden_patterns: ["TODO"]
-      forbidden_phrases_from: .claude/rules/data/forbidden-phrases.yaml
-      platform_forbidden_from: "columns.{column}.platforms.{platform}.tone.rules"
+      forbidden_phrases_from: runtime/profile-resolved/constraints.yaml#/forbidden/phrases
 
   - name: figures
     agent: illustrator
@@ -156,16 +153,14 @@ stages:
     validation:
       required_sections: ["润色结果", "变更溯源表", "润色变更摘要"]
       forbidden_patterns: ["TODO", "待确认"]
-      forbidden_phrases_from: .claude/rules/data/forbidden-phrases.yaml
+      forbidden_phrases_from: runtime/profile-resolved/constraints.yaml#/forbidden/phrases
       platform_checks:
         - type: css_safety
-          source: .claude/rules/data/platform-limits.yaml
-          only_if: "platform == 'wechat'"
+          source: runtime/profile-resolved/typesetting.yaml#/cssSafety
         - type: heading_level
-          source: .claude/rules/data/platform-limits.yaml
+          source: runtime/profile-resolved/typesetting.yaml#/heading
         - type: image_width
-          source: .claude/rules/data/platform-limits.yaml
-          only_if: "platform == 'wechat'"
+          source: runtime/profile-resolved/typesetting.yaml#/imageWidth
 
   - name: publish
     agent: publisher
@@ -224,13 +219,14 @@ registry:
 # ============================================================
 paths:
   articles_root: content/articles
-  styles_root: content/styles
+  profiles_root: profiles                           # Profile pack 根目录
+  profile_resolved_dir: runtime/profile-resolved    # 合成产物目录（agent 读的唯一真源）
+  profile_lock: runtime/profile-lock.yaml           # 当前工作区绑定的 Profile
   references_dir: content/references
   retrospectives_dir: content/retrospectives
   state_dir: runtime/pipeline-states
-  style_profile: content/styles/default/style-profile.md
-  columns_config: framework/config/columns.yaml
-  writing_contract: framework/contracts/writing-contract.md
+  writing_kernel: framework/contracts/writing-kernel.md    # 平台无关写作元契约
+  profile_protocol: framework/contracts/profile-protocol.md
   artifact_layout: framework/config/artifact-layout.yaml
 
 # ============================================================
@@ -244,7 +240,7 @@ paths:
 #   纯浏览器工具。Ink-Flow 通过 framework/tools/_adapters/ 读对方
 #   `dist/api/capabilities.json` 做"能力对账 + variant 白名单"，不做主题决策。
 #
-#   writer 按 framework/contracts/writing-contract.md 直接写 ::: 容器，
+#   writer 按当前绑定 Profile 的 typesetting.containers.whitelist 直接写 ::: 容器，
 #   publisher 直接交付 08-wechat-publish.md，
 #   主题 / variant / 组件切换由用户在本地编辑器里运行时完成。
 # ============================================================

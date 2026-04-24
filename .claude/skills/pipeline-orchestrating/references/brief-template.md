@@ -19,8 +19,7 @@ skip_seo: false
 
 # === 高级参数（通常使用默认值，按需覆盖） ===
 # opening_style: auto               # pain_point | story | contrast | question | blunt | auto
-# style_profile: default            # 对应 content/styles/{style_profile}/ 目录
-# tone_override: ""                 # 空=使用 style-profile 默认值
+# profile_overlay: ""               # 单篇叠加某 Profile（写 content/articles/{slug}/.profile/overlay.yaml）
 # series_name: ""                   # 系列名称（空=独立文章）
 # series_index: 0
 # cta_type: follow                  # follow | comment | share | mini_program | none

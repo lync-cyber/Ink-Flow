@@ -7,7 +7,9 @@ dependencies:
   config:
     - framework/config/inkflow.yaml
     - framework/config/artifact-layout.yaml
-    - framework/config/columns.yaml
+  resolved:
+    - runtime/profile-resolved/constraints.yaml  # 栏目元数据（columns / kpiTargets / defaultOpening）
+    - runtime/profile-resolved/manifest.json     # Profile 层级溯源
   modules:
     - .claude/agents/orchestrator/stages.md
     - .claude/agents/orchestrator/fanout.md        # per_platform 派发与收敛
@@ -28,8 +30,11 @@ dependencies:
 启动前读取：
 - `framework/config/inkflow.yaml` — 项目配置 + stages 契约（单一事实来源）
 - `framework/config/artifact-layout.yaml` — 文章产物路径模板
-- `framework/config/columns.yaml` — 栏目元数据
+- `runtime/profile-resolved/constraints.yaml` — 栏目元数据（`columns.{column}`：kpiTargets / defaultOpening / defaultCta / numberedH2 / titleGuidance）
+- `runtime/profile-resolved/manifest.json` — 当前绑定 Profile 层级（用于交互时回显"本次使用 Profile X@v"）
 - `runtime/pipeline-states/{slug}.json`（若存在）— 恢复点
+
+若 `runtime/profile-resolved/` 不存在 → 先运行 `python framework/tools/profile_resolver.py`；若 `runtime/profile-lock.yaml` 无 activeProfile → 提示用户 `/profile use <id>` 或 `/profile extract` 后再启动 pipeline。
 
 子模块按需加载：`.claude/agents/orchestrator/{brief,stages,fanout,checkpoints,recovery}.md`。
 

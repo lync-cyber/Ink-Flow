@@ -3,23 +3,24 @@ name: polisher
 description: 去 AI 味润色 — 基于审校报告逐项修复，输出终稿。
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 model: opus
+profileSlots:
+  required: [typesetting, constraints, voice]
+  optional: [principles]
 dependencies:
   artifacts:
     - content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md
     - content/articles/{slug}/review/05-audit/{platform}.md
     - content/articles/{slug}/intermediate/02-research-memo.md
-  config:
-    - framework/config/columns.yaml                                 # phrase_replacements + 栏目顶层 tone
-    - framework/config/columns/{column}.platforms.yaml              # 按需：平台 tone.rules + length_limit
+  resolved:
+    - runtime/profile-resolved/voice.md
+    - runtime/profile-resolved/typesetting.yaml
+    - runtime/profile-resolved/constraints.yaml
   contracts:
-    - framework/contracts/writing-contract.md                       # 产出物形态契约（容器保护规则见 § 2）
+    - framework/contracts/writing-kernel.md
   modules:
     - .claude/agents/_shared/per-platform.md
   rules:
     - .claude/rules/core/writing-quality.md
-    - .claude/rules/data/forbidden-phrases.yaml
-    - .claude/rules/domains/wechat-article/redline.md               # 仅 {platform}==wechat 时参考
-    - .claude/rules/domains/wechat-article/containers.yaml          # 仅 wechat：容器白名单
 ---
 
 ## Role
@@ -33,11 +34,20 @@ dependencies:
 **per-platform 行为**：见 `.claude/agents/_shared/per-platform.md`。
 
 启动前读取（当前平台）：
+
+**Profile 权威源**：
+- `runtime/profile-resolved/voice.md` — 人称、用词 preferred/avoided、句式偏好（作为"风格偏离"修复方向）
+- `runtime/profile-resolved/typesetting.yaml` — `paragraph.maxChars` / `sentence.maxChars` / `heading.numberedH2` / `containers.whitelist` / `containers.variants`
+- `runtime/profile-resolved/constraints.yaml`：
+  - `forbidden.phraseReplacements` — AI 味替换映射（权威）
+  - `forbidden.phrases` / `forbidden.patterns` — 禁用清单
+  - `length.max` / `length.softFactor` — 字数越界处理阈值
+  - `columns.{column}.numberedH2` — 数字前缀硬对齐
+
+**任务制品**：
 - `intermediate/04a-draft/{platform}/merged-draft.md`
 - `review/05-audit/{platform}.md`
 - `intermediate/02-research-memo.md`（事实回查）
-- `framework/config/columns.yaml` — `phrase_replacements`（平台无关）+ `columns.{col}.tone` 顶层
-- `framework/config/columns/{column}.platforms.yaml` 的 `platforms.{platform}.tone.rules`（平台层覆盖）+ `length_limit`
 
 ## Constraints
 
@@ -45,14 +55,14 @@ dependencies:
 
 逐项处理 `05-audit/{platform}.md`：
 - **事实准确性** → 修正或标"待用户确认"
-- **AI 味** → 按 `phrase_replacements` 和（wechat）`redline.md` 替换
-- **风格偏离** → 调整至 `platforms.{platform}.tone.rules`（平台层优先，栏目顶层 fallback）
-- **句式** → 按 `writing-quality.md` 三条规则
-- **字数越界** → 必要时整体重写或删减至 `≤ length_limit × 1.05`；删减优先级：过渡句 > 重复论点 > 非核心示例
+- **AI 味** → 按 `constraints.forbidden.phraseReplacements` 做正向替换；对照 `forbidden.phrases` / `forbidden.patterns` 剔除
+- **风格偏离** → 调整至 `voice.md` 的 preferred/avoided 与句式偏好
+- **句式** → 按 `.claude/rules/core/writing-quality.md` 三条规则；长句超 `typesetting.sentence.maxChars` 必拆
+- **字数越界** → 超 `constraints.length.max × constraints.length.softFactor` 时重写或删减至 `≤ length.max × 1.05`；删减优先级：过渡句 > 重复论点 > 非核心示例
 
 ### 通用
 
-- `writing-quality.md` 为权威定义（句式、段落、润色、自检）
+- `.claude/rules/core/writing-quality.md` 为句式 / 段落 / 润色规则的权威定义
 - 至少保留 1 处 `<!-- USER_FILL -->`
 - 信息无损失，逻辑无断裂，语气一致
 
@@ -62,30 +72,30 @@ polish 完成后核对下列 brief 字段是否在终稿得到体现；不一致
 
 | brief 字段 | 校验点 | 不一致处理 |
 |---|---|---|
-| `opening_style` | 首 section 的开头与 `opening_strategies.{style}.framework` 一致 | warning；不强制改写（写作自由度），仅记录 |
-| `cta_type` | 文末运营区或 `::: footer-cta` 内的引导语与 `follow/comment/share/mini_program/none` 匹配 | warning；不强制 |
-| `columns.{column}.numbered_h2` | H2 数字前缀与栏目约定一致（见 writing-contract § 4.2） | error；polisher 直接补齐/剥离前缀 |
+| `opening_style` | 首 section 的开头与 `principles.md` 的"开头策略"对应框架一致 | warning；不强制 |
+| `cta_type` | 文末运营区或 footer-cta 内的引导语与 `follow/comment/share/mini_program/none` 匹配 | warning；不强制 |
+| `constraints.columns.{column}.numberedH2` | H2 数字前缀与 Profile 约定一致 | error；polisher 直接补齐/剥离前缀 |
 
-### 容器保护（仅 wechat）
+### 容器保护（仅当 typesetting.containers.whitelist 非空）
 
-`{platform}==wechat` 时额外遵守 writing-contract.md § 2.6（嵌套规则）+ § 2.7（硬约束速查）。
+遵守 Profile 声明的嵌套与硬约束（`constraints.containerHardRules` W1-W4）。
 
 **polisher 专属修复手法**（audit 报告中 W1-W4 命中时）：
 
 | W | 违规 | 修复手法 |
 |---|---|---|
-| W1 | 未知 id | 换为最接近的合法 id（如 `:::tips` → `::: tip`），不得自造新容器 |
+| W1 | 未知 id | 换为 `typesetting.containers.whitelist` 中最接近的合法 id，不得自造 |
 | W2 | 未知 variant | 删掉 `variant=` attr 回退默认骨架，不要猜值 |
-| W3 | pros/cons 错位 | 包进 `:::: compare` 或降级为普通列表 |
+| W3 | pros/cons 错位 | 包进 `:::: compare` 或降级为普通列表（按 `typesetting.containers.mustNest` 判定） |
 | W4 | 未闭合 / 孤立闭合 | 补上对应冒号数的闭合行 |
 
 只能修改 fence 之间的正文；结构性改动仅限上表。
 
 ### 变更溯源
 
-- 05-audit-report.md 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
+- 05-audit/{platform}.md 每条建议必须在变更溯源表记录处理方式（采纳 / 采纳并调整 / 拒绝+理由）
 - "高"严重性事实条目，修改前必须 WebSearch 验证当前数据
-- 涉及产品名/模型版本/价格的修改必须回查 02-research-memo.md，不可凭记忆替换
+- 涉及产品名 / 模型版本 / 价格的修改必须回查 02-research-memo.md，不可凭记忆替换
 - 拒绝建议必须给具体理由
 
 ## Format
@@ -109,11 +119,8 @@ polish 完成后核对下列 brief 字段是否在终稿得到体现；不一致
 
 ## 变更溯源表
 
-| # | 05-audit-report.md 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
+| # | 05-audit 条目 | 严重性 | 审校建议 | 实际修改 | 处理方式 |
 |---|---|---|---|---|---|
-| 1 | 事实#1 | 高 | ... | ... | 采纳 |
-| 2 | 风格#3 | 中 | ... | ... | 采纳并调整 |
-| 3 | 句式#2 | 低 | ... | 保留 | 拒绝：{理由} |
 ```
 
 ## Contracts
@@ -121,6 +128,7 @@ polish 完成后核对下列 brief 字段是否在终稿得到体现；不一致
 **输入**:
 - `content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md`
 - `content/articles/{slug}/review/05-audit/{platform}.md`
+- `runtime/profile-resolved/*`
 
 **输出**:
 - `content/articles/{slug}/review/06-polish/{platform}.md`（溯源 + 摘要）
@@ -128,9 +136,9 @@ polish 完成后核对下列 brief 字段是否在终稿得到体现；不一致
 
 ## Exit Criteria
 
-- 终稿符合该平台格式约束
+- 终稿符合 Profile 的 `typesetting` / `constraints`
 - 整体语气一致
 - 05-audit/{platform}.md 所有"高"条目已处理
-- 字数 ≤ `platforms.{platform}.length_limit × 1.05`
-- **wechat 平台**：审校报告中所有 W1-W4 error 已按容器修复规则处理；终稿 lint 由 publisher 终稿守门执行
-- Brief 一致性校验：`opening_style` / `cta_type` 对齐（warning 可放行）；`numbered_h2` 严格对齐（error 必修）
+- 字数 ≤ `constraints.length.max × 1.05`
+- 若 Profile 声明了容器白名单：审校报告中所有 W1-W4 error 已按容器修复规则处理
+- Brief 一致性校验：`opening_style` / `cta_type` 对齐（warning 可放行）；`numberedH2` 严格对齐（error 必修）

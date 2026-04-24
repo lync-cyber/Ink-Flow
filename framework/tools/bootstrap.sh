@@ -99,14 +99,15 @@ FRAMEWORK_DIRS=(
     ".claude/scripts"
     "framework/tools"
     "framework/contracts"
-    "framework/config/columns"
+    "profiles"
 )
 FRAMEWORK_FILES=(
     "framework/config/inkflow.yaml"
-    "framework/config/columns.yaml"
     "framework/config/artifact-layout.yaml"
     "framework/config/platform-lint-rules.yaml"
-    "framework/contracts/writing-contract.md"
+    "framework/contracts/writing-kernel.md"
+    "framework/contracts/profile-protocol.md"
+    "framework/contracts/profile.schema.json"
     "framework/contracts/wechat-typeset.schema.json"
     ".claude/settings.json"
     "CLAUDE.md"

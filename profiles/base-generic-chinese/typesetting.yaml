@@ -1,0 +1,37 @@
+slot: typesetting
+version: 1.0.0
+schemaVersion: "1.0"
+
+heading:
+  allowed: [2, 3, 4]
+  h1Uniqueness: true
+  numberedH2:
+    enabled: false
+    format: "{NN} ／ {title}"
+
+paragraph:
+  maxChars: 300
+  noFirstLineIndent: true
+
+sentence:
+  maxChars: 40
+  splitAt: ["但是", "因此", "所以", "，"]
+
+emphasis:
+  perParagraphMax: 2
+  allowed: [bold, italic]
+
+separators:
+  betweenSections: "---"
+
+inlineExtensions:
+  allowed: []
+
+emoji:
+  policy: sparing
+  exceptions: []
+
+imageWidth: 1080
+
+reference:
+  platformContract: framework/contracts/writing-kernel.md

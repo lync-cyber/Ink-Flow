@@ -4,14 +4,17 @@
 用法: python .claude/skills/quality-linting/scripts/lint.py <markdown-file> \
            [--column <栏目名>] [--platform <wechat|xiaohongshu|zhihu|juejin>] [--config <config.yaml>]
 
-数据来源：
-- .claude/skills/quality-linting/scripts/config.yaml       规则开关与严重级别（基础）
-- .claude/rules/data/*.yaml           禁用词、CSS 安全、排版阈值（单一事实来源）
-- framework/config/platform-lint-rules.yaml               平台差异规则（渐进披露）
-- framework/config/columns/{column}.platforms.yaml         length_limit 硬上限
+数据来源（全部来自 Profile 合成产物）：
+- runtime/profile-resolved/typesetting.yaml   段落/句子/标题/容器白名单/CSS 安全/SVG 约束
+- runtime/profile-resolved/constraints.yaml   禁用词 / 长度区间 / 栏目元数据
+- framework/config/platform-lint-rules.yaml   规则开关与严重级别（平台差异）
+- .claude/skills/quality-linting/scripts/config.yaml  lint 内部默认（可被 Profile 覆盖）
 
-平台规则合并顺序（后者覆盖前者）：
-  DEFAULT_CONFIG → .claude/rules/data/*.yaml → config.yaml → platform-lint-rules.{platform}
+规则合并顺序（后者覆盖前者）：
+  DEFAULT_CONFIG → config.yaml → profile-resolved/* → platform-lint-rules.{platform}
+
+前置：须先绑定 Profile（`/profile use <id>`）并执行 `python framework/tools/profile_resolver.py`
+生成 resolved 快照。快照缺失时 lint 报 error 中止。
 
 输出: JSON (stdout), 人类可读摘要 (stderr)
 退出码: 0=通过, 1=有 error, 2=仅 warning
@@ -33,7 +36,7 @@ except ImportError:
 # 常量
 # ============================================================
 
-# GFM Alert 合法类型清单（权威来源：framework/contracts/writing-contract.md § 3）
+# GFM Alert 合法类型清单（权威来源：framework/contracts/writing-kernel.md § 1）
 # 修改本清单前务必同步契约文件与 platform-lint-rules.yaml 的 allowed_types 字段
 GFM_ALERT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"]
 
@@ -41,57 +44,29 @@ GFM_ALERT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"]
 # 配置加载
 # ============================================================
 
+# lint 规则的"开/关 + 默认严重级别"骨架。
+# 数值阈值、禁用词、容器白名单、栏目覆盖 — 全部从 runtime/profile-resolved/* 注入。
 DEFAULT_CONFIG = {
     "rules": {
-        "forbidden_blocks": {
-            "enabled": True,
-            "severity": "error",
-            # 任何 ^::: 残留都视为错误（粘贴微信必失效）。
-        },
-        "gfm_alerts": {
-            "enabled": True,
-            "severity": "warning",
-            "allowed_types": GFM_ALERT_TYPES,
-        },
-        "typography": {
-            "enabled": True,
-            "severity": "warning",
-            "max_paragraph_chars": 120,
-            "max_sentence_chars": 40,
-            "allowed_headings": [2, 3, 4],
-        },
-        "theme_constraints": {"enabled": True, "severity": "error"},
-        "image_references": {"enabled": True, "severity": "warning"},
-        "css_safety": {
-            "enabled": True,
-            "severity": "error",
-            "forbidden_css": ["position:", "@media", "@keyframes", ":hover", ":active", "float:", "gap:"],
-            "forbidden_tags": ["<style", "<script"],
-        },
-        "forbidden_patterns": {"enabled": True, "severity": "warning", "words": [
-            # 与 .claude/rules/data/forbidden-phrases.yaml 同步（PyYAML 不可用时的回退）
-            "值得注意的是", "显而易见", "毋庸置疑", "不难发现", "综上所述",
-            "众所周知", "不可否认", "不得不说", "无可避免", "这无疑是",
-            "毫无疑问", "不言而喻", "从某种意义上说", "在一定程度上",
-            "未来可期", "让我们拭目以待", "相信未来", "这表明", "由此可见",
-            "通过以上分析", "不难看出", "这说明", "接下来我们来看",
-            "可以看到", "需要注意的是", "希望本文对你有所帮助",
-        ]},
+        "forbidden_blocks":  {"enabled": True,  "severity": "error"},   # ^::: 残留，粘贴微信必失效
+        "gfm_alerts":        {"enabled": True,  "severity": "warning", "allowed_types": GFM_ALERT_TYPES},
+        "typography":        {"enabled": True,  "severity": "warning"},
+        "theme_constraints": {"enabled": True,  "severity": "error"},
+        "image_references":  {"enabled": True,  "severity": "warning"},
+        "css_safety":        {"enabled": True,  "severity": "error"},
+        "forbidden_patterns":{"enabled": True,  "severity": "warning"},
     },
-    "column_overrides": {
-        "学术前沿": {"theme_constraints": {"require_references": True, "require_tldr": True}},
-    },
+    "column_overrides": {},
 }
 
 
-# 数据文件根目录（单一事实来源）
+# 数据文件根目录（Profile 合成产物为唯一真源）
 # __file__ = .claude/skills/quality-linting/scripts/lint.py
 # parent^1 scripts → parent^2 quality-linting → parent^3 skills → parent^4 .claude → parent^5 仓库根
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
-RULES_DATA_DIR = REPO_ROOT / ".claude" / "rules" / "data"
+PROFILE_RESOLVED_DIR = REPO_ROOT / "runtime" / "profile-resolved"
 FRAMEWORK_CONFIG_DIR = REPO_ROOT / "framework" / "config"
 PLATFORM_RULES_FILE = FRAMEWORK_CONFIG_DIR / "platform-lint-rules.yaml"
-COLUMNS_DIR = FRAMEWORK_CONFIG_DIR / "columns"
 
 
 def _load_yaml(path: Path) -> dict:
@@ -101,101 +76,95 @@ def _load_yaml(path: Path) -> dict:
     return {}
 
 
+def _resolved_typesetting() -> dict:
+    return _load_yaml(PROFILE_RESOLVED_DIR / "typesetting.yaml")
+
+
+def _resolved_constraints() -> dict:
+    return _load_yaml(PROFILE_RESOLVED_DIR / "constraints.yaml")
+
+
 def _merge_data_sources(config: dict) -> dict:
-    """将 .claude/rules/data/*.yaml 注入 config，构造 lint 规则所需的完整结构。"""
+    """Inject Profile resolved data into lint config. 缺失则报错中止。"""
     rules = config.setdefault("rules", {})
 
-    # forbidden-phrases.yaml → rules.forbidden_patterns.words
-    phrases = _load_yaml(RULES_DATA_DIR / "forbidden-phrases.yaml")
-    if phrases:
-        words = []
-        for group in ("clichés", "vague", "ai_tells", "filler", "closing_cliches"):
-            words.extend(phrases.get(group, []) or [])
-        rules.setdefault("forbidden_patterns", {})["words"] = words
+    constraints = _resolved_constraints()
+    typeset = _resolved_typesetting()
+    if not constraints or not typeset:
+        raise SystemExit(
+            "[lint] runtime/profile-resolved/ 缺失。\n"
+            "  → 运行 `python framework/tools/profile_resolver.py` 或先 `/profile use <id>` 绑定。"
+        )
 
-    # platform-limits.yaml 多平台结构。默认注入 wechat；
-    # 其他平台由 _merge_platform_rules 按 --platform 选段覆盖。
-    platform_doc = _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
-    if platform_doc:
-        platforms_section = platform_doc.get("platforms", {}) or {}
-        wechat_cfg = platforms_section.get("wechat", {}) or {}
-        _apply_platform_thresholds(rules, wechat_cfg)
-        config["_platform_limits_doc"] = platform_doc
+    # constraints.forbidden.phrases → rules.forbidden_patterns.words
+    forbidden = constraints.get("forbidden", {}) or {}
+    phrases = list(forbidden.get("phrases", []) or [])
+    rules.setdefault("forbidden_patterns", {})["words"] = phrases
+    config["_constraints"] = constraints
+
+    # typesetting → rules.typography / css_safety / svg
+    _apply_typesetting(rules, typeset)
+    config["_typesetting"] = typeset
+
+    # columns.{col} overrides (require_references / require_tldr 等)
+    columns_overrides = {}
+    for cid, cdef in (constraints.get("columns") or {}).items():
+        tc = (cdef or {}).get("themeConstraints") or {}
+        if tc:
+            columns_overrides[cid] = {"theme_constraints": tc}
+    if columns_overrides:
+        existing = config.setdefault("column_overrides", {})
+        existing.update(columns_overrides)
 
     return config
 
 
-def _apply_platform_thresholds(rules: dict, p_cfg: dict) -> None:
-    """把 platform-limits.yaml 单个平台段的数值阈值合并到 lint rules。"""
-    if not p_cfg:
+def _apply_typesetting(rules: dict, ts: dict) -> None:
+    """把 profile-resolved/typesetting.yaml 的阈值注入 lint rules。"""
+    if not ts:
         return
-    para = p_cfg.get("paragraph", {}) or {}
-    sent = p_cfg.get("sentence", {}) or {}
-    heads = p_cfg.get("headings", {}) or {}
+    para = ts.get("paragraph", {}) or {}
+    sent = ts.get("sentence", {}) or {}
+    heads = ts.get("heading", {}) or {}
     typo_rule = rules.setdefault("typography", {})
-    if "max_chars" in para:
-        typo_rule["max_paragraph_chars"] = para["max_chars"]
-    if "max_chars" in sent:
-        typo_rule["max_sentence_chars"] = sent["max_chars"]
+    if "maxChars" in para:
+        typo_rule["max_paragraph_chars"] = para["maxChars"]
+    if "maxChars" in sent:
+        typo_rule["max_sentence_chars"] = sent["maxChars"]
     if "allowed" in heads:
         typo_rule["allowed_headings"] = heads["allowed"]
-    svg = p_cfg.get("svg", {}) or {}
+
+    svg = ts.get("svg", {}) or {}
     if svg:
         svg_rule = rules.setdefault("svg_readability", {})
-        if "min_font_size" in svg:
-            svg_rule["min_font_size"] = svg["min_font_size"]
-        if "caption_font_size" in svg:
-            svg_rule["caption_font_size"] = svg["caption_font_size"]
+        if "minFontSize" in svg:
+            svg_rule["min_font_size"] = svg["minFontSize"]
+        if "captionFontSize" in svg:
+            svg_rule["caption_font_size"] = svg["captionFontSize"]
+
+    css = ts.get("cssSafety", {}) or {}
     css_rule = rules.setdefault("css_safety", {})
-    if "forbidden_css" in p_cfg:
-        css_rule["forbidden_css"] = p_cfg["forbidden_css"]
-    if "forbidden_tags" in p_cfg:
-        forbidden_tags = p_cfg.get("forbidden_tags", []) or []
-        css_rule["forbidden_tags"] = [f"<{t}" for t in forbidden_tags]
+    if "forbiddenProperties" in css:
+        css_rule["forbidden_css"] = list(css["forbiddenProperties"] or [])
+    if "forbiddenTags" in css:
+        tags = list(css["forbiddenTags"] or [])
+        css_rule["forbidden_tags"] = [f"<{t}" for t in tags]
 
 
 def _merge_platform_rules(config: dict, platform: str) -> dict:
-    """按 platform 合并：
-       (1) 数值阈值 ← .claude/rules/data/platform-limits.yaml 的 platforms.{platform}
-                      （含 length_limit_factor / length_hard_factor / paragraph / sentence / svg / css）
-       (2) 规则启用/严重级别/消息 ← framework/config/platform-lint-rules.yaml 的 platforms.{platform}
-
-    渐进披露：只读取 platforms.{platform} 段，不一次性合并所有平台。
-    """
+    """platform-lint-rules.yaml 覆盖规则 enabled / severity / messages。数值阈值来自 Profile。"""
     if not platform or not yaml:
         return config
     rules = config.setdefault("rules", {})
 
-    # ---- (1) platform-limits.yaml v3：注入数值阈值 ----
-    plimits_doc = config.get("_platform_limits_doc") or _load_yaml(RULES_DATA_DIR / "platform-limits.yaml")
-    if plimits_doc:
-        defaults = plimits_doc.get("defaults", {}) or {}
-        p_limits = (plimits_doc.get("platforms", {}) or {}).get(platform, {}) or {}
-        # 顶层数值字段：缺则回退 defaults
-        merged_top = {}
-        for key in ("length_limit_factor", "length_hard_factor"):
-            if key in p_limits:
-                merged_top[key] = p_limits[key]
-            elif key in defaults:
-                merged_top[key] = defaults[key]
-        # 合并嵌套段（paragraph/sentence/headings 等），platform 段覆盖 defaults
-        for section in ("paragraph", "sentence", "headings"):
-            base_seg = defaults.get(section, {}) or {}
-            plat_seg = p_limits.get(section, {}) or {}
-            if base_seg or plat_seg:
-                merged_top[section] = {**base_seg, **plat_seg}
-        # 把数值阈值注入 lint rules
-        merged_for_apply = {**p_limits}
-        for k in ("paragraph", "sentence", "headings"):
-            if k in merged_top:
-                merged_for_apply[k] = merged_top[k]
-        _apply_platform_thresholds(rules, merged_for_apply)
-        # 顶层字段（length_limit_factor 等）放入 _platform_cfg 供 rule_length_limit 读取
-        platform_top = {**merged_top}
-    else:
-        platform_top = {}
+    platform_top: dict = {}
+    constraints = config.get("_constraints") or _resolved_constraints()
+    length_cfg = (constraints.get("length") or {}) if constraints else {}
+    if "softFactor" in length_cfg:
+        platform_top["length_limit_factor"] = length_cfg["softFactor"]
+    if "hardFactor" in length_cfg:
+        platform_top["length_hard_factor"] = length_cfg["hardFactor"]
 
-    # ---- (2) platform-lint-rules.yaml：覆盖规则 enabled/severity/messages ----
     if PLATFORM_RULES_FILE.exists():
         platform_data = _load_yaml(PLATFORM_RULES_FILE)
         if platform_data:
@@ -210,7 +179,6 @@ def _merge_platform_rules(config: dict, platform: str) -> dict:
                     rules[rule_name] = {}
                 for k, v in rule_override.items():
                     rules[rule_name][k] = v
-            # platform-lint-rules 的顶层字段（如向后兼容残留）也并入 platform_top
             for k, v in p_cfg.items():
                 if not isinstance(v, dict):
                     platform_top.setdefault(k, v)
@@ -221,15 +189,12 @@ def _merge_platform_rules(config: dict, platform: str) -> dict:
 
 
 def _load_platform_length_limit(column: str, platform: str) -> int | None:
-    """从 framework/config/columns/{column}.platforms.yaml 读 length_limit"""
-    if not column or not platform or not yaml:
+    """从 Profile resolved constraints.yaml 读本篇长度硬上限（与栏目无关的全局 length.max）。"""
+    constraints = _resolved_constraints()
+    if not constraints:
         return None
-    col_file = COLUMNS_DIR / f"{column}.platforms.yaml"
-    if not col_file.exists():
-        return None
-    data = _load_yaml(col_file)
-    p = (data.get("platforms", {}) or {}).get(platform, {}) or {}
-    return p.get("length_limit")
+    length = constraints.get("length") or {}
+    return length.get("max")
 
 
 def load_config(config_path: str | None, platform: str = "") -> dict:
@@ -245,7 +210,7 @@ def load_config(config_path: str | None, platform: str = "") -> dict:
 
 
 def get_forbidden_words(config: dict) -> list[str]:
-    """从配置中读取禁用词列表（单一事实来源: .claude/rules/data/forbidden-phrases.yaml）"""
+    """从配置中读取禁用词列表（单一事实来源: runtime/profile-resolved/constraints.yaml#/forbidden/phrases）"""
     fp = config.get("rules", {}).get("forbidden_patterns", {})
     return fp.get("words", [])
 
@@ -434,9 +399,24 @@ _VARIANT_ATTR_RE = re.compile(r'\bvariant\s*=\s*"?([A-Za-z0-9-]+)"?')
 
 
 def _load_container_whitelist() -> dict:
-    """读 .claude/rules/domains/wechat-article/containers.yaml"""
-    wl_file = REPO_ROOT / ".claude" / "rules" / "domains" / "wechat-article" / "containers.yaml"
-    return _load_yaml(wl_file)
+    """从 Profile resolved typesetting.yaml 构造容器白名单视图（兼容历史 schema）。
+
+    返回:
+      containers: [id, ...]
+      must_nest:  {child: parent}
+      admonition_kinds: [id, ...]
+      variant_whitelist: {kind: [variant, ...]}
+    """
+    ts = _resolved_typesetting()
+    containers = (ts.get("containers") or {}) if ts else {}
+    inline = (ts.get("inlineExtensions") or {}) if ts else {}
+    _ = inline  # 预留：行内扩展后续校验
+    return {
+        "containers": list(containers.get("whitelist") or []),
+        "must_nest": dict(containers.get("mustNest") or {}),
+        "admonition_kinds": list(containers.get("admonitionKinds") or []),
+        "variant_whitelist": dict(containers.get("variants") or {}),
+    }
 
 
 def _load_capabilities_variants() -> dict[str, list[str]] | None:
@@ -456,22 +436,23 @@ def rule_container_whitelist(lines: list[str], config: dict, result: LintResult)
 
     仅 wechat 平台启用（通过 platform-lint-rules.yaml 的 wechat.container_whitelist.enabled=true）。
     校验维度：
-    - W1: 容器 id 必须在 25 个合法白名单内
-    - W2: variant=X 必须在 capabilities.json 或 containers.yaml 的 variant_whitelist 内
+    - W1: 容器 id 必须在当前 Profile 的 typesetting.containers.whitelist 内
+    - W2: variant=X 必须在 capabilities.json 或 Profile 的 typesetting.containers.variants 内
     - W3: pros / cons 必须嵌在 compare 内（外层冒号数 > 内层）
     - W4: 容器开合配对（open/close 冒号数匹配）
     """
     wl = _load_container_whitelist()
-    if not wl:
+    if not wl or not wl.get("containers"):
+        # 当前 Profile 未声明容器白名单 → 本规则沉默退出（配合 forbidden_blocks 兜底）
         return
 
-    valid_ids = set(wl.get("containers", []) or [])
-    must_nest = wl.get("must_nest", {}) or {}
-    admonition_kinds = set(wl.get("admonition_kinds", []) or [])
-    fallback_variants = wl.get("variant_whitelist", {}) or {}
+    valid_ids = set(wl.get("containers") or [])
+    must_nest = wl.get("must_nest") or {}
+    admonition_kinds = set(wl.get("admonition_kinds") or [])
+    static_variants = wl.get("variant_whitelist") or {}
 
     runtime_variants = _load_capabilities_variants()
-    variants = runtime_variants if runtime_variants else fallback_variants
+    variants = runtime_variants if runtime_variants else static_variants
 
     # 栈追踪嵌套：每项 (colon_count, name, line_num)
     stack: list[tuple[int, str, int]] = []
@@ -491,7 +472,7 @@ def rule_container_whitelist(lines: list[str], config: dict, result: LintResult)
 
             if name not in valid_ids:
                 result.add("W1", "error", ctx.line_num,
-                           f"未知容器 '::: {name}'（不在 25 个合法白名单内）")
+                           f"未知容器 '::: {name}'（不在当前 Profile 的 containers.whitelist 内）")
                 continue
 
             vm = _VARIANT_ATTR_RE.search(rest)
@@ -829,10 +810,10 @@ def rule_article_structure(lines: list[str], column: str, config: dict, result: 
 def rule_svg_readability(lines: list[str], config: dict, result: LintResult):
     """规则 V: SVG 可读性 — 640px 画布缩到手机 375px 后的字号硬约束
 
-    platform-base.md "SVG 可读性" 段：
-    - 正文/数据标签 ≥14px（硬下限，低于此值报 error）
-    - 图注/脚注 12-13px 报 warning（允许人工审核放行）
-    - <12px 一律 error（手机端必然糊成团）
+    阈值来自 runtime/profile-resolved/typesetting.yaml#/svg：
+    - 正文/数据标签 ≥ svg.minFontSize（硬下限，低于此值报 error）
+    - 图注/脚注 小于 minFontSize 但 ≥ captionFontSize → warning（允许人工审核放行）
+    - < captionFontSize 一律 error（手机端必然糊成团）
     """
     svg_cfg = config["rules"].get("svg_readability", {})
     min_font = svg_cfg.get("min_font_size", 14)          # 正文硬下限
@@ -866,7 +847,7 @@ def rule_svg_readability(lines: list[str], config: dict, result: LintResult):
 
 
 def rule_forbidden_patterns(lines: list[str], config: dict, result: LintResult):
-    """规则 G: 禁用词检查（从 .claude/rules/data/forbidden-phrases.yaml 读取）"""
+    """规则 G: 禁用词检查（从 runtime/profile-resolved/constraints.yaml#/forbidden/phrases 读取）"""
     words = get_forbidden_words(config)
     if not words:
         return
@@ -1017,17 +998,19 @@ def rule_length_limit(lines: list[str], config: dict, result: LintResult, length
         result.add("P7", "warning", 0, f"字数 {total} 超过软上限 {soft}（length_limit={length_limit}，factor={soft_factor}）")
 
 
-# 栏目名 → theme id 映射
-COLUMN_ALIASES = {
-    "学术前沿": "academic",
-    "行业趋势": "industry",
-    "技术专题": "tech",
-    "人物故事": "story",
-    "academic": "academic",
-    "industry": "industry",
-    "tech": "tech",
-    "story": "story",
-}
+# 栏目名 → theme id 映射（从 Profile constraints.columnAliases 加载；
+# Profile 未提供则退化为恒等映射）
+def _load_column_aliases() -> dict[str, str]:
+    constraints = _resolved_constraints()
+    aliases = dict((constraints or {}).get("columnAliases") or {})
+    # 追加"栏目 id 自映射"便于调用方统一写 ALIASES.get(col, col)
+    columns_section = (constraints or {}).get("columns") or {}
+    for cid in columns_section:
+        aliases.setdefault(cid, cid)
+    return aliases
+
+
+COLUMN_ALIASES = _load_column_aliases()
 
 
 # ============================================================

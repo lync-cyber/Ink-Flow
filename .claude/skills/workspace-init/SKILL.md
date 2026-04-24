@@ -42,9 +42,10 @@ allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 content/articles/
 content/references/
 content/retrospectives/
-content/styles/*/style-profile.md
-content/styles/*/exemplar-*.md
+profiles/                   # 用户 Profile 包（升级不覆盖用户自建 id）
 runtime/pipeline-states/
+runtime/profile-lock.yaml
+runtime/profile-resolved/
 .claude/settings.local.json
 ```
 

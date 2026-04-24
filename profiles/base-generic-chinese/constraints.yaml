@@ -1,0 +1,74 @@
+slot: constraints
+version: 1.0.0
+
+forbidden:
+  phrases:
+    # 套话
+    - 值得注意的是
+    - 显而易见
+    - 毋庸置疑
+    - 不难发现
+    - 综上所述
+    - 众所周知
+    - 不可否认
+    - 不得不说
+    - 无可避免
+    - 这无疑是
+    - 毫无疑问
+    - 不言而喻
+    # 万能短语
+    - 从某种意义上说
+    - 在一定程度上
+    - 未来可期
+    - 让我们拭目以待
+    - 相信未来
+    # AI 特征词
+    - 这表明
+    - 由此可见
+    - 通过以上分析
+    - 不难看出
+    - 这说明
+    # 过渡废话
+    - 接下来我们来看
+    - 可以看到
+    - 需要注意的是
+    # 结尾套话
+    - 希望本文对你有所帮助
+  patterns:
+    - regex: '^(综上|总的来说|总而言之)'
+      at: paragraph_start
+      reason: 结尾套话
+    - regex: '^(随着.+的(发展|普及|深入))'
+      at: article_start
+      reason: 宏观背景式开头
+    - regex: '(首先|其次|最后)\s*[,，]?'
+      at: sequential_triplet
+      reason: 机械三段排比
+
+required:
+  perArticle:
+    - id: concrete-number
+      rule: "至少一处具体数字或百分比"
+    - id: code-or-case
+      rule: "每个论点至少 1 处代码 / 数据 / 案例支撑"
+  perSection:
+    - id: no-filler-lead
+      rule: "首段不得是背景铺垫"
+
+compliance:
+  absoluteTerms: warn
+  claimsNeedSource: true
+
+length:
+  target: 2000
+  min: 1200
+  max: 3500
+  hardFactor: 1.2
+
+metadata:
+  required: [title, tags]
+  tagsRange: [3, 5]
+
+terminologyRule: |
+  首次使用专业术语必须在括号内或下一句解释；
+  连续 3+ 个缩写 / 英文术语无解释则违规。

@@ -3,12 +3,14 @@ name: atomizer
 description: 将 research-memo 拆解为可跨平台复用的内容原子池（claims/evidence/cases/analogies/quotes/pitfalls/comparison/actions）。
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
+profileSlots:
+  required: [constraints]
 dependencies:
   artifacts:
     - content/articles/{slug}/intermediate/01-brief.md
     - content/articles/{slug}/intermediate/02-research-memo.md
-  config:
-    - framework/config/columns.yaml
+  resolved:
+    - runtime/profile-resolved/constraints.yaml   # columnPlatforms.{col}.{p}.atomSelection
   rules:
     - .claude/rules/core/fact-check.md
 ---
@@ -24,7 +26,7 @@ dependencies:
 启动前读取：
 - `content/articles/{slug}/intermediate/01-brief.md` — 取 `target_platforms`、`primary_platform`、`content_column`
 - `content/articles/{slug}/intermediate/02-research-memo.md` — 事实源（不修改）
-- `framework/config/columns.yaml` — 找到 `columns.{content_column}.platforms`，取各平台 `atom_selection` 白名单，用于决定每个原子的 `platforms:` 字段
+- `runtime/profile-resolved/constraints.yaml` — 定位 `columnPlatforms.{content_column}.{platform}.atomSelection`，用于决定每个原子的 `platforms:` 字段
 
 ## Format
 
@@ -61,10 +63,10 @@ length_chars: 28             # 原子正文字符数（不含 frontmatter）
 
 - **不新增事实**：只能重组 research-memo 中已有内容，缺失信息标 `source_section: 空`
 - **最小粒度**：一个原子 = 一个独立可引用单元，禁止把两个论点塞进同一个 atom
-- **平台白名单映射**：读 `columns.{column}.platforms.{p}.atom_selection`，若 atom 的 type 不在任何平台白名单中 → 不写出
+- **平台白名单映射**：读 `constraints.columnPlatforms.{column}.{platform}.atomSelection`，若 atom 的 type 不在任何平台白名单中 → 不写出
 - **按 target_platforms 动态缩减**：
-  - 先计算 `active_types = ⋃ (columns.{column}.platforms.{p}.atom_selection for p in brief.target_platforms)`
-  - 只产出 `active_types` 覆盖的文件；其他 type 的文件本次不写（`index.md` 标注"未启用：不在 target_platforms 的任一 atom_selection 中"）
+  - 先计算 `active_types = ⋃ (constraints.columnPlatforms.{column}.{p}.atomSelection for p in brief.target_platforms)`
+  - 只产出 `active_types` 覆盖的文件；其他 type 的文件本次不写（`index.md` 标注"未启用：不在 target_platforms 的任一 atomSelection 中"）
   - 例：`target_platforms=[wechat]` + tech 栏目 → active_types = {claims, evidence-data, evidence-code, cases, pitfalls, comparison, actions}，跳过 `analogies` / `quotes`
 - **引用来源保留**：含数据/引言的 atom 必须在正文或 frontmatter 附 `[来源](url)`，规则同 researcher
 - **禁止 TODO / 待补充**
@@ -78,7 +80,7 @@ length_chars: 28             # 原子正文字符数（不含 frontmatter）
 ```markdown
 # Atoms Index · {slug}
 
-## 平台白名单（从 columns.yaml 读取，仅供参考）
+## 平台白名单（从 Profile constraints.columnPlatforms 读取，仅供参考）
 | platform | atom_selection |
 | wechat | claims, evidence-data, evidence-code, cases, pitfalls, comparison, actions |
 | xiaohongshu | quotes, cases, actions, pitfalls |
@@ -103,9 +105,9 @@ length_chars: 28             # 原子正文字符数（不含 frontmatter）
 1. 读 brief，拿 `target_platforms` 和 `content_column`
 2. 读 research-memo，按 4 类原始素材遍历（事实 / 代码 / 对比 / 不确定）
 3. 按 type 分流到 9 个文件；为每条写 frontmatter
-4. 查 `columns.{content_column}.platforms.*.atom_selection`，给每个 atom 的 `platforms` 字段填入该原子所在 type 被选中的平台
+4. 查 `constraints.columnPlatforms.{content_column}.*.atomSelection`，给每个 atom 的 `platforms` 字段填入该原子所在 type 被选中的平台
 5. 写 `index.md`，包含白名单表、原子清单、覆盖检查
-6. 自检：每个 target_platform 至少命中 `atom_selection` 要求的 type；否则在 index.md 末尾写 `## 警告` 块
+6. 自检：每个 target_platform 至少命中 `atomSelection` 要求的 type；否则在 index.md 末尾写 `## 警告` 块
 
 ## Exit Criteria
 

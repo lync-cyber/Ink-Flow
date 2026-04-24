@@ -5,15 +5,14 @@
 # - 本文件只放"规则的开/关 / 严重级别 / 消息文案 / 关键词列表 / 平台特化模式"
 # - 数值阈值（max_paragraph_chars / max_sentence_chars / allowed_headings /
 #   length_limit_factor / length_hard_factor / svg / forbidden_css / forbidden_tags）
-#   全部由 .claude/rules/data/platform-limits.yaml 单一事实来源提供
-# - lint.py 的 _merge_platform_rules 先读 platform-limits.yaml 注入数值，
-#   再读本文件做 enabled/severity 覆盖
+#   由 runtime/profile-resolved/typesetting.yaml + constraints.yaml 提供（Profile 合成产物）
+# - lint.py 先从 Profile resolved 读数值，再读本文件做 enabled/severity 覆盖
 #
 # 加载策略：按 --platform 参数只加载当前平台段
 # enforce 级别：error 阻断；warning 记录不阻断
 # ============================================================
 
-version: "2.0"
+version: "3.0"
 
 # 所有平台共享的基础（强制启用）
 base:
@@ -33,20 +32,20 @@ base:
 # ============================================================
 # 平台差异段：覆盖/关闭/追加
 # key = brief.target_platforms 元素
-# 数值阈值参见 .claude/rules/data/platform-limits.yaml 同 key
+# 数值阈值参见 runtime/profile-resolved/typesetting.yaml 同 key
 # ============================================================
 
 platforms:
 
   wechat:
     # 最严：GFM Alerts + 段落字数 + CSS 安全 + SVG 可读性全开
-    # 注：wechat 平台允许 ::: 容器（契约内 25 个），校验走 container_whitelist（W1-W4）
+    # 注：wechat 允许 ::: 容器（Profile typesetting.containers.whitelist 声明），由 container_whitelist 校验 id 合法性
     forbidden_blocks:
-      enabled: false               # wechat 允许 ::: 容器；由 container_whitelist 校验 id 合法性
+      enabled: false               # wechat 允许 ::: 容器；由 container_whitelist 校验
     container_whitelist:
       enabled: true
       severity: error
-      whitelist_source: .claude/rules/domains/wechat-article/containers.yaml
+      whitelist_source: runtime/profile-resolved/typesetting.yaml
       capabilities_cache: runtime/typeset-capabilities.json    # variant id 以此为准，缺失时降级到 whitelist_source
     typography:
       enabled: true
@@ -54,7 +53,7 @@ platforms:
     gfm_alerts:
       enabled: true
       severity: warning
-      # 权威来源：framework/contracts/writing-contract.md § 3；修改同步 lint.py GFM_ALERT_TYPES
+      # 权威来源：framework/contracts/writing-kernel.md § 1 + platform-wechat Profile typesetting.alerts.allowed
       allowed_types: [NOTE, TIP, IMPORTANT, WARNING, CAUTION]
     css_safety:
       enabled: true
@@ -113,7 +112,7 @@ platforms:
     require_counter_argument:
       enabled: true
       severity: warning
-      message: "知乎文章建议至少包含 1 个反方观点（tone.rules 要求）"
+      message: "知乎文章建议至少包含 1 个反方观点（voice 规则要求）"
       detect_keywords: ["反过来", "但也有人", "反对意见", "另一种看法"]
 
   juejin:
@@ -124,7 +123,7 @@ platforms:
     gfm_alerts:
       enabled: true
       severity: warning
-      # 权威来源：framework/contracts/writing-contract.md § 3
+      # 权威来源：framework/contracts/writing-kernel.md § 1
       allowed_types: [NOTE, TIP, IMPORTANT, WARNING, CAUTION]
     css_safety:
       enabled: false               # 掘金投递 Markdown，无 CSS

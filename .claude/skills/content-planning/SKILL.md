@@ -29,10 +29,10 @@ AskUserQuestion:
 
 ## 数据读取
 
-1. `framework/config/columns.yaml` — 读取每个栏目的：
-   - `frequency`（发布频率目标）
-   - `best_time`（推荐发布时间）
-   - `content_mix`（月度总量控制）
+1. `runtime/profile-resolved/constraints.yaml` — 读取每个栏目的：
+   - `columns.{col}.frequency`（发布频率目标）
+   - `columns.{col}.bestTime`（推荐发布时间）
+   - `contentMix`（月度总量控制）
 2. `content/articles/*/intermediate/01-brief.md` — 扫描所有已发布文章的 frontmatter，提取：
    - 栏目（column）
    - 发布日期（publish_date，若有）
@@ -43,13 +43,9 @@ AskUserQuestion:
 
 1. **统计各栏目最近发布频率**，对比 frequency 目标
 2. **识别欠缺栏目**（实际频率 < 目标频率），优先排入
-3. **按 best_time 分配时间槽**：
-   - 行业趋势: 固定周一早
-   - 技术专题: 优选周二/四晚
-   - 学术前沿: 优选周三/四晚
-   - 人物故事: 优选周末
+3. **按 bestTime 分配时间槽**（由 Profile 的 `constraints.columns.{col}.bestTime` 决定）
 4. **约束检查**：
-   - 月总量不超过 content_mix.monthly_target 上限
+   - 月总量不超过 `constraints.contentMix.monthlyTarget` 上限
    - 每天最多 content_mix.max_per_day 篇
    - 系列文章间隔 ≤ 1 周
 5. **选题建议**：若用户提供了选题列表则分配到对应槽位；否则标注"待定"并给出栏目方向建议

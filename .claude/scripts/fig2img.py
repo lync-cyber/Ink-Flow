@@ -91,11 +91,11 @@ def _svg_via_inkscape(src: Path, dst: Path, width: int) -> tuple[bool, str]:
                 f"--export-filename={dst}",
                 f"--export-width={width}",
             ],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
         )
         if result.returncode == 0 and dst.exists():
             return True, ""
-        return False, f"inkscape rc={result.returncode}: {result.stderr.strip()[:160]}"
+        return False, f"inkscape rc={result.returncode}: {(result.stderr or '').strip()[:160]}"
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         return False, f"inkscape: {e}"
 
@@ -116,11 +116,11 @@ def _svg_via_chromium(src: Path, dst: Path, width: int, chromium: str) -> tuple[
                 f"--screenshot={dst}",
                 src.resolve().as_uri(),
             ],
-            capture_output=True, text=True, timeout=90,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90,
         )
         if dst.exists():
             return True, ""
-        return False, f"chromium rc={result.returncode}: {result.stderr.strip()[:160]}"
+        return False, f"chromium rc={result.returncode}: {(result.stderr or '').strip()[:160]}"
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         return False, f"chromium: {e}"
 
@@ -190,11 +190,11 @@ def _html_via_chromium(src: Path, dst: Path, width: int, chromium: str) -> tuple
                 f"--screenshot={dst}",
                 src.resolve().as_uri(),
             ],
-            capture_output=True, text=True, timeout=90,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90,
         )
         if dst.exists():
             return True, ""
-        return False, f"chromium rc={result.returncode}: {result.stderr.strip()[:160]}"
+        return False, f"chromium rc={result.returncode}: {(result.stderr or '').strip()[:160]}"
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         return False, f"chromium: {e}"
 

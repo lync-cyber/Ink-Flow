@@ -1,0 +1,166 @@
+slot: typesetting
+version: 0.2.0
+schemaVersion: "1.0"
+
+# 覆盖 base：微信段落硬上限 120 字（移动端 3 行）
+paragraph:
+  maxChars: 120
+  noFirstLineIndent: true
+
+sentence:
+  maxChars: 40
+
+heading:
+  allowed: [2, 3, 4]
+  h1Uniqueness: true
+
+# 微信公众号渲染适配宽度
+imageWidth: 640
+
+# CSS 安全（公众号编辑器会剥离的属性）
+cssSafety:
+  forbiddenProperties:
+    - "position:"
+    - "@media"
+    - "@keyframes"
+    - ":hover"
+    - ":active"
+    - "float:"
+    - "-webkit-"
+  forbiddenTags:
+    - style
+    - script
+    - iframe
+    - form
+    - input
+    - button
+    - object
+    - embed
+    - link
+    - meta
+    - noscript
+
+# 正文排版参数（inline style only）
+bodyTypography:
+  fontSize: 15
+  lineHeightRange: [1.75, 2.0]
+  letterSpacing: 1
+  paragraphMarginRange: [15, 20]
+
+# SVG 可读性下限（640 → 375 缩放系数 ≈0.586）
+svg:
+  minFontSize: 14
+  captionFontSize: 12
+  titleFontSize: 18
+  sectionFontSize: 16
+  minFontWeight: 400
+  maxFontVariants: 4
+  fontStack: '"Microsoft YaHei","PingFang SC",sans-serif'
+  wechatSpecific:
+    forbidIdAttribute: true
+    forbidStyleTag: true
+    forbidScriptTag: true
+    forbidAnchorTag: true
+    backgroundUrlNoQuotes: true
+
+# ============================================================
+# wechat-typeset 容器契约（与下游 wechat-typeset 的 container-syntax.md 对齐）
+# 数量以下表为准，随下游版本升级增删
+# ============================================================
+containers:
+  whitelist:
+    - intro
+    - cover
+    - author
+    - section-title
+    - abstract
+    - tip
+    - warning
+    - info
+    - danger
+    - note
+    - quote-card
+    - highlight
+    - compare
+    - pros
+    - cons
+    - steps
+    - key-number
+    - divider
+    - footer-cta
+    - recommend
+    - see-also
+    - qrcode
+    - mpvoice
+    - mpvideo
+    - free
+
+  # 签名容器（参与主题人格 · 信息性，lint 不校验）
+  signature:
+    - intro
+    - cover
+    - author
+    - section-title
+    - abstract
+    - tip
+    - warning
+    - info
+    - danger
+    - note
+    - quote-card
+    - highlight
+    - compare
+    - steps
+    - key-number
+    - footer-cta
+    - recommend
+    - see-also
+    - qrcode
+    - mpvoice
+    - mpvideo
+
+  # 必须嵌套
+  mustNest:
+    pros: compare
+    cons: compare
+
+  # 软上限（一篇文章最多几次）
+  perArticleLimit:
+    signature-total: 1
+
+  # variant 白名单（与 runtime/typeset-capabilities.json 对齐）
+  variants:
+    admonition: [accent-bar, card-shadow, dashed-border, double-border, minimal-underline, pill-tag, terminal, ticket-notch, top-bottom-rule]
+    quote-card: [classic, column-rule, frame-brackets, magazine-dropcap]
+    compare: [column-card, ledger, stacked-row]
+    steps: [number-circle, ribbon-chain, timeline-dot]
+    divider: [dots, flower, glyph, rule, wave]
+    section-title: [bordered, cornered]
+
+  admonitionKinds:
+    - tip
+    - warning
+    - info
+    - danger
+    - note
+
+# 5 个行内扩展
+inlineExtensions:
+  allowed:
+    - { pattern: "==",  name: mark }
+    - { pattern: "~~",  name: strikethrough }
+    - { pattern: "++",  name: ins }
+    - { pattern: "[.",  name: emphasis-dot }
+    - { pattern: "[~",  name: wave-underline }
+
+# GFM Alerts（5 种）— 所有平台共享，此处作声明
+alerts:
+  allowed: [NOTE, TIP, IMPORTANT, WARNING, CAUTION]
+  perArticleMax: 4
+  perAlertMaxLines: 3
+  # wechat 平台优先用 ::: tip / ::: warning 容器，Alerts 留给跨平台共享内容
+
+reference:
+  platformContract: framework/contracts/writing-kernel.md
+  typesetContract: framework/contracts/wechat-typeset.schema.json
+  capabilitiesCache: runtime/typeset-capabilities.json

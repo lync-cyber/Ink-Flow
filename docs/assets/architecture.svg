@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" role="img" aria-label="InkFlow 两层架构">
+  <defs>
+    <style>
+      .bg        { fill: #FFFFFF; }
+      .title     { font: 600 15px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1F2328; }
+      .tag       { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #0969DA; letter-spacing: 0.08em; }
+      .name      { font: 600 13px ui-sans-serif, -apple-system, "Segoe UI", "PingFang SC", sans-serif; fill: #1F2328; }
+      .row       { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #1F2328; }
+      .muted     { font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #656D76; }
+      .box       { fill: #FFFFFF; stroke: #D0D7DE; stroke-width: 1; }
+      .box-mid   { fill: #F6F8FA; stroke: #D0D7DE; stroke-width: 1; }
+      .arrow     { stroke: #8C959F; stroke-width: 1.2; fill: none; }
+      .arrowhead { fill: #8C959F; }
+      .dashed    { stroke: #8C959F; stroke-width: 1; stroke-dasharray: 4 3; fill: none; }
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="arrowhead"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="760" height="400"/>
+
+  <text x="24" y="32" class="title">InkFlow · 两层架构（通用内核 + 可插拔 Profile 层）</text>
+  <text x="24" y="50" class="muted">换 Profile 即换"栏目 / 品牌 / 平台"整套设定，核心 pipeline 不动。</text>
+
+  <!-- L3 编排层 -->
+  <rect x="24" y="70" width="712" height="82" rx="8" class="box"/>
+  <text x="42" y="94" class="tag">L3 · ORCHESTRATION</text>
+  <text x="42" y="115" class="name">编排层</text>
+  <text x="42" y="137" class="row">orchestrator agent  ·  12 个 skill（pipeline / profile / quality / planning / analytics）  ·  SessionStart hook</text>
+
+  <!-- L2 Profile 层 -->
+  <rect x="24" y="166" width="712" height="128" rx="8" class="box-mid"/>
+  <text x="42" y="190" class="tag">L2 · PROFILE PLUGIN</text>
+  <text x="42" y="210" class="name">Profile 插件层（extends 链合成到 runtime/profile-resolved/*）</text>
+  <text x="42" y="234" class="row">principles.md      论证方式 · 叙事骨架 · 段落推进 · 开头策略</text>
+  <text x="42" y="252" class="row">voice.md           人称 · 用词 · 句式 · 金句位</text>
+  <text x="42" y="270" class="row">typesetting.yaml   段落 · 容器白名单 · CSS 安全 · SVG 下限</text>
+  <text x="42" y="288" class="row">constraints.yaml   禁用词 · 字数 · 栏目 × 平台矩阵</text>
+
+  <!-- L1 通用内核 -->
+  <rect x="24" y="308" width="712" height="78" rx="8" class="box"/>
+  <text x="42" y="332" class="tag">L1 · GENERIC KERNEL</text>
+  <text x="42" y="352" class="name">通用内核</text>
+  <text x="42" y="374" class="row">8 个 subagent  ·  writing-kernel 契约  ·  core rules  ·  只读 runtime/profile-resolved/*</text>
+
+  <!-- 箭头：L2 下沉到 L1 -->
+  <path class="arrow" d="M 380 294 L 380 306" marker-end="url(#arr)"/>
+</svg>

@@ -45,7 +45,7 @@ dependencies:
 
 ## 栏目感知
 
-从 `brief.content_column` 读栏目 ID，调整搜索策略。栏目的 `goal` / `suggested_components` 在 `framework/config/columns.yaml`；本 agent 侧重源优先级和侧重点：
+从 `brief.content_column` 读栏目 ID，调整搜索策略。栏目的 `kpiTargets` / `titleGuidance` 在 `runtime/profile-resolved/constraints.yaml.columns.{column}`；本 agent 侧重源优先级和侧重点：
 
 ### academic
 - 来源：arXiv → Semantic Scholar → ACM/IEEE → 顶会官网
