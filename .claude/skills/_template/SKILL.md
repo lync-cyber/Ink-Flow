@@ -91,6 +91,6 @@ disable-model-invocation: true
 
 | 何时查 | 文件 |
 |---|---|
-| 本 skill 的产物路径与契约 | `.claude/agents/{owner-agent}.md` |
+| 本 skill 的产物路径与契约 | `.claude/agents/{owner-agent}/AGENT.md` |
 | 配置/规则 SSOT | `framework/config/{...}.yaml` 或 Profile 合成产物 `runtime/profile-resolved/{...}.yaml` |
 | 上游/下游 skill | `.claude/skills/{...}/SKILL.md` |

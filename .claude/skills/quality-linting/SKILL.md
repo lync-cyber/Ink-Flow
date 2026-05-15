@@ -1,10 +1,8 @@
 ---
 name: quality-linting
 description: >
-  格式 lint — 对指定文章运行 .claude/skills/quality-linting/scripts/lint.py，报告 error / warning。
-  触发条件："跑一下 lint"、"检查格式"、"格式校验"、"lint {slug}"。
-  由 publisher agent 在发布前自动调用；当用户想手工校验单篇文章排版/段落/SVG 是否合规时，
-  也应触发此 skill。
+  格式 lint — 对文章跑 lint.py，报告 error / warning（容器 W1-W4 / CSS 安全 / 段落上限 / 图片宽度）。
+  publisher agent 发布前自动调用；用户手动触发词："跑 lint"、"检查格式"、"lint {slug}"。
 argument-hint: "[文章 slug 或文件路径]"
 allowed-tools: Read, Bash, Glob, AskUserQuestion
 ---
@@ -37,7 +35,7 @@ python .claude/skills/quality-linting/scripts/lint.py {target_file_or_dir}
 ### 4. 修复建议（可选）
 
 lint 不提供自动修复。安全可修项（如段落超长、CSS 白名单违规）列出定位信息后由用户手动修改；
-涉及语义的修改（如禁用词替换）引导用户进入 profile-extracting（调整当前 Profile 的 constraints.yaml）或手动改写。
+涉及语义的修改（如禁用词替换）引导用户进入 `profile` skill（调整当前 Profile 的 constraints.yaml）或手动改写。
 
 ## 规则来源
 

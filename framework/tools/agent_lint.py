@@ -1,12 +1,13 @@
-"""agent_lint — 校验 .claude/agents/*.md 与 inkflow.yaml 的契约一致性。
+"""agent_lint — 校验 .claude/agents/*/AGENT.md 与 inkflow.yaml 的契约一致性。
 
 规则
 ----
 1. 每个 agent frontmatter 必含 ``name`` / ``description`` / ``allowed-tools`` / ``model``
-2. ``model`` 必须等于 ``framework/config/inkflow.yaml`` 的 ``model_allocation.{name}``
+2. ``name`` 必须等于其所在目录名（``.claude/agents/{name}/AGENT.md``）
+3. ``model`` 必须等于 ``framework/config/inkflow.yaml`` 的 ``model_allocation.{name}``
    - 缺失或漂移即为 error
-3. 模块化 agent（带 ``modules`` 子文件）允许在子目录有 <agent>/<sub>.md，子文件不参与 lint
-4. 三向一致性：inkflow.yaml.stages.{agent} ⊆ model_allocation 键；
+4. 模块化 agent 可在同目录有任意 ``<sub>.md`` 子文件（仅当无 frontmatter 时不参与 lint）
+5. 三向一致性：inkflow.yaml.stages.{agent} ⊆ model_allocation 键；
    artifact-layout.yaml 含 stages.output 所引用的 path key。
    任一边漂移 → error。
 
@@ -182,8 +183,8 @@ def lint(agents_dir: Path, yaml_path: Path) -> tuple[list[dict], int]:
     expected = _load_inkflow_models(yaml_path)
     issues: list[dict] = []
     n_err = 0
-    for md in sorted(agents_dir.glob("*.md")):
-        agent_name = md.stem
+    for md in sorted(agents_dir.glob("*/AGENT.md")):
+        agent_name = md.parent.name
         text = md.read_text(encoding="utf-8")
         fm = _parse_frontmatter(text)
         if not fm:
@@ -214,10 +215,10 @@ def lint(agents_dir: Path, yaml_path: Path) -> tuple[list[dict], int]:
 
     # 反向：声明但缺 agent
     declared = set(expected)
-    files = {p.stem for p in agents_dir.glob("*.md")}
+    files = {p.parent.name for p in agents_dir.glob("*/AGENT.md")}
     for missing in sorted(declared - files):
         issues.append({"agent": missing, "severity": "error", "rule": "agent_missing",
-                       "message": f"inkflow.yaml 声明了 {missing} 但 .claude/agents/{missing}.md 不存在"})
+                       "message": f"inkflow.yaml 声明了 {missing} 但 .claude/agents/{missing}/AGENT.md 不存在"})
         n_err += 1
 
     # 三向一致性：stages.{agent} ⊆ model_allocation

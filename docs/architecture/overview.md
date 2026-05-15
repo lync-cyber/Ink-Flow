@@ -135,7 +135,7 @@ InkFlow/
 │
 ├── content/                     # 创作资产（纳入版本管理）
 │   ├── articles/{slug}/         # 文章产物（intermediate / review / export）
-│   ├── references/articles/     # 外部参考文章（profile-extracting 使用）
+│   ├── references/articles/     # 外部参考文章（profile skill 使用）
 │   └── retrospectives/          # 运营数据 / 复盘日志
 │
 └── docs/                        # 用户文档

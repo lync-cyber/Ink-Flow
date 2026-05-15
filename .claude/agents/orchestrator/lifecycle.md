@@ -28,7 +28,7 @@
 ```
 CP3 approved
   → orchestrator 写入 lifecycle.published_at = now
-  → 提示用户："请在发布后按 publish-preparing 清单录入数据"
+  → 提示用户："请在发布后按 publisher 输出的发布清单录入数据"
 
 D+0 ~ D+1（用户运行 metrics-tracking）
   → metrics-tracking 写 lifecycle.metrics.d0.{recorded_at, data}
@@ -51,7 +51,6 @@ creation-reviewing 完成
 
 | Skill | 读 | 写回 lifecycle 字段 |
 |-------|----|-------------------|
-| `publish-preparing` | brief, exports | 不写（只读 + 生成清单） |
 | `metrics-tracking` | brief, lifecycle | `metrics.d0` / `metrics.d1` / `metrics.d7` |
 | `performance-benchmarking` | lifecycle.metrics, ops-metrics.csv | `benchmark_done = true` |
 | `creation-reviewing` | draft, final, lifecycle | `retro_done = true` |

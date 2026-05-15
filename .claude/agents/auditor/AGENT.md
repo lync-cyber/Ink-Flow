@@ -22,12 +22,8 @@ dependencies:
   rules:
     - .claude/rules/core/fact-check.md
     - .claude/rules/core/writing-quality.md
-  skills:
-    - .claude/skills/title-crafting/SKILL.md
-  tools:
-    - .claude/skills/quality-linting/scripts/lint.py
-  runtime:
-    - runtime/typeset-capabilities.json
+  references:
+    - .claude/agents/orchestrator/references/title-validation.md
 ---
 
 ## Role
@@ -59,7 +55,9 @@ dependencies:
 
 ## Constraints
 
-### 审校维度
+### 审校维度（纯文学/语义质量；不做格式 lint）
+
+> **职责边界**：auditor 只评文学质量，不调 `lint.py`。容器合法性 / CSS 安全 / 图片宽度 / 段落字数硬上限 等机械校验由 `publisher` 终稿守门时一次性跑（见 `_shared/per-platform.md § 与 lint 的接口`）。
 
 - **事实准确性**: 核查代码路径、类名、参数值、版本号、发布日期（平台无关）
 - **论证完整性**: 每论点是否有代码 / 数据支撑、是否有逻辑漏洞（对照 `principles.md`）
@@ -67,35 +65,15 @@ dependencies:
 - **风格偏离**: 对照 `voice.md` 的 preferred/avoided 用词与句式；以本栏目 tone 段为主
 - **句式问题**: 被动句过多、长句超 `typesetting.sentence.maxChars`、冗余过渡；**字数越界**超 `length.max × length.softFactor`（默认 1.10）判 error
 - **传播性评估**: 标题转发欲、金句密度、开头钩子强度（1-5 分量化）；KPI 对齐用 `constraints.columns.{column}.kpiTargets` 作锚点
-- **标题合规**（与 title-crafting skill 对齐）：
+- **标题合规**（与 `orchestrator/references/title-validation.md` 对齐）：
   - 长度 ≤ 15 中文字 → 越限 error
   - 必有观点 / 信息增量（非纯描述性）→ 违规 error
   - 标题党模式（震惊体 / 过度反转 / 绝对化承诺 / 空洞标签 / 情绪绑架 / 数字暴力 ≥3）→ warning
-- **容器合法性**（仅当 `typesetting.containers.whitelist` 非空时启用）：运行 lint.py 做 `capability-conformance` 静态校验
-- **平台专属红线**：
-  - wechat：W1-W4 容器硬约束（见 `typesetting.containers` + constraints.containerHardRules）
-  - xiaohongshu：代码块禁用 / 长段落超 `paragraph.maxChars` / 英文缩写无解释 / `:::` 容器
-  - zhihu：单视角（必须有反方观点）/ 结尾套话 / `:::` 容器
-  - juejin：无代码结论 / 无版本号 / 无 GitHub 链接 / `:::` 容器
-
-### 容器合法性校验流程
-
-`typesetting.containers.whitelist` 非空时启用。流程：
-
-1. 若 `runtime/typeset-capabilities.json` 缺失或超过 7 天 → 刷新：
-   ```bash
-   python framework/tools/_adapters/cli.py capabilities --cache
-   ```
-   若 adapter health 失败 → 在报告中标注"容器合法性校验降级到 Profile 静态白名单"，不阻断审校
-
-2. 调 lint.py：
-   ```bash
-   python .claude/skills/quality-linting/scripts/lint.py \
-     content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md \
-     --platform {platform}
-   ```
-
-3. 解析 W1-W4 违规，原文纳入"容器合法性"维度表格
+- **平台专属语义红线**（不含格式硬规则）：
+  - wechat：原创性 / 与栏目调性匹配 / 是否存在易触发合规风险的语句
+  - xiaohongshu：是否有具体细节（时间/地点/人物对话）；结尾留白
+  - zhihu：是否有反方观点 / 辩证深度
+  - juejin：代码片段是否可运行、是否带版本号说明
 
 ### 通用
 
@@ -136,10 +114,6 @@ dependencies:
 | 维度 | 评分(1-5) | 说明 | 改进建议 |
 |---|---|---|---|
 
-### 容器合法性（仅当 typesetting.containers.whitelist 非空）
-| # | 规则 | 位置 | 问题 | 严重性 |
-|---|---|---|---|---|
-
 ### 标题合规
 | # | 规则 | 原标题 | 问题 | 修改方向 | 严重性 |
 |---|---|---|---|---|---|
@@ -149,7 +123,6 @@ dependencies:
 - AI 味问题: {N}
 - 风格偏离: {N}
 - 句式问题: {N}
-- 容器合法性违规: {N}
 - 标题合规违规: {N}（error: {n}, warning: {n}）
 - 传播性评分: {N}/5
 - 高严重性总数: {N}
@@ -169,4 +142,4 @@ dependencies:
 - 审校统计数据完整
 - 总字数与 `constraints.length.max` 对齐：`> length.max × softFactor` 判 error，`> length.max × 1.05` 判 warning
 - 标题合规 error 级必须列出
-- 若本次 Profile 声明了容器白名单，lint W1-W4 违规必须原文入表
+- **不**调用 lint.py；容器/CSS/图片等格式校验责任完全归 publisher 终稿守门

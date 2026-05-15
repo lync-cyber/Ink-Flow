@@ -185,11 +185,13 @@ def _check_one(path: Path) -> SkillLintResult:
                 "description_no_triggers",
                 "description 未列出触发词（要含 '触发条件' 或 '触发词' 等关键字 + 实际词列表）",
             )
+        # 场景描述软提示：触发词清晰时可忽略。
+        # 官方 skill-creator 推荐 "key use cases first" + 触发词，不强求 "当用户…应触发此 skill" 句式。
         if not any(k in desc for k in SCENARIO_KEYWORDS):
             res.add(
-                "error",
+                "warning",
                 "description_no_scenario",
-                "description 未描述应触发场景（要含 '当用户……应触发此 skill' 等句式）",
+                "description 未显式描述触发场景；若触发词已足够清晰可忽略本警告",
             )
         # 长度建议（避免过长 = 触发不稳定）
         if len(desc) > 320:

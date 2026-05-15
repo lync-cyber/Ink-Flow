@@ -93,11 +93,13 @@ Agent 只读 `runtime/profile-resolved/*`（resolver 合成产物）；不得直
 
 ## 使用方式
 
-> 以下触发词为自然语言，Claude 识别意图后加载对应 skill 执行。
+> 以下触发词为自然语言，Claude 识别意图后加载对应 agent / skill 执行。
 
-- **写文章**: 告诉 Claude 主题 → 自动启动 pipeline。writer 按当前 Profile 的 `typesetting.containers.whitelist` 决定是否写 `:::` 容器。
-- **提取 Profile**: "提取风格"、"生成 profile"、"从这几篇学一套" → `profile-extracting` skill
-- **装配 Profile**: "切换 profile"、"本次用 X" → `profile-injecting` skill
+- **写文章**: 告诉 Claude 主题 → `orchestrator` agent 自动接管。可选预设：
+  - "快速写一篇 X / quick X" → preset=quick（~10 分钟，单平台，inline 模式，CP1/CP2 自动通过）
+  - "草稿 X / draft X" → preset=draft（~5 分钟，跑到 draft 停下，用户接手）
+  - 默认 → preset=full（完整流程，3 个 checkpoint 全开）
+- **Profile 全生命周期**: "提取 profile / 学这几篇 / 对标"（→ extract）/ "切换 profile / 本次用 X / overlay / stack"（→ use 系列）→ `profile` skill
 - **本地排版（wechat）**: pipeline 交付后，启动独立 repo [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) → `npm run dev` → 浏览器 `127.0.0.1:7788` → 粘贴 `export/08-wechat-publish.md` → 挑主题 → 一键复制富文本 → 粘贴到公众号后台
 - **刷新 capabilities 缓存**: `python framework/tools/_adapters/cli.py capabilities --cache` → 更新 `runtime/typeset-capabilities.json`，供 lint.py 消费
 - **格式校验**: "跑一下 lint"、"检查格式" → 运行 `.claude/skills/quality-linting/scripts/lint.py`（从 `runtime/profile-resolved/*` 拉取规则数据）

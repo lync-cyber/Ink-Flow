@@ -6,13 +6,12 @@ description: Profile 插件层协议 — Ink-Flow 通用内核与创作设定之
 consumers:
   - framework/tools/profile_resolver.py
   - framework/tools/inject_profile.py
-  - .claude/skills/profile-extracting/SKILL.md
-  - .claude/skills/profile-injecting/SKILL.md
-  - .claude/agents/writer.md
-  - .claude/agents/auditor.md
-  - .claude/agents/polisher.md
-  - .claude/agents/outliner.md
-  - .claude/agents/publisher.md
+  - .claude/skills/profile/SKILL.md
+  - .claude/agents/writer/AGENT.md
+  - .claude/agents/auditor/AGENT.md
+  - .claude/agents/polisher/AGENT.md
+  - .claude/agents/outliner/AGENT.md
+  - .claude/agents/publisher/AGENT.md
 related:
   - framework/contracts/profile.schema.json   # manifest JSON Schema
   - framework/contracts/writing-kernel.md     # 通用写作元契约（平台无关）
@@ -352,7 +351,7 @@ lockfileVersion: 1
 
 ## 6 · 注入（Inject）
 
-三种模式，由 `profile-injecting` skill 负责：
+三种模式，由 `profile` skill § 2 负责：
 
 | 模式 | 作用域 | 实现 |
 |---|---|---|
@@ -369,7 +368,7 @@ Agent 正文**只**从 `runtime/profile-resolved/` Read —— 不得直接 Read
 也不得 Read 任何已废弃的栏目 / 平台规则文件。
 
 ```yaml
-# 例：.claude/agents/writer.md
+# 例：.claude/agents/writer/AGENT.md
 profileSlots:
   required: [principles, voice, typesetting]
   optional: [examples, constraints]

@@ -33,6 +33,43 @@ defaults:
   opening_style: auto
   target_platforms: [wechat]       # 多平台分发：brief 必填；默认仅 wechat
   primary_platform: wechat         # 决定 research 深度基准；必须 ∈ target_platforms
+  preset: full                     # 预设档位（见 presets 段）
+  execution_mode: subagent         # subagent | inline；inline 表示 main agent 同对话直接执行（不开 subagent）
+
+# ============================================================
+# Pipeline 预设档位 — 用户在 brief frontmatter 写 `preset: <name>`
+# orchestrator 在 brief 阶段将 preset 字段展开到 brief（用户显式字段优先）
+# ============================================================
+presets:
+  full:
+    description: "完整流程：研究 + 原子 + 大纲 + 草稿 + 配图 + 审校 + 润色 + 发布；3 个 checkpoint 全开"
+    fields:
+      skip_research: false
+      no_figures: false
+      skip_seo: false
+      execution_mode: subagent
+      auto_checkpoints: []         # 自动通过的 checkpoint（空 = 全部强制人工审核）
+
+  quick:
+    description: >
+      快速 (~10 分钟)：单平台 + 跳研究/原子/配图；main agent 同对话推进；
+      CP1/CP2 自动通过仅 CP3 人工。audit + polish 仍跑以保质量底线。
+    fields:
+      skip_research: true          # 触发 stage research / atoms 跳过
+      no_figures: true             # 触发 stage figures 跳过
+      skip_seo: true
+      execution_mode: inline       # main agent 同对话直接执行 outline/draft/audit/polish/publish
+      target_platforms: [wechat]   # 单平台快通道（stages.md 单播算法）
+      auto_checkpoints: [CP1, CP2] # CP1/CP2 自动通过（不向用户提问），CP3 仍人工
+
+  draft:
+    description: "草稿模式：跑 outline → draft 停下，用户接手手动改；不导出，不审校"
+    fields:
+      skip_research: true
+      no_figures: true
+      execution_mode: inline
+      stop_after: draft            # pipeline 推进到 draft 完成即停
+      auto_checkpoints: []         # 仅 CP1 出现（CP2/CP3 不会触达）
 
 # ============================================================
 # 工作流阶段 — 既是执行顺序，也是合约
@@ -179,7 +216,7 @@ stages:
         - '<img src="\.\./'
         - '<svg[^>]* id='
       # wechat 产物允许 ::: 容器（25 个白名单内）；其他平台由 lint A1 拦截
-      # 容器合法性校验由 lint.py --platform wechat 的 W1-W4 规则承担（合并进 audit 阶段）
+      # 容器合法性校验由 lint.py --platform wechat 的 W1-W4 规则承担（仅 publisher 守门阶段调用一次）
 
 # ============================================================
 # 导出格式（publish 阶段使用）

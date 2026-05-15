@@ -124,6 +124,29 @@ publisher.wechat
 
 **规则**：数量 ∈ `[3, 5]`；每 tag `#话题词`；选词优先级：brief.tags → 文章 H2 高频名词 → 栏目默认
 
+### 发布清单（CP3 回显，不写文件）
+
+publisher 在导出结束后，按 brief.content_column 输出"发布前 / 发布后"清单到终端（不持久化）：
+
+**通用项**：
+- [ ] 发布时间：推荐 `constraints.columns.{column}.bestTime`
+- [ ] 标题终审：≤15 字、有观点
+- [ ] 摘要检查：≤120 字（wechat）
+- [ ] 封面图就绪
+- [ ] **wechat 本地排版**：启动 [wechat-typeset](https://github.com/lync-cyber/wechat-typeset) → `http://127.0.0.1:7788/` → 粘贴 08-wechat-publish.md → 挑主题 → 一键复制
+- [ ] 话题标签 2-3 个
+
+**栏目特化**（按 brief.content_column 选一条）：
+- academic：论文引用格式正确 / 数据图表清晰
+- industry：时效信息标注日期 / 多信源交叉验证
+- tech：代码块可运行 / 版本+环境说明完整
+- story：USER_FILL 标记已替换 / 互动引导语到位
+
+**发布后**：
+- D+0：回复留言、转发社群
+- D+1：触发 `metrics-tracking` 录入初步数据
+- D+7：触发 `performance-benchmarking` 做交叉分析
+
 ### 通用约束
 
 - 生成失败 → 记入 `extra_outputs.errors[]`，不回滚主产物

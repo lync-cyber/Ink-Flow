@@ -1,9 +1,8 @@
 ---
 name: creation-reviewing
 description: >
-  创作复盘 — 对比 AI 初稿与用户终审版，分类编辑修改，提炼可复用规则。
-  触发条件："给反馈"、"复盘"、"文章发表后"。
-  当用户完成文章编辑想回顾 AI 草稿与终稿差异、改进写作流程时，应触发此 skill。
+  创作复盘 — 对比 AI 初稿（04a-draft）与用户终审版（07-final），分类编辑修改、提炼可复用规则。
+  触发词："复盘"、"给反馈"、"文章发表后总结"。
 argument-hint: "[文章 slug]"
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---

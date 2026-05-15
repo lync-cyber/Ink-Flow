@@ -18,13 +18,35 @@
 
 ---
 
+## 30 秒看懂
+
+| 我想改… | 看这里 |
+|---|---|
+| 文章内容 | `content/articles/{slug}/` |
+| 栏目 / 品牌风格 | `profiles/{id}/`（principles / voice / typesetting / constraints 四 slot） |
+| 项目配置（默认值 / preset / stage 契约） | `framework/config/inkflow.yaml` |
+| 框架代码 / 工具 | `framework/tools/` |
+| Agent 定义 | `.claude/agents/{name}/AGENT.md` |
+| Skill 定义 | `.claude/skills/{name}/SKILL.md` |
+| 运行时缓存（可清空） | `runtime/` |
+
+| 我想用… | 触发词 |
+|---|---|
+| 写完整文章（~30 分钟，3 checkpoint） | 直接说主题 → orchestrator agent |
+| 快速产出（~10 分钟，inline 模式） | "快速写一篇 X" / "quick X" |
+| 跑到 draft 停下接手 | "草稿 X" / "draft X" |
+| 切换风格 | "切换 profile 到 X" |
+| 从样本反推风格 | "学这几篇" / "提取 profile" |
+
+---
+
 ## 架构一览
 
 <p align="center">
   <img src="docs/assets/architecture.svg" alt="InkFlow 三层架构" width="760">
 </p>
 
-**L3 编排层**（orchestrator + 12 个 skill）→ **L2 Profile 插件层**（四类 slot + extends 链）→ **L1 通用内核**（8 个 subagent，只读 resolved 产物）
+**L3 编排层**（orchestrator agent + 7 个用户 skill）→ **L2 Profile 插件层**（四类 slot + extends 链）→ **L1 通用内核**（8 个 subagent，只读 resolved 产物）
 
 <p align="center">
   <img src="docs/assets/workflow.svg" alt="从初始化到发布的完整工作流" width="960">

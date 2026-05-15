@@ -35,9 +35,24 @@ FOR each stage from current_stage to end:
      收集已完成前置阶段的 output 文件（01-brief.md 始终包含）。
      Skill/rules 由 agent 自行读取，编排器不拼装。
 
-  5. MARK IN_PROGRESS + SPAWN AGENT
+  5. MARK IN_PROGRESS + SPAWN AGENT（按 execution_mode 路由）
      调 state-writer.md PROC update_state(stage, {status:in_progress, started_at:now()})
-     然后 Agent tool 调用 .claude/agents/{agent}.md（rules 自动注入）。
+
+     读 brief.execution_mode（默认 subagent；preset 可覆盖）：
+
+     IF execution_mode == "subagent":
+        Agent tool 调用 .claude/agents/{agent}/AGENT.md（独立上下文，rules 自动注入）
+     ELIF execution_mode == "inline":
+        # main agent（orchestrator 自身）在同对话直接执行
+        # 详见 dispatch-protocol.md § execution_mode 路由 / § inline 模式的执行细则
+        Read .claude/agents/{agent}/AGENT.md + 其 dependencies.modules
+        Read 其 profileSlots.required 列出的 runtime/profile-resolved/* + dependencies.artifacts
+        按目标 agent 的 Workflow / Constraints 在同对话直接 Write / Edit 文件
+        按目标 agent 的 Exit Criteria 自检
+
+     # 强制降级（即使 execution_mode == inline）：
+     #  - per_platform 多平台（target_platforms > 1）→ 必须 subagent
+     #  - main context 占用 ≥70% → 必须 subagent
 
   6. VALIDATE + STATE UPDATE（subagent return 后立即执行，不允许延迟）
      调 state-writer.md PROC validate_stage_output(stage)（单一事实来源）

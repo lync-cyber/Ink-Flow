@@ -1,10 +1,8 @@
 ---
 name: workspace-init
 description: >
-  工作区初始化与升级 — 初始化项目目录结构和配置文件，或升级已有工作区的框架版本。
-  触发条件："初始化工作区"、"创建内容项目"、"init workspace"、"新建工作区"、
-  "更新 InkFlow"、"升级框架"、"update inkflow"、"sync framework"。
-  当用户想创建新的内容工作区、或在已有工作区中升级 InkFlow 框架版本时，应触发此 skill。
+  工作区初始化 / 框架升级 — 创建 content / profiles / runtime 目录骨架，或从远程同步框架代码。
+  触发词："初始化工作区"、"新建工作区"、"升级框架"、"sync inkflow"。
 argument-hint: "[目标目录路径 或 GitHub 仓库 URL]"
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 ---

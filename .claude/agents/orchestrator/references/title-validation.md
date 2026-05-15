@@ -1,17 +1,14 @@
 ---
-name: title-crafting
-description: >
-  标题打磨 — 校验标题是否符合长度限制和价值标准，不合格时提供备选方案。
-  由 pipeline 在 outline 阶段完成后、Checkpoint 1 前执行。
-allowed-tools: Read, Write, Edit, Glob, AskUserQuestion
-user-invocable: false
-disable-model-invocation: true
+name: title-validation
+description: 标题质量门禁 — orchestrator CP1 内嵌引用；checkpoint 前对每个 platform 的 outline 标题硬性校验
+consumers:
+  - .claude/agents/orchestrator/checkpoints.md   # CP1 预检
+  - .claude/agents/auditor/AGENT.md              # 审校维度"标题合规"
 ---
 
 ## 标题质量门禁
 
-在大纲生成后、Checkpoint 1 前由 orchestrator 程序性调用（**不**由 LLM 触发；frontmatter 的
-`disable-model-invocation: true` 已锁死）。对每个 platform，检查
+由 orchestrator 在 CP1 主交互前内嵌执行。对每个 platform，检查
 `content/articles/{slug}/intermediate/03-outline/{platform}.md` 的 `## 总览` 区块中的文章标题。
 
 ---

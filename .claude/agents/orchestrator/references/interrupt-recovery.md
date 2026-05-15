@@ -45,8 +45,7 @@ Resume 时对每个标记为 `completed` 的依赖阶段执行：
 
 ## Draft 阶段恢复（整平台粒度）
 
-writer 现在是**单次调用产出当前平台全部 section + merged-draft.md**，不再按 section 拆分调用。
-因此 draft 恢复以整平台为单位，不再支持 single-section rerun。
+writer 单次调用产出当前平台全部 section + merged-draft.md，因此 draft 恢复以整平台为单位，不支持 single-section rerun。
 
 ### 状态结构
 
@@ -82,7 +81,7 @@ writer 现在是**单次调用产出当前平台全部 section + merged-draft.md
 
 | 场景 | 表现 | 恢复方式 |
 |------|------|----------|
-| 上下文窗口溢出 | 编排器停止响应 | 重新触发 pipeline-orchestrating，自动 resume |
+| 上下文窗口溢出 | 编排器停止响应 | 重新触发 orchestrator agent（说"继续"或直接给主题），自动 resume |
 | 网络断连 | subagent 无输出 | 阶段停留在 in_progress，resume 时检测 stale lock |
 | 用户手动终止 | Ctrl+C | 阶段可能为 in_progress 或 pending |
 | subagent 超时 | Agent tool 报错 | 进入 L1 错误处理（自动重试） |

@@ -3,11 +3,11 @@ name: writing-kernel
 description: 通用写作元契约 — 平台无关、品牌无关。产出物的最小合法形态。
 schemaVersion: "2.0"
 consumers:
-  - .claude/agents/writer.md
-  - .claude/agents/outliner.md
-  - .claude/agents/auditor.md
-  - .claude/agents/polisher.md
-  - .claude/agents/publisher.md
+  - .claude/agents/writer/AGENT.md
+  - .claude/agents/outliner/AGENT.md
+  - .claude/agents/auditor/AGENT.md
+  - .claude/agents/polisher/AGENT.md
+  - .claude/agents/publisher/AGENT.md
 related:
   - framework/contracts/profile-protocol.md       # 谁来填充 slot
   - runtime/profile-resolved/typesetting.yaml     # 当前生效的排版契约

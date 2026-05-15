@@ -1,18 +1,35 @@
 # orchestrator / checkpoints 模块
 
-3 个检查点使用 AskUserQuestion 结构化交互。详细文案见 `.claude/skills/pipeline-orchestrating/references/checkpoint-prompts.md`。
+3 个检查点使用 AskUserQuestion 结构化交互。详细文案见 `.claude/agents/orchestrator/references/checkpoint-prompts.md`。
+
+## auto_checkpoints 入口检查（每个 CP 段执行前必读）
+
+进入 CP1 / CP2 / CP3 主交互之前，必须先做：
+
+```
+1. 读 brief.auto_checkpoints (来自 preset 展开；默认 [])
+2. IF 当前 cp_id ∈ brief.auto_checkpoints:
+     a. 检查 stage validation 是否 passed (见 stages.md / fanout.md 的 validation 输出)
+     b. validation.passed == false → 强制人工，忽略 auto_checkpoints；打印"validation 失败，{cp_id} 自动通过被覆盖"
+     c. validation.passed == true → 调 state-writer.md update_state(checkpoints.{cp_id}, {decision: auto_approved, reason: "preset={brief.preset}"})
+     d. 打印一行："[{cp_id}] 自动通过（preset={brief.preset}）"
+     e. RETURN（不进入主交互）
+3. ELSE: 进入下方主交互段
+```
+
+完整协议见 `dispatch-protocol.md § auto_checkpoints 协议`。
 
 ## CP1 — 大纲审核（outline 阶段结束）
 
 ### CP1 预检：标题门禁
 
-进入主交互前，orchestrator 调用 `title-crafting` skill：
+进入主交互前，orchestrator 按 `.claude/agents/orchestrator/references/title-validation.md` 内嵌执行：
 
 ```
 FOR each platform in brief.target_platforms:
   1. 从 03-outline/{platform}.md 提取标题
-  2. 执行 title-crafting 硬性规则（≤15 字 + 非描述性 + 栏目调性）
-  3. 未通过 → 走 title-crafting 备选标题流程
+  2. 执行 title-validation 硬性规则（≤15 字 + 非描述性 + 栏目调性）
+  3. 未通过 → 按 title-validation § 备选标题生成 流程提示用户
   4. 用户确认后回写标题字段
   5. 全部平台通过 → 进入 CP1 主交互
 ```
@@ -33,7 +50,7 @@ AskUserQuestion:
 - 每个 section 有明确论点（非描述性标题）
 - 视觉断点归属清晰（writer:/illustrator:）
 - 总字数与 brief.target_length 偏差 ≤20%
-- **标题已通过 title-crafting 门禁**（摘要中展示最终标题，便于人工复核）
+- **标题已通过 title-validation 门禁**（摘要中展示最终标题，便于人工复核）
 
 ## CP2 — 终审（polish 阶段结束）
 
@@ -54,15 +71,9 @@ AskUserQuestion:
 
 ## CP3 — 发布确认（publish 阶段结束）
 
-### CP3 预检：发布清单生成
+### CP3 预检：发布清单读取
 
-进入主交互前，orchestrator 调用 `publish-preparing` skill 生成发布清单：
-
-```
-1. 读 brief.target_platforms 和 publisher 导出报告
-2. 调用 publish-preparing，传入 slug
-3. 清单内容并入 CP3 主交互的展示包
-```
+publisher Extra Outputs 段已生成发布清单（写入终端，不持久化）。orchestrator 直接复用其返回包中的清单文本。
 
 ### CP3 主交互
 

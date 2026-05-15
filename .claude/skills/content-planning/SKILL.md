@@ -1,9 +1,9 @@
 ---
 name: content-planning
 description: >
-  内容排期 — 基于栏目频率、发布历史和运营记忆生成内容日历。
-  触发条件："排期"、"内容日历"、"本月计划"、"这周写什么"。
-  当用户询问写什么、安排发布计划、查看内容规划时，应触发此 skill。
+  内容排期 — 基于栏目频率、发布历史和运营记忆生成"未来 N 周的选题日历"
+  （非日程提醒，是选题库建议 + 时间槽分配）。
+  触发词："排期"、"内容日历"、"本月发什么"。
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -96,7 +96,7 @@ AskUserQuestion:
 
 ```json
 {
-  "handoff": "pipeline-orchestrating",
+  "handoff": "orchestrator",
   "brief_seed": {
     "topic": "{排期条目的选题文本}",
     "content_column": "{排期条目的栏目 ID}",

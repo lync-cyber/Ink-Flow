@@ -73,7 +73,7 @@ Profile 是 InkFlow 的写作设定插件包，决定"这篇文章怎么写"。�
 /profile extract sample content/references/articles/article1.md content/references/articles/article2.md
 ```
 
-skill `profile-extracting` 会：
+skill `profile`（extract sample 模式）会：
 1. 分析文章的论证方式、语气、排版习惯
 2. 反推四类 slot 的配置
 3. 进入 Plan Mode 让你确认，确认后落盘到 `profiles/<new-id>/`

@@ -78,13 +78,16 @@ per-platform agent 可以读**同平台**上一阶段的产物（如 writer 读 
 
 ## 与 lint 的接口
 
-涉及平台差异的格式校验（CSS 安全/图片规格/段落长度/容器 W1-W4）由 `quality-linting` skill 的 `lint.py --platform {platform}` 完成。全流程只跑两次：
+涉及平台差异的格式校验（CSS 安全/图片规格/段落长度/容器 W1-W4）由 `quality-linting` skill 的 `lint.py --platform {platform}` 完成。**全流程只跑一次**——在 publisher 终稿守门：
 
 | 调用方 | 输入 | 目的 |
 |--------|------|------|
-| `auditor` | `intermediate/04a-draft/{platform}/merged-draft.md` | 检测：把违规纳入"容器合法性"维度表格（wechat 启用 W1-W4，其他平台走通用规则） |
-| `publisher` Step 6 | `export/08-{platform}-publish.md` | 终稿守门：W1-W4 / 通用规则若有 error 直接停止导出 |
+| `publisher` Step 6 | `export/08-{platform}-publish.md` | **唯一**终稿守门：W1-W4 / 通用规则若有 error 直接停止导出 |
 
-**polisher 不自行调 lint**：polisher 负责基于 audit 报告逐条修复；若修复质量不达标，publisher 终稿守门会拦截并回流到 recovery。
+**职责分工**：
+
+- `auditor` **不**调 lint —— 只评文学/语义质量（事实/AI 味/风格/句式/标题/传播性），不做机械格式校验。容器合法性如果有显眼问题，会在自由文本中提醒，但不强制纳入维度表。
+- `polisher` **不**自行调 lint —— 基于 audit 报告逐条修复，并按 Profile `typesetting.containers.whitelist` 在内存中自检容器 id/variant 是否在白名单内（不调 lint.py）。
+- `publisher` 守门是唯一 lint 调用点。如有 error → 走 recovery 回流到 polisher 修。
 
 非 wechat 平台：`--platform {platform}` 只走通用规则（段落/标题/图片宽度/A1 容器剥离）；W1-W4 静默跳过。
