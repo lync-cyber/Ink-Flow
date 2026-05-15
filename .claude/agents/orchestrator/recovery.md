@@ -23,10 +23,13 @@
 4. warning（产物存在但 state pending）→ AskUserQuestion 问是否把 state 修正为 completed
 5. `in_progress` 且 `started_at` >30min → stale lock → 问用户（重跑/跳过/取消）
 
-### Section 级恢复（仅 draft）
+### Draft 阶段恢复（整平台粒度）
 
-state.draft.sections 数组中，从第一个非 completed 的 section 继续。
-已 completed 的 section-{NN}.md 文件不在则重跑该 section。
+writer 是单次调用产出全部 section + merged-draft.md，因此 draft 恢复以整平台为单位：
+
+- `state.draft.{platform}.status == completed` 且 `merged-draft.md` 存在 → 跳过
+- `merged-draft.md` 缺失 / section 数与 outline 不符 → 重置 `state.draft.{platform}` 为 pending，整平台重跑 writer
+- 已不再维护 `state.draft.sections` 数组；旧 state 中的该字段在 resume 时由 state-writer 兼容忽略
 
 ## Rerun
 

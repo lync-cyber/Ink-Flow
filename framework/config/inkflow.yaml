@@ -15,7 +15,7 @@ model_allocation:
   researcher: sonnet
   atomizer: sonnet      # 抽取 + 分类，不需 opus 判断
   outliner: opus
-  writer: opus
+  writer: sonnet        # 单平台单次调用产出全部 section + 由 polisher 整体调和，sonnet 性价比更高
   illustrator: sonnet
   auditor: opus
   polisher: opus        # 在 audit 基础上做高质量改写，需要强判断
@@ -105,6 +105,7 @@ stages:
     agent: writer
     per_platform: true
     parallel: true
+    # writer 单次调用即产出当前平台全部 section + merged-draft；不再按 section 拆分调用
     requires: [outline]
     output: "content/articles/{slug}/intermediate/04a-draft/{platform}/merged-draft.md"
     section_output: "content/articles/{slug}/intermediate/04a-draft/{platform}/section-{N}.md"

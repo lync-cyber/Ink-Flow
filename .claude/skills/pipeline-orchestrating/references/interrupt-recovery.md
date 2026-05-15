@@ -43,9 +43,10 @@ Resume 时对每个标记为 `completed` 的依赖阶段执行：
 注：per_platform 阶段的完整性校验逐平台执行——若某一个 `{platform}` 产物缺失，只重置该平台状态，不影响同阶段其他平台（对齐 `orchestrator/fanout.md` § 失败隔离）。
 **权威来源是 `framework/config/artifact-layout.yaml` 的 `paths.*`**，恢复逻辑应直接从该文件读路径模板，不要在本文档里硬编码。
 
-## Draft Section 级恢复（per-platform）
+## Draft 阶段恢复（整平台粒度）
 
-Draft 阶段是最耗时的阶段（多次 writer 调用），支持"平台 × section"粒度的恢复：
+writer 现在是**单次调用产出当前平台全部 section + merged-draft.md**，不再按 section 拆分调用。
+因此 draft 恢复以整平台为单位，不再支持 single-section rerun。
 
 ### 状态结构
 
@@ -57,31 +58,25 @@ Draft 阶段是最耗时的阶段（多次 writer 调用），支持"平台 × s
   "platforms": {
     "wechat": {
       "status": "in_progress",
-      "sections": [
-        { "index": 1, "status": "completed", "artifact": "intermediate/04a-draft/wechat/section-01.md" },
-        { "index": 2, "status": "completed", "artifact": "intermediate/04a-draft/wechat/section-02.md" },
-        { "index": 3, "status": "in_progress", "started_at": "2026-04-01T10:45:00Z" },
-        { "index": 4, "status": "pending" },
-        { "index": 5, "status": "pending" }
-      ]
+      "started_at": "2026-04-01T10:45:00Z"
     },
     "zhihu": {
       "status": "completed",
-      "sections": [ ... ]
+      "artifact": "intermediate/04a-draft/zhihu/merged-draft.md"
     }
   }
 }
 ```
 
+旧 state 中可能残留的 `sections[]` 字段在 resume 时由 state-writer 兼容忽略；不会迁移、不会触发错误。
+
 ### 恢复流程
 
-1. 对每个 `{platform}` 并行执行：
-   1. 读取 `draft.platforms.{platform}.sections` 数组
-   2. 跳过所有 `completed` 的 section（验证文件存在）
-   3. `in_progress` 的 section → 重新执行（部分写入的文件不可信）
-   4. `pending` 的 section → 正常执行
-   5. 全部完成后合并为 `intermediate/04a-draft/{platform}/merged-draft.md`
+1. 对每个 `{platform}` 并行检查：
+   - `status == completed` 且 `merged-draft.md` 存在且 section-{NN}.md 数与 outline 一致 → 跳过
+   - 任一条件不满足 → 重置 `state.draft.{platform}` 为 pending，整平台重跑 writer
 2. 某平台失败不影响其他平台的恢复进度。
+3. 用户若只想重写其中某一节，可手动修改对应 `section-{NN}.md`；这种局部修改会在 polish 阶段被拾起整体调和。
 
 ## 常见中断场景
 

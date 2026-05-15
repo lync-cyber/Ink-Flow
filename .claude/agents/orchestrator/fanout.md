@@ -100,28 +100,28 @@
 
 - `atoms`：**不**走本模块。平台无关的共用产物
 
-## Draft 分节循环（writer 在平台内部）
+## Draft：每平台一次调用（writer 自行完成全部 section）
 
-fanout 已按 {platform} 分派给 writer。writer 在该平台内部按 section 逐段写：
+orchestrator 不再按 section 派发 writer。fanout 把 {platform} 注入 writer 后，writer 在自己内部循环写完该平台所有 section，并自行合并 merged-draft.md。
 
 ```
-INIT:
-  - 读 intermediate/03-outline/{platform}.md，计算 section 总数
-  - state.draft.{platform}.sections = [{index:1, status:pending}, ...]
-
-FOR each section:
-  - completed 且文件存在 → SKIP
-  - 读 section.depends_on_previous（默认 true）
-  - false → 可与前序并行；true → 等前序完成，读其最后两段作为衔接
-  - status=in_progress, started_at
-  - 调用 writer（读 constraints.columnPlatforms.{column}.{platform} 的 skeleton/tone/lengthLimit；
-    首 section 再读 principles.md 的"开头策略"小节中对应 brief.opening_style 的那段）
-  - 输出 → intermediate/04a-draft/{platform}/section-{NN}.md
-  - 校验（字数 ±20%、无 forbidden_patterns、无 platform tone 违规）
-  - status=completed
-
-所有 section 完成 → 合并为 04a-draft/{platform}/merged-draft.md
+FOR each platform in effective_platforms（并行）:
+  - 调 state-writer update_state(draft, {status:in_progress, started_at:now()}, platform=p)
+  - 调用 writer 一次，注入 {platform}=p
+    writer 读 outline/{platform}.md，按 outline 顺序循环生成 section-{NN}.md，
+    最后合并 merged-draft.md
+  - 校验（aggregate）：
+      · section-{NN}.md 个数 == outline 中 section 数
+      · merged-draft.md 存在且字数在 columnPlatforms.{column}.{platform}.lengthLimit 软上限内
+      · 全文无 forbidden_phrases / forbidden_patterns
+  - 通过 → status=completed；不通过 → recovery.md L2（整平台重跑）
 ```
+
+重跑粒度：
+
+- 单平台失败 → 整个平台重跑 writer（不再支持 single-section rerun，因为 writer 是一次性产出）
+- 单 section 想重写 → 用户手动改对应 section-{NN}.md 后 → polisher 阶段拾起
+- 若需要"只重写第 3 节"这种细粒度，仍要走整平台 writer 重跑；这是用 token 换工程简洁性的取舍
 
 ## Audit + Polish 子步骤
 
