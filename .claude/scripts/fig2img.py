@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""fig2img.py — 将目录下的 SVG / HTML 文件批量转为 PNG 图片。
+"""fig2img.py — 将目录下的 SVG / HTML 文件批量转为 PNG 或 JPG 图片。
 
 用法:
-    python fig2img.py <目录> [--width 1280] [--suffix .png]
+    python fig2img.py <目录> [--width 1280] [--format png|jpg] [--quality 88]
 
 依赖（按优先级自动选择）:
     SVG:  cairosvg > inkscape > chromium
     HTML: playwright > chromium
+    JPG 转换需要 Pillow（cairosvg / playwright 路径自动用 Pillow 二次压缩；
+                       inkscape / chromium 路径先输出 PNG 再用 Pillow 转 JPG）
 
 退出码:
     0 = 全部成功
@@ -64,6 +66,31 @@ def _have_playwright():
         return True
     except ImportError:
         return False
+
+
+def _have_pillow():
+    try:
+        import PIL  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _png_to_jpg(png_path: Path, jpg_path: Path, quality: int) -> tuple[bool, str]:
+    """把 PNG（含透明通道）合成到白底再压成 JPG。"""
+    try:
+        from PIL import Image
+        im = Image.open(png_path)
+        if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+            bg = Image.new("RGB", im.size, (255, 255, 255))
+            bg.paste(im.convert("RGBA"), mask=im.convert("RGBA").split()[-1])
+            im = bg
+        else:
+            im = im.convert("RGB")
+        im.save(jpg_path, "JPEG", quality=quality, optimize=True, progressive=True)
+        return True, ""
+    except Exception as e:
+        return False, f"pillow: {e}"
 
 
 # ------------------------------------------------------------
@@ -226,6 +253,7 @@ def detect_tools() -> dict:
         "inkscape": _have_inkscape(),
         "playwright": _have_playwright(),
         "chromium": _find_chromium(),
+        "pillow": _have_pillow(),
     }
 
 
@@ -241,14 +269,20 @@ def should_skip(src: Path, dst: Path) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Convert SVG/HTML files in a directory to PNG images.",
+        description="Convert SVG/HTML files in a directory to PNG or JPG images.",
     )
     parser.add_argument("directory", help="目录路径（含 .svg / .html 源文件）")
     parser.add_argument("--width", type=int, default=1280,
                         help="输出宽度像素（默认 1280，2× 高清）")
-    parser.add_argument("--suffix", default=".png",
-                        help="输出后缀（默认 .png）")
+    parser.add_argument("--format", choices=["png", "jpg"], default="png",
+                        help="输出格式（默认 png；jpg 需要 Pillow）")
+    parser.add_argument("--quality", type=int, default=88,
+                        help="JPG 质量 1-100（默认 88）；仅 format=jpg 生效")
+    parser.add_argument("--suffix", default=None,
+                        help="输出后缀；不指定则由 --format 决定（.png / .jpg）")
     args = parser.parse_args()
+
+    suffix = args.suffix or f".{args.format}"
 
     root = Path(args.directory)
     if not root.is_dir():
@@ -266,32 +300,56 @@ def main() -> int:
     tools = detect_tools()
     print(f"[INFO] 工具探测: "
           f"cairosvg={tools['cairosvg']}, inkscape={tools['inkscape']}, "
-          f"playwright={tools['playwright']}, chromium={bool(tools['chromium'])}",
+          f"playwright={tools['playwright']}, chromium={bool(tools['chromium'])}, "
+          f"pillow={tools['pillow']}",
           file=sys.stderr)
+
+    if args.format == "jpg" and not tools["pillow"]:
+        print("[ERR] --format jpg 需要 Pillow，请 pip install pillow", file=sys.stderr)
+        return 2
 
     ok_count = 0
     skip_count = 0
     fail_count = 0
 
     for src, kind in sources:
-        dst = src.with_suffix(args.suffix)
+        final_dst = src.with_suffix(suffix)
 
-        if should_skip(src, dst):
-            print(f"[SKIP] {src.name} → {dst.name}（产物已是最新）")
+        if should_skip(src, final_dst):
+            print(f"[SKIP] {src.name} → {final_dst.name}（产物已是最新）")
             skip_count += 1
             continue
 
-        if kind == "svg":
-            ok, info = convert_svg(src, dst, args.width, tools)
+        # JPG 模式：先渲染到临时 PNG，再用 Pillow 转 JPG（带白底合成）
+        if args.format == "jpg":
+            with tempfile.TemporaryDirectory() as td:
+                tmp_png = Path(td) / (src.stem + ".png")
+                if kind == "svg":
+                    ok, info = convert_svg(src, tmp_png, args.width, tools)
+                else:
+                    ok, info = convert_html(src, tmp_png, args.width, tools)
+                if not ok:
+                    print(f"[FAIL] {src.name}: {info}", file=sys.stderr)
+                    fail_count += 1
+                    continue
+                ok2, info2 = _png_to_jpg(tmp_png, final_dst, args.quality)
+                if ok2:
+                    print(f"[OK]   {src.name} → {final_dst.name}（{info}+pillow q{args.quality}）")
+                    ok_count += 1
+                else:
+                    print(f"[FAIL] {src.name}: {info2}", file=sys.stderr)
+                    fail_count += 1
         else:
-            ok, info = convert_html(src, dst, args.width, tools)
-
-        if ok:
-            print(f"[OK]   {src.name} → {dst.name}（{info}）")
-            ok_count += 1
-        else:
-            print(f"[FAIL] {src.name}: {info}", file=sys.stderr)
-            fail_count += 1
+            if kind == "svg":
+                ok, info = convert_svg(src, final_dst, args.width, tools)
+            else:
+                ok, info = convert_html(src, final_dst, args.width, tools)
+            if ok:
+                print(f"[OK]   {src.name} → {final_dst.name}（{info}）")
+                ok_count += 1
+            else:
+                print(f"[FAIL] {src.name}: {info}", file=sys.stderr)
+                fail_count += 1
 
     print(f"\n转换完成：{ok_count} 成功，{skip_count} 跳过，{fail_count} 失败",
           file=sys.stderr)
