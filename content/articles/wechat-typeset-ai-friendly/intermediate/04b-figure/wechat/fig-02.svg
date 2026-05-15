@@ -1,0 +1,92 @@
+<svg viewBox="0 0 640 410" xmlns="http://www.w3.org/2000/svg"
+     font-family='"Microsoft YaHei","PingFang SC",sans-serif'>
+
+  <!-- 背景 -->
+  <rect width="640" height="410" fill="#f4f6f9"/>
+
+  <!-- 主标题 -->
+  <text x="288" y="30" font-size="18" font-weight="700" fill="#2c3e50"
+        text-anchor="middle">wechat-typeset · AI 接口栈</text>
+  <!-- 副标题 -->
+  <text x="288" y="50" font-size="14" font-weight="400" fill="#7f8c8d"
+        text-anchor="middle">让 AI 不靠记忆写排版</text>
+
+  <!-- ===== 层 4（顶）：LLM Agent system prompt ===== -->
+  <rect x="36" y="62" width="496" height="60" rx="6" ry="6"
+        fill="#3498db" stroke="#2980b9" stroke-width="1.5"/>
+  <text x="56" y="87" font-size="16" font-weight="700" fill="#fefefe">LLM Agent</text>
+  <text x="56" y="108" font-size="14" fill="#d6eaf8">system prompt 注入白名单 + 词汇表 + 硬约束</text>
+  <text x="508" y="98" font-size="30" font-weight="700" fill="#fefefe"
+        text-anchor="middle" opacity="0.25">4</text>
+
+  <!-- 箭头：层 3 → 层 4（向上，polygon 替代 marker）-->
+  <line x1="284" y1="140" x2="284" y2="130" stroke="#5a6470" stroke-width="1.5"/>
+  <polygon points="280,130 284,122 288,130" fill="#5a6470"/>
+
+  <!-- ===== 层 3：4 个 SKILL.md ===== -->
+  <rect x="36" y="142" width="496" height="60" rx="6" ry="6"
+        fill="#9b59b6" stroke="#8e44ad" stroke-width="1.5"/>
+  <text x="56" y="167" font-size="16" font-weight="700" fill="#fefefe">4 个 SKILL.md</text>
+  <text x="56" y="188" font-size="14" fill="#e8daef">router · annotate-markdown · author-persona · export-richtext</text>
+  <text x="508" y="178" font-size="30" font-weight="700" fill="#fefefe"
+        text-anchor="middle" opacity="0.25">3</text>
+
+  <!-- 箭头：层 2 → 层 3（向上，polygon 替代 marker）-->
+  <line x1="284" y1="220" x2="284" y2="210" stroke="#5a6470" stroke-width="1.5"/>
+  <polygon points="280,210 284,202 288,210" fill="#5a6470"/>
+
+  <!-- ===== 层 2：公开 TypeScript API ===== -->
+  <rect x="36" y="222" width="496" height="60" rx="6" ry="6"
+        fill="#27ae60" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="56" y="247" font-size="16" font-weight="700" fill="#fefefe">公开 TypeScript API</text>
+  <text x="56" y="268" font-size="14" fill="#d5f5e3">12 个符号：render · listPersonas · getContainerVocabulary · getVariantIds ···</text>
+  <text x="508" y="258" font-size="30" font-weight="700" fill="#fefefe"
+        text-anchor="middle" opacity="0.25">2</text>
+
+  <!-- 箭头：层 1 → 层 2（向上，polygon 替代 marker）-->
+  <line x1="284" y1="300" x2="284" y2="290" stroke="#5a6470" stroke-width="1.5"/>
+  <polygon points="280,290 284,282 288,290" fill="#5a6470"/>
+
+  <!-- ===== 层 1（底）：capabilities.json ===== -->
+  <rect x="36" y="302" width="496" height="60" rx="6" ry="6"
+        fill="#2c3e50" stroke="#1a252f" stroke-width="1.5"/>
+  <text x="56" y="327" font-size="16" font-weight="700" fill="#fefefe">capabilities.json</text>
+  <text x="56" y="348" font-size="14" fill="#aab7c4">schemaVersion 2.3 · jsDelivr CDN · 12h 缓存 · 无鉴权 CORS</text>
+  <text x="508" y="338" font-size="30" font-weight="700" fill="#fefefe"
+        text-anchor="middle" opacity="0.25">1</text>
+
+  <!-- ===== 右侧标注栏 ===== -->
+  <rect x="548" y="62" width="80" height="300" rx="6" ry="6"
+        fill="#fefefe" stroke="#dde3eb" stroke-width="1.5"/>
+
+  <!-- 标注标题 -->
+  <text x="588" y="82" font-size="14" font-weight="700" fill="#2c3e50"
+        text-anchor="middle">用途</text>
+
+  <!-- 标注 4（对应层 4，y=62~122）-->
+  <text x="588" y="102" font-size="14" fill="#3498db" text-anchor="middle">幻觉防控</text>
+  <text x="588" y="120" font-size="14" fill="#7f8c8d" text-anchor="middle">事前注入</text>
+
+  <line x1="558" y1="134" x2="618" y2="134" stroke="#dde3eb" stroke-width="1"/>
+
+  <!-- 标注 3（对应层 3，y=142~202）-->
+  <text x="588" y="156" font-size="14" fill="#9b59b6" text-anchor="middle">Agent</text>
+  <text x="588" y="174" font-size="14" fill="#7f8c8d" text-anchor="middle">直接挂载</text>
+
+  <line x1="558" y1="214" x2="618" y2="214" stroke="#dde3eb" stroke-width="1"/>
+
+  <!-- 标注 2（对应层 2，y=222~282）-->
+  <text x="588" y="236" font-size="14" fill="#27ae60" text-anchor="middle">Node-safe</text>
+  <text x="588" y="254" font-size="14" fill="#7f8c8d" text-anchor="middle">无副作用</text>
+
+  <line x1="558" y1="294" x2="618" y2="294" stroke="#dde3eb" stroke-width="1"/>
+
+  <!-- 标注 1（对应层 1，y=302~362）-->
+  <text x="588" y="316" font-size="14" fill="#2c3e50" text-anchor="middle">机器可读</text>
+  <text x="588" y="334" font-size="14" fill="#7f8c8d" text-anchor="middle">CDN 订阅</text>
+
+  <!-- 底部说明 -->
+  <text x="320" y="398" font-size="14" fill="#7f8c8d"
+        text-anchor="middle">wechat-typeset v0.2.0 · AI 接口层级</text>
+
+</svg>
